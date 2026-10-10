@@ -38,17 +38,21 @@ permissions:
 jobs:
   release:
     strategy:
+      fail-fast: false
       matrix:
         include:
           # Windows: NSIS atualiza sozinho; portable vai junto p/ download manual.
           - os: windows-latest
             args: '--win nsis portable --publish always'
+          # macOS: best-effort (precisa de ícone 512px+; o atual tem 256px).
           - os: macos-latest
             args: '--mac --publish always'
+            allow-fail: true
           # Linux: AppImage atualiza sozinho; tar.xz vai junto p/ manual.
           - os: ubuntu-latest
             args: '--linux AppImage tar.xz --publish always'
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.allow-fail == true }}
     env:
       GH_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
     steps:
