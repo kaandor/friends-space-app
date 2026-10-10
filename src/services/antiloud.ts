@@ -1,0 +1,280 @@
+export type CallQuality = '480p' | '720p' | '1080p' | '2k'
+export type CallFps = 30 | 60
+export type CallMode = 'audio' | 'video'
+
+const VIDEO_PRESETS: Record<CallQuality, { width: MediaTrackConstraints['width']; height: MediaTrackConstraints['height'] }> = {
+  '480p': { width: { ideal: 854 }, height: { ideal: 480 } },
+  '720p': { width: { ideal: 1280 }, height: { ideal: 720 } },
+  '1080p': { width: { ideal: 1920 }, height: { ideal: 1080 } },
+  '2k': { width: { ideal: 2560 }, height: { ideal: 1440 } },
+}
+
+// Bitrate sugerido por qualidade (kbps). Baseado no padrao de transmissao
+// para entrega nitida: 480p ~2.5 Mbps, 720p ~5 Mbps, 1080p ~9 Mbps,
+// 2k ~14 Mbps. E usado como ceiling do encoder da camera.
+export const QUALITY_BITRATE_KBPS: Record<CallQuality, number> = {
+  '480p': 3000,
+  '720p': 6000,
+  '1080p': 12000,
+  '2k': 16000,
+}
+
+export function buildAudioConstraints(): MediaTrackConstraints {
+  let echo = true
+  let noise = true
+  let agc = true
+  try {
+    echo = localStorage.getItem('friends-space:echo') !== '0'
+    noise = localStorage.getItem('friends-space:noise') !== '0'
+    agc = localStorage.getItem('friends-space:agc') !== '0'
+  } catch { }
+  const constraints: MediaTrackConstraints = {
+    // Valores 'ideal' nunca causam falha de captura: o driver entrega o melhor
+    // que suporta. Monofonico + 48kHz = voz limpa; processamento mata eco,
+    // ruido de fundo e estabiliza o volume automaticamente.
+    echoCancellation: { ideal: echo },
+    noiseSuppression: { ideal: noise },
+    autoGainControl: { ideal: agc },
+    channelCount: { ideal: 1 },
+    sampleRate: { ideal: 48000 },
+    sampleSize: { ideal: 16 },
+  }
+  // Dica de latencia minima de captura (0 = menor buffer do driver).
+  // 'latency' nao existe no tipo do TS, mas o Chrome aceita; 'ideal' nunca
+  // quebra (driver ignora se nao suportar). Voz continua mono: estereo
+  // dobraria a banda = mais delay na transmissao.
+  try {
+    (constraints as unknown as Record<string, unknown>)['latency'] = { ideal: 0 }
+  } catch { }
+  return constraints
+}
+
+export function buildVideoConstraints(quality: CallQuality, fps: CallFps = 60): MediaTrackConstraints {
+  return {
+    ...VIDEO_PRESETS[quality],
+    frameRate: { ideal: fps, max: fps },
+    facingMode: 'user',
+  }
+}
+
+export async function getAudioInputDevices(): Promise<{ deviceId: string; label: string }[]> {
+  try {
+    if (!navigator.mediaDevices?.enumerateDevices) return []
+    const devices = await navigator.mediaDevices.enumerateDevices()
+    return devices
+      .filter(device => device.kind === 'audioinput')
+      .map(device => ({ deviceId: device.deviceId, label: device.label || 'Microfone' }))
+  } catch {
+    return []
+  }
+}
+
+export async function getAudioOutputDevices(): Promise<{ deviceId: string; label: string }[]> {
+  try {
+    if (!navigator.mediaDevices?.enumerateDevices) return []
+    const devices = await navigator.mediaDevices.enumerateDevices()
+    return devices
+      .filter(device => device.kind === 'audiooutput')
+      .map(device => ({ deviceId: device.deviceId, label: device.label || 'Fone de ouvido' }))
+  } catch {
+    return []
+  }
+}
+
+export function supportsSinkId(): boolean {
+  return typeof HTMLAudioElement !== 'undefined' && 'setSinkId' in HTMLAudioElement.prototype
+}
+export function applySinkId(el: HTMLMediaElement, deviceId: string | null): void {
+  if (!deviceId || !supportsSinkId()) return
+  try {
+    const audio = el as HTMLAudioElement & { setSinkId?: (id: string) => Promise<void> }
+    if (typeof audio.setSinkId === 'function') {
+      void audio.setSinkId(deviceId).catch(() => { })
+    }
+  } catch {
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Reconhecimento automatico de microfone (recurso ASTRO).
+// O SO expoe cada driver/dispositivo via enumerateDevices; aqui pontuamos os
+// rotulos: mic dedicado/USB de qualidade ganha de "padrao"/generico. Sem
+// permissao de mic os rotulos vem vazios — por isso a selecao roda DEPOIS da
+// primeira captura (que dispara o prompt de permissao).
+// ---------------------------------------------------------------------------
+
+const QUALITY_MIC_HINTS = [
+  'usb', 'hyperx', 'logitech', 'razer', 'blue', 'yeti', 'snowball', 'elgato',
+  'shure', 'rode', 'audio-technica', 'jbl', 'sony', 'sennheiser', 'beyerdynamic',
+  'fifine', 'maono', 'tonor', 'samson', 'akg', 'edifier', 'havit', 'redragon',
+  'corsair', 'steelseries', 'quadcast', 'wave', 'nt-usb', 'podmic', 'sm7',
+  'externo', 'external', 'condensador', 'condenser', 'dinamico', 'dynamic',
+  'headset gamer', 'gaming headset',
+]
+
+const GENERIC_MIC_HINTS = [
+  'default', 'padrao', 'padrão', 'communications', 'comunica',
+  'hands-free', 'maos-livres', 'mãos-livres', 'hfp', 'hsp',
+]
+
+const WEAK_MIC_HINTS = [
+  'webcam', 'camera', 'câmera', 'array', 'integrado', 'integrated',
+  'realtek', 'high definition audio', 'stereo mix', 'mixagem',
+]
+
+export function scoreMicDevice(label: string, deviceId: string): number {
+  const id = (deviceId || '').toLowerCase()
+  const name = (label || '').toLowerCase()
+  if (!name) return -1000
+  let score = 0
+  if (id === 'default' || id === 'communications') score -= 50
+  for (const hint of GENERIC_MIC_HINTS) {
+    if (name.includes(hint)) score -= 50
+  }
+  for (const hint of WEAK_MIC_HINTS) {
+    if (name.includes(hint)) score -= 15
+  }
+  for (const hint of QUALITY_MIC_HINTS) {
+    if (name.includes(hint)) score += 100
+  }
+  if (name.includes('microfone') || name.includes('microphone') || name.includes('mic ')) score += 5
+  return score
+}
+
+export async function selectBestMicDevice(): Promise<{ deviceId: string; label: string } | null> {
+  try {
+    if (!navigator.mediaDevices?.enumerateDevices) return null
+    const devices = await navigator.mediaDevices.enumerateDevices()
+    const mics = devices.filter(d => d.kind === 'audioinput' && d.deviceId)
+    if (mics.length === 0) return null
+    const ranked = mics
+      .map(d => ({ deviceId: d.deviceId, label: d.label || '', score: scoreMicDevice(d.label || '', d.deviceId) }))
+      .sort((a, b) => b.score - a.score)
+    const best = ranked[0]
+    // So vale a troca se o melhor for um mic reconhecido de verdade, nao um
+    // "padrao"/generico (nesse caso o audio padrao ja e o correto).
+    if (!best || best.score < 50) return null
+    return { deviceId: best.deviceId, label: best.label }
+  } catch {
+    return null
+  }
+}
+
+export interface SmartCapture {
+  stream: MediaStream
+  micLabel: string
+  micAuto: boolean
+  cleanAudio: boolean
+}
+
+// Captura inteligente: primeiro garante permissao/stream padrao, depois (so se
+// autoSelectMic, i.e. ASTRO) procura um mic dedicado e recaptura nele, e por
+// fim aplica o RNNoise se o usuario ativou o audio limpo. Falha em qualquer
+// etapa cai de volta para a stream padrao — nunca quebra a entrada na call.
+export async function acquireCallMediaSmart(
+  mode: CallMode,
+  quality: CallQuality,
+  fps: CallFps = 60,
+  autoSelectMic = false,
+): Promise<SmartCapture> {
+  const first = await acquireCallMedia(mode, quality, undefined, fps)
+  const firstLabel = (() => {
+    try { return first.getAudioTracks()[0]?.label || '' } catch { return '' }
+  })()
+  let stream = first
+  let micLabel = firstLabel
+  let micAuto = false
+  if (autoSelectMic) {
+    try {
+      const best = await selectBestMicDevice()
+      const curId = (() => {
+        try { return first.getAudioTracks()[0]?.getSettings?.().deviceId || '' } catch { return '' }
+      })()
+      if (best && best.deviceId && best.deviceId !== curId) {
+        try {
+          const second = await acquireCallMedia(mode, quality, best.deviceId, fps)
+          stopMediaStream(first)
+          try { localStorage.setItem('friends-space:mic', best.deviceId) } catch { }
+          stream = second
+          micLabel = best.label
+          micAuto = true
+        } catch {
+          // Mantem a primeira stream.
+        }
+      }
+    } catch {
+      // Mantem a primeira stream.
+    }
+  }
+  // Audio limpo (RNNoise): so Astro (autoSelectMic) + pref ativada. Qualquer
+  // falha mantem a stream sem filtro.
+  let cleanAudio = false
+  if (autoSelectMic) {
+    try {
+      const { isCleanAudioEnabledPref, enableCleanAudio } = await import('./rnnoise')
+      if (isCleanAudioEnabledPref()) {
+        const handle = await enableCleanAudio(stream)
+        if (handle) {
+          stream = handle.stream
+          cleanAudio = true
+        }
+      }
+    } catch {
+      // Mantem sem filtro.
+    }
+  }
+  return { stream, micLabel, micAuto, cleanAudio }
+}
+
+export async function acquireCallMedia(mode: CallMode, quality: CallQuality, deviceId?: string, fps: CallFps = 60) {
+  const { unlockAudio } = await import('./audioUnlock')
+  unlockAudio()
+  const video = mode === 'video' ? buildVideoConstraints(quality, fps) : false
+
+  // Cadeia de fallback para o micro/fone do usuario: tenta a melhor qualidade
+  // (48kHz mono + processamento), e se o driver nao suportar alguma constraint
+  // (fones Bluetooth, headsets USB, etc.) vai relaxando ate capturar com
+  // certeza. Sem isso o getUserMedia falha e o usuario "nunca entra na call".
+  const attempts: Array<{ audio: MediaTrackConstraints | boolean; label: string }> = []
+
+  const full = buildAudioConstraints()
+  if (deviceId) full.deviceId = { exact: deviceId }
+  attempts.push({ audio: full, label: 'full' })
+
+  const relaxed = buildAudioConstraints()
+  if (deviceId) relaxed.deviceId = { exact: deviceId }
+  relaxed.echoCancellation = { ideal: false }
+  relaxed.noiseSuppression = { ideal: false }
+  relaxed.autoGainControl = { ideal: false }
+  attempts.push({ audio: relaxed, label: 'relaxed' })
+
+  const noDevice = buildAudioConstraints()
+  attempts.push({ audio: noDevice, label: 'nodevice' })
+
+  const bare: MediaTrackConstraints = {}
+  attempts.push({ audio: bare, label: 'bare' })
+  attempts.push({ audio: true, label: 'true' })
+
+  let lastError: unknown = null
+  for (const attempt of attempts) {
+    try {
+      return await navigator.mediaDevices.getUserMedia({ audio: attempt.audio, video })
+    } catch (err) {
+      lastError = err
+      const e = err as DOMException
+      // Nao adianta repetir quando o usuario negou ou nao existe dispositivo.
+      if (e?.name === 'NotAllowedError' || e?.name === 'NotFoundError') throw err
+    }
+  }
+  throw lastError
+}
+
+export function stopMediaStream(stream: MediaStream | null | undefined): void {
+  if (!stream) return
+  stream.getTracks().forEach(track => track.stop())
+}
+
+export function applyRemoteGain(el: HTMLMediaElement, volume: number): void {
+  const v = Math.max(0, Math.min(1, volume))
+  el.volume = v
+}

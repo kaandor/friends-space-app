@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data:; img-src https: data:; style-src 'unsafe-inline' https:; script-src 'self'">
+<title>Friends Space Overlay</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
+  body {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 10px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  #list {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.45);
+    border-radius: 999px;
+    padding: 4px 10px 4px 5px;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.18s ease-out;
+  }
+  .item img {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #333;
+  }
+  .item .name {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 11.5px;
+    font-weight: 600;
+    max-width: 130px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+  <div id="list"></div>
+  <script>
+    const list = document.getElementById('list')
+    const electronAPI = window.electronAPI
+    if (!electronAPI || typeof electronAPI.onOverlayRender !== 'function') {
+      list.textContent = ''
+    } else {
+      electronAPI.onOverlayRender((users) => {
+        list.innerHTML = ''
+        const arr = Array.isArray(users) ? users : []
+        for (const u of arr) {
+          if (!u || !u.photoUrl) continue
+          const item = document.createElement('div')
+          item.className = 'item'
+          const img = document.createElement('img')
+          img.src = u.photoUrl
+          img.alt = ''
+          img.draggable = false
+          item.appendChild(img)
+          if (u.userName) {
+            const name = document.createElement('span')
+            name.className = 'name'
+            name.textContent = u.userName
+            item.appendChild(name)
+          }
+          list.appendChild(item)
+        }
+      })
+    }
+  </script>
+</body>
+</html>

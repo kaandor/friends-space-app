@@ -1,0 +1,108 @@
+{
+  "name": "friends-space",
+  "private": true,
+  "version": "1.1.0",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "dev:electron": "concurrently -k \"vite\" \"wait-on http://127.0.0.1:5173 && electron .\"",
+    "build": "node scripts/stamp-version.mjs && tsc -b && vite build",
+    "build:cloudflare": "node scripts/stamp-version.mjs && tsc -b && vite build --mode cloudflare",
+    "build:desktop": "node scripts/stamp-version.mjs && tsc -b && vite build --mode desktop",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "dist:win": "npm run build:desktop && electron-builder --win portable",
+    "dist:installer": "npm run build:desktop && electron-builder --win nsis"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@jitsi/rnnoise-wasm": "^0.2.1",
+    "dexie": "^4.4.4",
+    "electron-updater": "^6.8.9",
+    "livekit-client": "^2.22.3",
+    "lucide-react": "^1.31.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.2",
+    "web-push": "^3.6.7",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "concurrently": "^9.2.0",
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3",
+    "oxlint": "^1.71.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1",
+    "wait-on": "^9.0.1",
+    "wrangler": "^4.119.0"
+  },
+  "build": {
+    "appId": "com.friends-space.app",
+    "productName": "Friends Space",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "electron/**",
+      "build/**",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.social-networking",
+      "artifactName": "Friends-Space-${version}-mac.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "tar.xz"
+      ],
+      "icon": "build/icon.png",
+      "category": "Network",
+      "artifactName": "Friends-Space-${version}-linux.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Friends Space",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "artifactName": "Friends-Space-Setup-${version}.exe",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "Friends-Space-Portable.exe"
+    }
+  },
+  "description": "App React + Vite com backend serverless em `api/app.js`, pronto para deploy na Vercel.",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "optionalDependencies": {
+    "@rolldown/binding-linux-x64-gnu": "^1.2.7"
+  }
+}

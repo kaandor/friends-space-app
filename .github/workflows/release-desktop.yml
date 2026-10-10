@@ -1,0 +1,82 @@
+# Release do app desktop (Windows / macOS / Linux) no GitHub Releases.
+#
+# Destino FIXO: kaandor/update-electro (repositório de atualizações).
+# O workflow roda no repo do código, mas PUBLICA no update-electro — por
+# isso precisa do secret UPDATE_REPO_TOKEN (PAT clássico com scope `repo`,
+# criado em github.com/settings/tokens) nos secrets do repo do código.
+# Sem ele, o GITHUB_TOKEN só publica no próprio repo e a release falha.
+#
+# Como soltar uma versão:
+#   1. Garanta o secret UPDATE_REPO_TOKEN no repo do código.
+#   2. Configure o BACKEND (Vercel produção + rebuild do site):
+#        GH_OWNER=kaandor  GH_REPO=update-electro
+#        VITE_GH_OWNER=kaandor  VITE_GH_REPO=update-electro
+#      (o endpoint checkUpdate e o modal "Baixar app" usam isso — o modal
+#      passa a oferecer a nova versão sozinho).
+#   3. Rode:  git tag desktop-v1.2.0 ; git push origin desktop-v1.2.0
+#      A versão do tag vira a versão do app (precisa ser MAIOR que a instalada).
+#   4. O app instalado atualiza sozinho: baixa em segundo plano, avisa por
+#      notificação nativa (push do Electron) + botão na tela, instala ao sair.
+#
+# O electron-updater lê owner/repo do app-update.yml gerado no build
+# (publish passado por CLI abaixo — o package.json NÃO tem publish para
+# não quebrar builds locais sem GH_OWNER/GH_REPO).
+#
+# Alvos com auto-update: Windows NSIS (+ portable como asset manual) e
+# Linux AppImage (+ tar.xz manual). Portable/tar.xz NÃO atualizam sozinhos.
+
+name: Release Desktop
+
+on:
+  push:
+    tags:
+      - 'desktop-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      matrix:
+        include:
+          # Windows: NSIS atualiza sozinho; portable vai junto p/ download manual.
+          - os: windows-latest
+            args: '--win nsis portable --publish always'
+          - os: macos-latest
+            args: '--mac --publish always'
+          # Linux: AppImage atualiza sozinho; tar.xz vai junto p/ manual.
+          - os: ubuntu-latest
+            args: '--linux AppImage tar.xz --publish always'
+    runs-on: ${{ matrix.os }}
+    env:
+      GH_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # A versão do app segue o tag (desktop-v1.2.0 -> 1.2.0).
+      - name: Sync version from tag
+        shell: bash
+        run: |
+          VER="${GITHUB_REF_NAME#desktop-v}"
+          npm version --no-git-tag-version "$VER"
+      # Secret do Google embutido no asar (main.cjs lê electron/auth-secret.json).
+      # Sem isso o login Google quebra nos builds do CI.
+      - name: Write Google client secret
+        shell: bash
+        run: |
+          printf '{"client_secret":"%s"}' "$GOOGLE_CLIENT_SECRET" > electron/auth-secret.json
+        env:
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      - run: npm run build:desktop
+      - name: Build + publish installers
+        shell: bash
+        run: >
+          npx electron-builder ${{ matrix.args }}
+          -c.publish.provider=github
+          -c.publish.owner=kaandor
+          -c.publish.repo=update-electro

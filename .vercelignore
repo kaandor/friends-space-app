@@ -1,0 +1,11 @@
+node_modules
+dist
+release
+*.exe
+Friends-Space-Portable.exe
+electron
+.env
+.env.local
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,29 @@
+{
+  "name": "Friends Space",
+  "short_name": "Friends Space",
+  "description": "Rede social: servidores, amigos, chat e chamadas. Seu espaço social na web.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0a0a",
+  "theme_color": "#00ff88",
+  "categories": [
+    "social",
+    "communication"
+  ],
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/Logo.png",
+      "sizes": "1024x1536",
+      "type": "image/png"
+    },
+    {
+      "src": "/friends-space-icon.png",
+      "sizes": "144x127",
+      "type": "image/png"
+    }
+  ]
+}

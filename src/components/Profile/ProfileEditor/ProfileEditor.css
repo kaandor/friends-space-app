@@ -1,0 +1,2841 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Montserrat:wght@400;600;700&family=Outfit:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Poppins:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap');
+
+/* STYLE NOTE: Friends Space dark desktop workspace — near-black layers, subtle blue-gray surfaces,
+   emerald action color, restrained radius, dense product typography, no generic landing-page gradients. */
+
+
+
+.fs-profile-editor {
+  --bg: #080a0d;
+  --bg-elevated: #0c1014;
+  --panel: #0f1317;
+  --panel-raised: #13181e;
+  --panel-soft: #12171c;
+  --line: rgba(255,255,255,.085);
+  --line-strong: rgba(255,255,255,.13);
+  --text: #f0f3f5;
+  --text-soft: #d4dadd;
+  --muted: #8d979d;
+  --muted-2: #687279;
+  --green: #19d56b;
+  --green-deep: #0e9d4c;
+  --red: #ff5964;
+  --shadow: 0 12px 28px rgba(0,0,0,.22);
+  --ease-out: cubic-bezier(.23,1,.32,1);
+}
+
+.fs-profile-editor *, .fs-profile-editor *::before, .fs-profile-editor *::after { box-sizing: border-box; }
+.fs-profile-editor button, .fs-profile-editor input, .fs-profile-editor textarea { font: inherit; }
+.fs-profile-editor button, .fs-profile-editor a, .fs-profile-editor input, .fs-profile-editor textarea { outline-color: var(--green); }
+.fs-profile-editor button { color: inherit; border: 0; }
+.fs-profile-editor button:not(:disabled), .fs-profile-editor [role="button"], .fs-profile-editor a { cursor: pointer; }
+.fs-profile-editor button:disabled { cursor: not-allowed; }
+
+.fs-profile-editor .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.fs-profile-editor .icon-green { color: var(--green); }
+
+.fs-profile-editor .friends-app-shell { min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); overflow: hidden; }
+.fs-profile-editor .topbar { height: 35px; display: flex; align-items: center; border-bottom: 1px solid var(--line); background: #07090c; flex: 0 0 35px; position: relative; z-index: 20; }
+.fs-profile-editor .brand-lockup { width: 285px; height: 100%; display: flex; gap: 8px; align-items: center; padding: 0 14px; font-family: "Space Grotesk", sans-serif; font-size: 14px; font-weight: 700; letter-spacing: -.025em; }
+.fs-profile-editor .brand-lockup img { width: 20px; height: 20px; object-fit: contain; border-radius: 6px; }
+.fs-profile-editor .window-controls { display: flex; align-items: center; gap: 22px; color: #9aa3a8; margin-left: auto; padding-right: 18px; }
+.fs-profile-editor .square-window-icon { display: block; width: 10px; height: 10px; border: 1px solid currentColor; border-radius: 1px; }
+.fs-profile-editor .topbar-actions { height: 100%; display: flex; align-items: center; gap: 10px; padding-right: 16px; }
+.fs-profile-editor .topbar-icon { background: transparent; color: #c4cdd1; padding: 6px; border-radius: 6px; transition: color 180ms var(--ease-out), background 180ms var(--ease-out); }
+.fs-profile-editor .topbar-icon:hover { color: #fff; background: #151b20; }
+.fs-profile-editor .user-menu-trigger { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: #0e1317; color: #f2f5f6; padding: 7px 11px; border-radius: 7px; font-weight: 600; font-size: 12px; transition: background 180ms var(--ease-out), border-color 180ms var(--ease-out); }
+.fs-profile-editor .user-menu-trigger:hover { background: #151c21; border-color: var(--line-strong); }
+.fs-profile-editor .online-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(25,213,107,.1); }
+.fs-profile-editor .user-menu { position: absolute; right: 15px; top: 42px; width: 220px; display: grid; gap: 4px; padding: 12px; background: #12181d; border: 1px solid var(--line-strong); border-radius: 9px; box-shadow: var(--shadow); z-index: 40; animation: menu-in 180ms var(--ease-out) both; }
+.fs-profile-editor .user-menu b { font-size: 12px; }
+.fs-profile-editor .user-menu span { color: var(--muted); font-size: 11px; }
+.fs-profile-editor .user-menu button { margin-top: 8px; text-align: left; padding: 7px; border-radius: 5px; background: #1a2228; color: var(--text-soft); font-size: 11px; }
+
+.fs-profile-editor .app-body { display: flex; flex: 1; min-height: calc(100vh - 35px); position: relative; }
+.fs-profile-editor .icon-rail { width: 48px; flex: 0 0 48px; display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 12px 0 10px; border-right: 1px solid var(--line); background: #090b0f; }
+.fs-profile-editor .rail-button { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; background: transparent; color: #d3dadd; transition: color 180ms var(--ease-out), background 180ms var(--ease-out), transform 160ms var(--ease-out); }
+.fs-profile-editor .rail-button:hover { color: var(--green); background: #111a16; }
+.fs-profile-editor .rail-button:active { transform: scale(.96); }
+.fs-profile-editor .rail-button-active { color: #06140b; background: var(--green); }
+.fs-profile-editor .rail-button-active:hover { color: #06140b; background: #23df75; }
+.fs-profile-editor .rail-spacer { flex: 1; min-height: 30px; }
+
+.fs-profile-editor .desktop-friend-sidebar { display: block; }
+.fs-profile-editor .friend-sidebar { width: 235px; flex: 0 0 235px; min-height: calc(100vh - 35px); border-right: 1px solid var(--line); background: #0a0d11; padding: 30px 22px 18px; }
+.fs-profile-editor .friend-sidebar-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 22px; }
+.fs-profile-editor .friend-sidebar-head > svg { color: var(--text-soft); margin-top: 2px; flex: none; }
+.fs-profile-editor .friend-sidebar-head h2 { font-family: "Space Grotesk", sans-serif; font-size: 16px; margin: 0 0 6px; letter-spacing: -.02em; }
+.fs-profile-editor .friend-sidebar-head p { margin: 0; line-height: 1.45; color: var(--muted); font-size: 11px; }
+.fs-profile-editor .friend-code, .fs-profile-editor .search-field { width: 100%; min-height: 39px; display: flex; align-items: center; gap: 10px; padding: 0 11px; background: #080b0f; border: 1px solid rgba(255,255,255,.06); border-radius: 6px; color: var(--text-soft); text-align: left; }
+.fs-profile-editor .friend-code { justify-content: space-between; margin-bottom: 14px; font-size: 11px; }
+.fs-profile-editor .friend-code b { color: var(--green); font-weight: 600; }
+.fs-profile-editor .search-field { margin-bottom: 11px; color: var(--green); }
+.fs-profile-editor .search-field input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 11px; }
+.fs-profile-editor .search-field input::placeholder { color: #7a858b; }
+.fs-profile-editor .search-friends { justify-content: flex-start; color: #c6cdd0; }
+.fs-profile-editor .friend-filters { display: flex; align-items: center; gap: 25px; margin: 22px 0 14px; border-bottom: 1px solid rgba(255,255,255,.055); }
+.fs-profile-editor .friend-filters button { position: relative; padding: 0 0 11px; color: #8e999f; background: transparent; font-size: 11px; }
+.fs-profile-editor .friend-filters button:hover { color: var(--text-soft); }
+.fs-profile-editor .friend-filter-active { color: var(--green) !important; }
+.fs-profile-editor .friend-filter-active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--green); }
+.fs-profile-editor .friend-list { padding-top: 3px; }
+.fs-profile-editor .friend-row { display: flex; align-items: center; gap: 10px; padding: 9px 4px; }
+.fs-profile-editor .friend-row strong, .fs-profile-editor .friend-row span { display: block; }
+.fs-profile-editor .friend-row strong { font-size: 12px; font-weight: 500; }
+.fs-profile-editor .friend-row span { color: var(--muted); margin-top: 3px; font-size: 10px; }
+.fs-profile-editor .friend-status { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: var(--green); }
+.fs-profile-editor .mobile-sidebar-toggle, .fs-profile-editor .mobile-sidebar-layer { display: none; }
+
+.fs-profile-editor .profile-main { flex: 1; min-width: 0; overflow: auto; background: #090c0f; }
+.fs-profile-editor .profile-header { height: 52px; display: flex; align-items: center; gap: 12px; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,.035); }
+.fs-profile-editor .profile-header h1 { margin: 0; font-family: "Space Grotesk", sans-serif; font-size: 18px; line-height: 1; letter-spacing: -.03em; }
+.fs-profile-editor .back-button { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--line); background: #11161b; border-radius: 8px; color: #d9e0e3; transition: background 180ms var(--ease-out), transform 160ms var(--ease-out); }
+.fs-profile-editor .back-button:hover { background: #1b242a; }
+.fs-profile-editor .back-button:active { transform: scale(.96); }
+.fs-profile-editor .profile-header-actions { display: flex; gap: 5px; margin-left: auto; }
+.fs-profile-editor .profile-header-actions button { width: 30px; height: 30px; display: grid; place-items: center; background: transparent; color: #aab3b7; border-radius: 6px; }
+.fs-profile-editor .profile-header-actions button:hover { color: var(--green); background: #131b17; }
+.fs-profile-editor .main-layout { display: grid; grid-template-columns: minmax(0, 1fr) 410px; gap: 18px; align-items: start; padding: 0 16px 18px; max-width: 1370px; }
+.fs-profile-editor .editor-column { min-width: 0; padding-top: 19px; }
+.fs-profile-editor .editor-top-grid { display: grid; grid-template-columns: minmax(190px, 29%) minmax(330px, 1fr); border-bottom: 1px solid rgba(255,255,255,.055); padding-bottom: 20px; }
+.fs-profile-editor .profile-photo-section { min-height: 302px; padding: 5px 16px 0 15px; border-right: 1px solid rgba(255,255,255,.05); }
+.fs-profile-editor .basic-info-section { padding: 5px 0 0 24px; }
+.fs-profile-editor .section-title { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 17px; }
+.fs-profile-editor .section-title-icon { flex: none; color: var(--green); margin-top: 1px; }
+.fs-profile-editor .section-title-icon-neutral { color: #c9d0d3; }
+.fs-profile-editor .section-title h2 { margin: 0; font-family: "Space Grotesk", sans-serif; color: var(--text); font-size: 14px; line-height: 1.1; font-weight: 600; letter-spacing: -.015em; }
+.fs-profile-editor .section-title p { margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.25; }
+.fs-profile-editor .profile-avatar-large { position: relative; width: 150px; height: 150px; margin: 12px auto 12px; display: grid; place-items: center; border-radius: 50%; background: #30353a; overflow: visible; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+.fs-profile-editor .profile-avatar-large img { width: 136px; height: 136px; object-fit: cover; border-radius: 50%; }
+.fs-profile-editor .profile-avatar-large span { position: absolute; right: -2px; bottom: 10px; width: 31px; height: 31px; display: grid; place-items: center; border-radius: 50%; background: #1a242a; border: 2px solid #090c0f; color: #e2e7e8; }
+.fs-profile-editor .photo-note { margin: 0; text-align: center; color: #9ca5aa; font-size: 10px; line-height: 1.55; }
+.fs-profile-editor .photo-note button { background: transparent; color: #9ca5aa; padding: 0; }
+.fs-profile-editor .photo-note button:hover, .fs-profile-editor .photo-note b { color: var(--green); }
+.fs-profile-editor .control-label { display: block; position: relative; color: #aab3b7; font-size: 10px; margin-bottom: 11px; }
+.fs-profile-editor .control-label em { color: var(--red); font-style: normal; margin-left: 2px; }
+.fs-profile-editor .text-input-wrap { display: block; position: relative; margin-top: 6px; }
+.fs-profile-editor .text-input-wrap input { width: 100%; height: 38px; padding: 0 45px 0 13px; color: #e9edef; background: linear-gradient(90deg, #0e1317, #11161b); border: 1px solid rgba(255,255,255,.08); border-radius: 5px; outline: 0; font-size: 12px; transition: border-color 180ms var(--ease-out), background 180ms var(--ease-out); }
+.fs-profile-editor .text-input-wrap input:focus, .fs-profile-editor .about-label textarea:focus, .fs-profile-editor .search-field:focus-within { border-color: rgba(25,213,107,.72); background: #11191a; }
+.fs-profile-editor .text-input-wrap small { position: absolute; right: 10px; bottom: 7px; color: #899399; font-size: 9px; }
+.fs-profile-editor .username-lock-card { width: 100%; display: flex; align-items: flex-start; gap: 11px; margin: 16px 0 15px; padding: 11px 12px; background: #11161b; border: 1px solid rgba(255,255,255,.075); border-radius: 6px; color: #c7d0d3; text-align: left; transition: border-color 180ms var(--ease-out), background 180ms var(--ease-out); }
+.fs-profile-editor .username-lock-card:hover { border-color: rgba(25,213,107,.4); background: #141c20; }
+.fs-profile-editor .username-lock-card > svg { flex: none; color: #dce3e5; margin-top: 1px; }
+.fs-profile-editor .username-lock-card span { display: grid; gap: 5px; min-width: 0; }
+.fs-profile-editor .username-lock-card b { color: var(--text); font-size: 11px; font-weight: 600; }
+.fs-profile-editor .username-lock-card small { color: #899399; line-height: 1.35; font-size: 9px; }
+.fs-profile-editor .username-lock-card strong { margin-left: auto; white-space: nowrap; color: #d8e0e2; font-size: 9px; font-weight: 500; }
+.fs-profile-editor .profile-link { margin: 0; text-align: center; color: #d4dbde; font-size: 11px; }
+.fs-profile-editor .profile-link b { color: var(--green); font-weight: 500; }
+
+.fs-profile-editor .banner-section, .fs-profile-editor .about-section { padding: 20px 0 0; }
+.fs-profile-editor .banner-section .section-title, .fs-profile-editor .about-section .section-title { margin-bottom: 12px; }
+.fs-profile-editor .locked-banner { width: 100%; min-height: 82px; height: 82px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px 16px; background-color: #11161b; background-position: center; background-size: cover; border: 1px solid rgba(255,255,255,.08); border-radius: 6px; color: #e7ecee; overflow: hidden; transition: border-color 180ms var(--ease-out), filter 180ms var(--ease-out), transform 180ms var(--ease-out); }
+.fs-profile-editor .locked-banner:hover { border-color: rgba(25,213,107,.42); filter: brightness(1.1); }
+.fs-profile-editor .locked-banner:active { transform: scale(.995); }
+/* STYLE NOTE: The Free banner shares the exact same 82px height and proportions as ASTRO, ASTRO+, and ASTRO PLUS. */
+.fs-profile-editor .free-profile-banner { height: 82px; min-height: 82px; aspect-ratio: auto; background-size: 100% 100%; background-repeat: no-repeat; background-position: center; }
+.fs-profile-editor .locked-banner strong { font-size: 11px; font-weight: 600; }
+.fs-profile-editor .locked-banner small { color: #b8c1c5; font-size: 10px; }
+.fs-profile-editor .available-note { padding: 3px 6px; border-radius: 3px; background: rgba(10,154,73,.55); color: #9ef5be; font-size: 10px; }
+.fs-profile-editor .about-section { padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,.055); }
+.fs-profile-editor .about-label { margin: 0; }
+.fs-profile-editor .about-label textarea { width: 100%; min-height: 78px; resize: vertical; padding: 11px 13px 24px; color: var(--text); background: linear-gradient(90deg, #0e1317, #11161b); border: 1px solid rgba(255,255,255,.08); border-radius: 5px; outline: 0; font-size: 12px; }
+.fs-profile-editor .about-label textarea::placeholder { color: #798389; }
+.fs-profile-editor .about-counter { position: absolute; right: 10px; bottom: 7px; color: #879197; font-size: 9px; }
+.fs-profile-editor .premium-card { margin-top: 20px; padding: 18px 16px 15px; border: 1px solid rgba(255,255,255,.08); border-radius: 7px; background-color: #0f1317; background-position: center; background-size: cover; }
+.fs-profile-editor .premium-card h2 { margin: 0 0 15px; font-family: "Space Grotesk", sans-serif; font-size: 13px; color: #edf1f2; font-weight: 600; }
+.fs-profile-editor .premium-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 30px; row-gap: 13px; }
+.fs-profile-editor .premium-item { display: flex; align-items: flex-start; gap: 9px; color: #b5bec2; font-size: 10px; line-height: 1.35; }
+.fs-profile-editor .premium-item svg { flex: none; color: #dfe5e6; margin-top: 1px; }
+.fs-profile-editor .editor-actions { display: flex; justify-content: space-between; padding-top: 20px; }
+.fs-profile-editor .cancel-button, .fs-profile-editor .save-button { padding: 9px 14px; border-radius: 5px; font-size: 11px; transition: background 180ms var(--ease-out), color 180ms var(--ease-out), transform 160ms var(--ease-out); }
+.fs-profile-editor .cancel-button { background: #171d22; color: #d8dee0; }
+.fs-profile-editor .cancel-button:hover { background: #232c32; }
+.fs-profile-editor .save-button { background: #10271a; color: rgba(25,213,107,.52); }
+.fs-profile-editor .save-button:not(:disabled) { background: var(--green); color: #06140b; font-weight: 700; }
+.fs-profile-editor .save-button:not(:disabled):hover { background: #26df77; }
+.fs-profile-editor .cancel-button:active, .fs-profile-editor .save-button:active { transform: scale(.97); }
+
+.fs-profile-editor .plan-column { min-width: 0; padding-top: 19px; display: grid; gap: 14px; }
+.fs-profile-editor .plan-card, .fs-profile-editor .upgrade-card { background: #0f1317; border: 1px solid rgba(255,255,255,.09); border-radius: 9px; box-shadow: 0 8px 22px rgba(0,0,0,.12); }
+.fs-profile-editor .plan-summary-card { padding: 17px 18px 16px; }
+.fs-profile-editor .plan-heading { display: flex; align-items: center; gap: 13px; }
+.fs-profile-editor .plan-avatar-wrap { width: 48px; height: 48px; flex: 0 0 48px; display: grid; place-items: center; background: #30353a; border-radius: 50%; overflow: hidden; }
+.fs-profile-editor .plan-avatar-wrap img { width: 45px; height: 45px; object-fit: cover; border-radius: 50%; }
+.fs-profile-editor .plan-heading span { display: block; color: #abb4b8; font-size: 10px; }
+.fs-profile-editor .plan-heading h2 { margin: 2px 0 0; font-family: "Space Grotesk", sans-serif; font-size: 22px; line-height: 1; letter-spacing: -.04em; }
+.fs-profile-editor .plan-divider { height: 1px; background: rgba(255,255,255,.07); margin: 17px 0 16px; }
+.fs-profile-editor .plan-card h3 { margin: 0 0 13px; font-family: "Space Grotesk", sans-serif; color: #f0f3f4; font-size: 12px; font-weight: 600; }
+.fs-profile-editor .available-list { list-style: none; display: grid; gap: 9px; padding: 0; margin: 0; }
+.fs-profile-editor .available-list li { display: flex; align-items: center; gap: 9px; color: #d0d8db; font-size: 10px; }
+.fs-profile-editor .check-dot { width: 14px; height: 14px; display: grid; place-items: center; border-radius: 50%; background: #1cb968; color: #07160c; }
+.fs-profile-editor .compare-card { padding: 16px 12px 11px; }
+.fs-profile-editor .compare-table { overflow: hidden; border: 1px solid rgba(255,255,255,.08); border-radius: 6px; }
+.fs-profile-editor .compare-row { display: grid; grid-template-columns: minmax(0,1.38fr) minmax(72px,.9fr) minmax(72px,.9fr); border-top: 1px solid rgba(255,255,255,.055); min-height: 27px; }
+.fs-profile-editor .compare-row:first-child { border-top: 0; }
+.fs-profile-editor .compare-row > span { display: flex; align-items: center; padding: 6px 7px; white-space: pre-line; color: #aeb7bb; font-size: 9px; line-height: 1.3; }
+.fs-profile-editor .compare-row > span + span { border-left: 1px solid rgba(255,255,255,.045); }
+.fs-profile-editor .compare-head > span { color: #e8edee; font-weight: 600; font-size: 9px; }
+.fs-profile-editor .compare-head .astro-text { color: var(--green); }
+.fs-profile-editor .compare-free, .fs-profile-editor .compare-astro { gap: 6px; }
+.fs-profile-editor .compare-free b, .fs-profile-editor .compare-astro b { width: 13px; height: 13px; flex: 0 0 13px; display: grid; place-items: center; border-radius: 50%; }
+.fs-profile-editor .compare-free b { color: #fff; background: var(--red); }
+.fs-profile-editor .compare-free b.compare-unavailable { color: #1b2025; background: linear-gradient(145deg, #dfe5e8, #9da8af); box-shadow: inset 0 0 0 1px rgba(255,255,255,.38), 0 0 5px rgba(193,204,210,.22); }
+.fs-profile-editor .compare-astro { color: #a8f0bf !important; }
+.fs-profile-editor .compare-astro b { color: #07160c; background: #23cb70; }
+.fs-profile-editor .upgrade-card { padding: 17px 20px 18px; }
+.fs-profile-editor .upgrade-card h3 { margin: 0 0 7px; font-family: "Space Grotesk", sans-serif; font-size: 16px; letter-spacing: -.02em; }
+.fs-profile-editor .upgrade-card p { margin: 0; color: #adb6ba; font-size: 11px; line-height: 1.45; }
+.fs-profile-editor .upgrade-card ul { list-style: none; padding: 0; margin: 13px 0 15px; display: grid; gap: 8px; }
+.fs-profile-editor .upgrade-card li { display: flex; align-items: center; gap: 8px; color: #d6dfe1; font-size: 10px; }
+.fs-profile-editor .upgrade-card li svg { color: var(--green); flex: none; }
+.fs-profile-editor .astro-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; padding: 11px 12px; border-radius: 7px; background: var(--green); color: #06140b; font-weight: 700; font-size: 12px; transition: background 180ms var(--ease-out), transform 160ms var(--ease-out); }
+.fs-profile-editor .astro-button:hover { background: #29df78; }
+.fs-profile-editor .astro-button:active { transform: scale(.98); }
+.fs-profile-editor .toast-status { position: fixed; right: 24px; bottom: 22px; z-index: 60; display: flex; align-items: center; gap: 8px; padding: 11px 14px; border: 1px solid rgba(25,213,107,.3); border-radius: 7px; background: #121b17; color: #c7f7d8; box-shadow: var(--shadow); font-size: 11px; animation: toast-in 220ms var(--ease-out) both; }
+
+@keyframes menu-in { from { opacity: 0; transform: translateY(-5px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes toast-in { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 1240px) {
+.fs-profile-editor .brand-lockup { width: 250px; }
+.fs-profile-editor .friend-sidebar { width: 220px; flex-basis: 220px; padding-left: 17px; padding-right: 17px; }
+.fs-profile-editor .main-layout { grid-template-columns: minmax(0,1fr) 360px; gap: 14px; }
+.fs-profile-editor .compare-row { grid-template-columns: minmax(0,1.25fr) minmax(64px,.9fr) minmax(64px,.9fr); }
+}
+
+@media (max-width: 1020px) {
+.fs-profile-editor .brand-lockup { width: auto; min-width: 190px; }
+.fs-profile-editor .settings-icon { display: none; }
+.fs-profile-editor .main-layout { grid-template-columns: 1fr; max-width: 850px; }
+.fs-profile-editor .plan-column { grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items: start; }
+.fs-profile-editor .plan-summary-card { grid-row: span 2; }
+.fs-profile-editor .upgrade-card { grid-column: 2; }
+.fs-profile-editor .compare-card { grid-column: 2; }
+}
+
+@media (max-width: 760px) {
+.fs-profile-editor .topbar { height: 48px; flex-basis: 48px; }
+.fs-profile-editor .brand-lockup { min-width: 0; padding-left: 13px; }
+.fs-profile-editor .brand-lockup span { font-size: 13px; }
+.fs-profile-editor .window-controls { display: none; }
+.fs-profile-editor .topbar-actions { margin-left: auto; padding-right: 10px; }
+.fs-profile-editor .topbar-icon { display: none; }
+.fs-profile-editor .app-body { min-height: calc(100vh - 48px); }
+.fs-profile-editor .icon-rail { display: none; }
+.fs-profile-editor .desktop-friend-sidebar { display: none; }
+.fs-profile-editor .mobile-sidebar-toggle { position: absolute; left: 12px; top: 10px; z-index: 19; width: 33px; height: 33px; display: grid; place-items: center; background: #11171b; border: 1px solid var(--line); border-radius: 7px; color: var(--text-soft); }
+.fs-profile-editor .mobile-sidebar-layer { display: block; position: fixed; left: 0; top: 48px; bottom: 0; z-index: 18; transform: translateX(-100%); transition: transform 220ms var(--ease-out); }
+.fs-profile-editor .mobile-sidebar-layer-open { transform: translateX(0); }
+.fs-profile-editor .mobile-sidebar-layer .friend-sidebar { min-height: calc(100vh - 48px); box-shadow: 14px 0 26px rgba(0,0,0,.28); }
+.fs-profile-editor .profile-header { padding-left: 58px; }
+.fs-profile-editor .main-layout { padding: 0 12px 24px; }
+.fs-profile-editor .editor-top-grid { grid-template-columns: 1fr; gap: 24px; }
+.fs-profile-editor .profile-photo-section { min-height: auto; padding: 0 0 22px; border-right: 0; border-bottom: 1px solid rgba(255,255,255,.055); }
+.fs-profile-editor .basic-info-section { padding: 0; }
+.fs-profile-editor .plan-column { grid-template-columns: 1fr; }
+.fs-profile-editor .plan-summary-card, .fs-profile-editor .compare-card, .fs-profile-editor .upgrade-card { grid-column: auto; grid-row: auto; }
+.fs-profile-editor .premium-grid { column-gap: 18px; }
+}
+
+@media (max-width: 480px) {
+.fs-profile-editor .user-menu-trigger { padding: 7px 8px; }
+.fs-profile-editor .user-menu-trigger svg { display: none; }
+.fs-profile-editor .profile-header h1 { font-size: 16px; }
+.fs-profile-editor .profile-header-actions { display: none; }
+.fs-profile-editor .editor-column, .fs-profile-editor .plan-column { padding-top: 14px; }
+.fs-profile-editor .premium-grid { grid-template-columns: 1fr; row-gap: 10px; }
+.fs-profile-editor .compare-row { grid-template-columns: minmax(0,1.18fr) minmax(64px,.9fr) minmax(64px,.9fr); }
+.fs-profile-editor .compare-row > span { padding: 6px 5px; font-size: 8px; }
+.fs-profile-editor .upgrade-card { padding: 16px; }
+.fs-profile-editor .toast-status { left: 12px; right: 12px; bottom: 12px; justify-content: center; text-align: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+.fs-profile-editor *, .fs-profile-editor *::before, .fs-profile-editor *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+/* STYLE NOTE: Crop-only mode — no chrome, no social rail, no centered marketing wrapper; preserve the two-column profile workspace from the supplied image. */
+.fs-profile-editor .profile-crop-page {
+  min-height: 100vh;
+  padding: 8px 10px 12px;
+  background: var(--appearance-page-bg, #080a0d);
+  color: var(--appearance-text, var(--text));
+}
+.fs-profile-editor .profile-crop-page .main-layout {
+  width: 100%;
+  max-width: none;
+  margin: 0 auto;
+  grid-template-columns: minmax(0, 1fr) 350px;
+  gap: 14px;
+  padding: 0;
+}
+.fs-profile-editor .profile-crop-page .editor-column, .fs-profile-editor .profile-crop-page .plan-column {
+  padding-top: 0;
+}
+.fs-profile-editor .profile-crop-page .plan-column {
+  grid-template-columns: 1fr;
+}
+.fs-profile-editor .profile-crop-page .editor-top-grid {
+  grid-template-columns: minmax(190px, 29%) minmax(330px, 1fr);
+}
+
+@media (max-width: 1100px) {
+.fs-profile-editor .profile-crop-page .main-layout {
+    grid-template-columns: minmax(0, 1.72fr) minmax(240px, .92fr);
+    gap: 10px;
+  }
+.fs-profile-editor .profile-crop-page .editor-top-grid {
+    grid-template-columns: minmax(145px, 34%) minmax(0, 1fr);
+  }
+.fs-profile-editor .profile-crop-page .profile-photo-section {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+.fs-profile-editor .profile-crop-page .basic-info-section {
+    padding-left: 13px;
+  }
+.fs-profile-editor .profile-crop-page .profile-avatar-large {
+    width: 110px;
+    height: 110px;
+    margin-top: 9px;
+  }
+.fs-profile-editor .profile-crop-page .profile-avatar-large img {
+    width: 100px;
+    height: 100px;
+  }
+.fs-profile-editor .profile-crop-page .profile-avatar-large span {
+    width: 27px;
+    height: 27px;
+    right: -1px;
+    bottom: 6px;
+  }
+.fs-profile-editor .profile-crop-page .section-title h2 { font-size: 12px; }
+.fs-profile-editor .profile-crop-page .section-title p { font-size: 9px; }
+.fs-profile-editor .profile-crop-page .plan-summary-card { padding: 13px 14px 12px; }
+.fs-profile-editor .profile-crop-page .plan-heading h2 { font-size: 20px; }
+.fs-profile-editor .profile-crop-page .plan-card h3 { font-size: 10px; }
+.fs-profile-editor .profile-crop-page .available-list { gap: 6px; }
+.fs-profile-editor .profile-crop-page .available-list li { font-size: 9px; }
+.fs-profile-editor .profile-crop-page .compare-card { padding: 12px 8px 9px; }
+.fs-profile-editor .profile-crop-page .compare-row { grid-template-columns: minmax(0,1.25fr) minmax(58px,.9fr) minmax(58px,.9fr); }
+.fs-profile-editor .profile-crop-page .compare-row > span { padding: 5px 4px; font-size: 8px; }
+.fs-profile-editor .profile-crop-page .upgrade-card { padding: 13px 14px 14px; }
+.fs-profile-editor .profile-crop-page .upgrade-card h3 { font-size: 14px; }
+.fs-profile-editor .profile-crop-page .upgrade-card p, .fs-profile-editor .profile-crop-page .upgrade-card li { font-size: 9px; }
+.fs-profile-editor .profile-crop-page .astro-button { padding: 9px 8px; font-size: 10px; }
+.fs-profile-editor .profile-crop-page .premium-card { margin-top: 14px; padding: 13px 11px 12px; }
+.fs-profile-editor .profile-crop-page .premium-grid { column-gap: 12px; row-gap: 9px; }
+.fs-profile-editor .profile-crop-page .premium-item { font-size: 9px; }
+.fs-profile-editor .profile-crop-page .editor-actions { padding-top: 13px; }
+}
+
+@media (max-width: 680px) {
+.fs-profile-editor .profile-crop-page { padding: 8px; }
+.fs-profile-editor .profile-crop-page .main-layout { grid-template-columns: 1fr; }
+.fs-profile-editor .profile-crop-page .editor-top-grid { grid-template-columns: 1fr; gap: 18px; }
+.fs-profile-editor .profile-crop-page .profile-photo-section { padding: 0 0 18px; border-right: 0; border-bottom: 1px solid rgba(255,255,255,.055); }
+.fs-profile-editor .profile-crop-page .basic-info-section { padding: 0; }
+.fs-profile-editor .profile-crop-page .profile-avatar-large { width: 130px; height: 130px; }
+.fs-profile-editor .profile-crop-page .profile-avatar-large img { width: 118px; height: 118px; }
+.fs-profile-editor .profile-crop-page .plan-column { gap: 10px; }
+}
+
+/* Crop-only override: prevent the full-app tablet placement rules from splitting the plan cards into two internal columns. */
+@media (max-width: 1100px) {
+.fs-profile-editor .profile-crop-page .plan-summary-card, .fs-profile-editor .profile-crop-page .compare-card, .fs-profile-editor .profile-crop-page .upgrade-card {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+/* STYLE NOTE: ASTRO normal state — emerald ownership, personalized media, unlocked controls, and a purple ASTRO+ upsell only where comparison is needed. */
+.fs-profile-editor .astro-profile-page {
+  --green: #18e96d;
+  --green-deep: #0b9d49;
+  background: #070b09;
+}
+.fs-profile-editor .astro-profile-page .main-layout { animation: astro-state-in 280ms var(--ease-out) both; }
+.fs-profile-editor .astro-profile-page .section-title-icon { color: #18e96d; }
+.fs-profile-editor .astro-profile-page .basic-info-section .section-title-icon { padding: 6px; width: 30px; height: 30px; margin-top: -6px; border-radius: 9px; background: rgba(15,218,94,.12); }
+.fs-profile-editor .astro-profile-page .profile-link b { color: #20e875; }
+.fs-profile-editor .astro-photo-section .profile-avatar-large {
+  background: radial-gradient(circle at 52% 45%, rgba(12,247,105,.34), rgba(4,34,17,.82) 62%, #02110a 100%);
+  border: 1px solid #18ef70;
+  box-shadow: 0 0 0 1px rgba(18,232,101,.18), 0 0 25px rgba(18,232,101,.2), inset 0 0 24px rgba(12,235,99,.16);
+}
+.fs-profile-editor .astro-photo-section .profile-avatar-large img { border-radius: 50%; object-fit: cover; }
+.fs-profile-editor .astro-photo-section .profile-avatar-large span { right: -3px; bottom: 8px; border-color: #07140c; background: #18dd68; color: #06130a; }
+.fs-profile-editor .remove-media-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 12px; border-radius: 4px; background: #171d21; color: #e1e7e8; font-size: 10px; transition: background 180ms var(--ease-out), transform 160ms var(--ease-out); }
+.fs-profile-editor .remove-media-button:hover { background: #202a2b; }
+.fs-profile-editor .remove-media-button:active { transform: scale(.97); }
+.fs-profile-editor .astro-photo-section .remove-media-button { display: flex; width: max-content; margin: -1px auto 0; }
+.fs-profile-editor .astro-banner-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.fs-profile-editor .astro-banner-heading .section-title { min-width: 0; }
+.fs-profile-editor .banner-use-button { display: inline-flex; align-items: center; gap: 8px; margin-top: 2px; padding: 0; background: transparent; color: #bac5c2; white-space: nowrap; font-size: 10px; }
+.fs-profile-editor .banner-use-button b { padding: 4px 7px; border-radius: 4px; background: #19d96a; color: #06140b; font-size: 10px; }
+.fs-profile-editor .banner-use-button:hover b { background: #32ed7b; }
+.fs-profile-editor .astro-banner-media { position: relative; min-height: 82px; margin-top: -1px; background-color: #07150d; background-position: center; background-size: cover; border: 1px solid rgba(24,235,108,.24); border-radius: 5px; box-shadow: inset 0 0 28px rgba(15,239,105,.14); }
+.fs-profile-editor .astro-banner-media::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(0,10,5,.28), transparent 44%, rgba(16,214,91,.16)); }
+.fs-profile-editor .astro-banner-media > button { position: absolute; right: 8px; top: 8px; z-index: 2; width: 23px; height: 23px; display: grid; place-items: center; border-radius: 50%; background: #1eea70; color: #06130b; }
+.fs-profile-editor .astro-banner-media > button:hover { background: #5aff9a; }
+.fs-profile-editor .banner-remove-button { display: flex; width: max-content; margin: 7px 8px 0 auto; }
+.fs-profile-editor .astro-about-section { padding-bottom: 20px; }
+.fs-profile-editor .decorations-section { padding: 20px 0 0; }
+.fs-profile-editor .decorations-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.fs-profile-editor .decorations-heading .section-title { min-width: 0; }
+.fs-profile-editor .decorations-actions { display: flex; align-items: center; gap: 10px; padding-top: 2px; }
+.fs-profile-editor .decorations-actions button { padding: 4px 7px; border-radius: 4px; background: #161b20; color: #d9e1e2; font-size: 10px; }
+.fs-profile-editor .decorations-actions button:first-child { color: #c9a1ff; }
+.fs-profile-editor .decorations-actions button:hover { background: #20292a; }
+.fs-profile-editor .decoration-strip { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 7px; margin-top: 2px; }
+.fs-profile-editor .decoration-item { position: relative; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 7px 2px 6px; background: #10151a; border: 1px solid rgba(255,255,255,.035); color: #d7dfdf; }
+.fs-profile-editor .decoration-item:hover { border-color: rgba(25,226,103,.36); background: #131b18; }
+.fs-profile-editor .decoration-empty { width: 45px; height: 45px; display: grid; place-items: center; border-radius: 50%; color: #dfe6e6; }
+.fs-profile-editor .decoration-ring { width: 45px; height: 45px; display: block; border-radius: 50%; box-shadow: inset 0 0 0 2px #19df69, 0 0 10px rgba(22,228,99,.16); }
+.fs-profile-editor .decoration-ring-2 { box-shadow: inset 0 0 0 2px #1be2e4, 0 0 10px rgba(27,226,228,.16); }
+.fs-profile-editor .decoration-ring-3 { box-shadow: inset 0 0 0 2px #b4e831, 0 0 10px rgba(180,232,49,.16); }
+.fs-profile-editor .decoration-ring-4 { box-shadow: inset 0 0 0 2px #1bdc91, 0 0 10px rgba(27,220,145,.16); }
+.fs-profile-editor .decoration-ring-5 { box-shadow: inset 0 0 0 2px #d9dd28, 0 0 10px rgba(217,221,40,.16); }
+.fs-profile-editor .decoration-lock { position: absolute; right: 8px; top: 39px; padding: 2px; width: 15px; height: 15px; border-radius: 50%; background: #11171c; color: #d3dbdc; }
+.fs-profile-editor .decoration-item b { font-size: 9px; font-weight: 500; }
+.fs-profile-editor .decoration-item small { max-width: 72px; min-height: 11px; color: #8e999a; font-size: 7px; line-height: 1.2; text-align: center; }
+.fs-profile-editor .astro-plus-lock { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 10px 12px; border: 1px solid rgba(24,233,109,.45); border-radius: 5px; background: rgba(6,31,17,.42); }
+.fs-profile-editor .astro-plus-lock > div { display: flex; align-items: flex-start; gap: 9px; min-width: 0; }
+.fs-profile-editor .astro-plus-lock > div > svg { flex: none; color: #d7e2e0; margin-top: 1px; }
+.fs-profile-editor .astro-plus-lock span { display: grid; gap: 4px; min-width: 0; }
+.fs-profile-editor .astro-plus-lock b { color: #e6eeec; font-size: 11px; }
+.fs-profile-editor .astro-plus-lock small { color: #9ba9a5; font-size: 9px; }
+.fs-profile-editor .astro-plus-lock button { flex: none; padding: 9px 14px; border-radius: 5px; background: #19d96a; color: #06140b; font-weight: 700; font-size: 11px; }
+.fs-profile-editor .astro-plus-lock button:hover { background: #34eb7d; }
+.fs-profile-editor .astro-summary-card { background: linear-gradient(180deg, rgba(4,60,28,.26), rgba(15,19,17,.92)), #0f1317; border-color: rgba(24,233,109,.16); }
+.fs-profile-editor .astro-summary-card .astro-card-banner { margin: -17px -18px 0; overflow: hidden; border-radius: 8px 8px 0 0; background: #03140b; }
+.fs-profile-editor .astro-summary-card .astro-card-banner img { display: block; width: 100%; height: auto; aspect-ratio: 4.04 / 1; object-fit: cover; }
+.fs-profile-editor .astro-summary-card .astro-card-banner + .plan-divider { margin-top: 17px; }
+.fs-profile-editor .astro-summary-card .plan-avatar-wrap { background: radial-gradient(circle, #073e1d, #03180b); border: 1px solid #18e96d; }
+.fs-profile-editor .astro-summary-card .plan-avatar-wrap img { border-radius: 50%; object-fit: cover; }
+.fs-profile-editor .astro-summary-card .plan-heading h2 { color: #1aeb6d; }
+.fs-profile-editor .astro-summary-card .check-dot { background: #16d967; }
+.fs-profile-editor .plan-switch-link { display: block; margin: 13px auto 0; padding: 0; background: transparent; color: #83918b; font-size: 9px; }
+.fs-profile-editor .plan-switch-link:hover { color: #1ce670; }
+.fs-profile-editor .astro-compare-card .compare-head .astro-text { color: #bf75ff; }
+.fs-profile-editor .astro-compare-card .compare-current { color: #a8f0bf !important; }
+.fs-profile-editor .astro-compare-card .compare-current b { color: #06140b; background: #23cb70; }
+.fs-profile-editor .astro-compare-card .compare-next { color: #d2a2fa !important; }
+.fs-profile-editor .astro-compare-card .compare-next b { color: #170827; background: #b565f0; }
+.fs-profile-editor .astro-upgrade-card { background: linear-gradient(180deg, rgba(11,24,17,.92), rgba(15,19,23,.96)); }
+.fs-profile-editor .astro-upgrade-card .upgrade-card li svg { color: #1be26c; }
+.fs-profile-editor .astro-plus-button { background: #9d45ed; color: #fff; }
+.fs-profile-editor .astro-plus-button:hover { background: #b05af8; }
+@keyframes astro-state-in { from { opacity: .82; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 1100px) {
+.fs-profile-editor .astro-banner-heading { display: block; }
+.fs-profile-editor .banner-use-button { margin: -4px 0 9px auto; display: flex; width: max-content; }
+.fs-profile-editor .decoration-item { padding-top: 5px; }
+.fs-profile-editor .decoration-ring, .fs-profile-editor .decoration-empty { width: 35px; height: 35px; }
+.fs-profile-editor .decoration-lock { top: 30px; right: 4px; }
+.fs-profile-editor .astro-plus-lock { align-items: flex-start; }
+.fs-profile-editor .astro-plus-lock button { padding: 8px 9px; font-size: 9px; }
+}
+@media (max-width: 680px) {
+.fs-profile-editor .astro-banner-heading { display: block; }
+.fs-profile-editor .banner-use-button { margin-left: auto; }
+.fs-profile-editor .decoration-strip { grid-template-columns: repeat(3, minmax(0,1fr)); row-gap: 7px; }
+.fs-profile-editor .astro-plus-lock { display: grid; }
+.fs-profile-editor .astro-plus-lock button { width: 100%; }
+}
+
+/* ASTRO avatar correction: custom edit control only; the lock remains exclusive to the Free tier. */
+.fs-profile-editor .astro-photo-section .astro-avatar-edit {
+  position: absolute;
+  right: -3px;
+  bottom: 8px;
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 2px solid #07140c;
+  border-radius: 50%;
+  background: #18dd68;
+  color: #06130a;
+  z-index: 2;
+  transition: background 180ms var(--ease-out), transform 160ms var(--ease-out);
+}
+.fs-profile-editor .astro-photo-section .astro-avatar-edit:hover { background: #5aff9a; }
+.fs-profile-editor .astro-photo-section .astro-avatar-edit:active { transform: scale(.94); }
+.fs-profile-editor .astro-photo-section .free-avatar-lock { display: grid; place-items: center; }
+
+/* STYLE NOTE: ASTRO Plus dourado — premium amber tier with celestial gold media, star mark, Galáxia selected, and no dashboard chrome. */
+.fs-profile-editor .astro-plus-profile-page {
+  --astro-plus: #f2a900;
+  --astro-plus-bright: #ffc84a;
+  --astro-plus-deep: #4d2a03;
+  background:
+    linear-gradient(180deg, #08090c 0%, #0b0d11 100%);
+}
+.fs-profile-editor .astro-plus-profile-page .section-title-icon, .fs-profile-editor .astro-plus-profile-page .section-title-icon-neutral, .fs-profile-editor .astro-plus-profile-page .section-title h2, .fs-profile-editor .astro-plus-profile-page .section-title p, .fs-profile-editor .astro-plus-profile-page .control-label, .fs-profile-editor .astro-plus-profile-page .profile-link b, .fs-profile-editor .astro-plus-profile-page .decorations-heading button, .fs-profile-editor .astro-plus-profile-page .astro-banner-heading .section-title-icon {
+  color: var(--astro-plus-bright);
+}
+.fs-profile-editor .astro-plus-profile-page .text-input-wrap input, .fs-profile-editor .astro-plus-profile-page .about-label textarea {
+  border-color: rgba(242, 169, 0, .22);
+  box-shadow: inset 0 0 0 1px rgba(242, 169, 0, .04);
+}
+.fs-profile-editor .astro-plus-profile-page .text-input-wrap input:focus, .fs-profile-editor .astro-plus-profile-page .about-label textarea:focus {
+  border-color: rgba(255, 200, 74, .78);
+  box-shadow: 0 0 0 3px rgba(242, 169, 0, .14);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-avatar-large {
+  border-color: var(--astro-plus);
+  box-shadow: 0 0 0 1px rgba(242, 169, 0, .24), 0 0 28px rgba(242, 169, 0, .30);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-avatar-large img, .fs-profile-editor .astro-plus-profile-page .plan-avatar-wrap img {
+  filter: hue-rotate(242deg) saturate(2.4) brightness(.94) contrast(1.1);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-avatar-edit {
+  background: var(--astro-plus);
+  color: #fff;
+  border-color: #2a1904;
+  box-shadow: 0 0 14px rgba(242, 169, 0, .46);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-avatar-edit:hover { background: var(--astro-plus-bright); }
+.fs-profile-editor .astro-plus-profile-page .astro-plus-banner-section .section-title-icon { color: var(--astro-plus-bright); }
+.fs-profile-editor .astro-plus-profile-page .astro-plus-banner-recommendation {
+  margin: -8px 0 10px 38px;
+  color: #9297a1;
+  font-size: 11px;
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-banner-media {
+  border-color: rgba(242, 169, 0, .66);
+  box-shadow: inset 0 0 26px rgba(242, 169, 0, .17), 0 0 18px rgba(242, 169, 0, .10);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-banner-media button {
+  background: var(--astro-plus);
+  color: #fff;
+  box-shadow: 0 0 15px rgba(242, 169, 0, .54);
+}
+.fs-profile-editor .astro-plus-profile-page .banner-use-button b { background: var(--astro-plus) !important; color: #fff; }
+.fs-profile-editor .astro-plus-profile-page .banner-use-button:hover b { background: var(--astro-plus-bright) !important; }
+.fs-profile-editor .astro-plus-profile-page .astro-plus-about-section .section-title-icon { color: var(--astro-plus-bright); }
+.fs-profile-editor .astro-plus-profile-page .astro-plus-decorations-section {
+  border-top-color: rgba(242, 169, 0, .28);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-decorations-section .section-title-icon { color: var(--astro-plus-bright); }
+.fs-profile-editor .astro-plus-profile-page .astro-plus-pill {
+  background: rgba(242, 169, 0, .18) !important;
+  color: var(--astro-plus-bright) !important;
+  border: 1px solid rgba(242, 169, 0, .54) !important;
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-decoration-item {
+  border-color: rgba(255,255,255,.055);
+  background: rgba(16, 18, 24, .88);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-decoration-item:hover, .fs-profile-editor .astro-plus-profile-page .astro-plus-decoration-item.decoration-selected {
+  border-color: var(--astro-plus);
+  box-shadow: 0 0 16px rgba(242, 169, 0, .27);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-decoration-item.decoration-selected {
+  background: linear-gradient(180deg, rgba(99, 57, 3, .34), rgba(22, 19, 14, .94));
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-decoration-item small { color: var(--astro-plus-bright); }
+.fs-profile-editor .astro-plus-profile-page .astro-plus-ring-1 { border-color: #27e866; box-shadow: 0 0 13px #27e866; }
+.fs-profile-editor .astro-plus-profile-page .astro-plus-ring-2 { border-color: var(--astro-plus); box-shadow: 0 0 16px var(--astro-plus), inset 0 0 9px rgba(255,200,74,.82); }
+.fs-profile-editor .astro-plus-profile-page .astro-plus-ring-3 { border-color: #ffb52e; box-shadow: 0 0 15px #ffb52e; }
+.fs-profile-editor .astro-plus-profile-page .astro-plus-ring-4 { border-color: #fff0a5; box-shadow: 0 0 15px #fff0a5; }
+.fs-profile-editor .astro-plus-profile-page .astro-plus-ring-5 { border-color: #ffd84c; box-shadow: 0 0 15px #ffd84c; }
+.fs-profile-editor .astro-plus-profile-page .astro-plus-decoration-item .decoration-selected-check {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--astro-plus);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-plan-column .plan-card, .fs-profile-editor .astro-plus-profile-page .astro-plus-summary-card {
+  border-color: rgba(242, 169, 0, .44);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-summary-card {
+  background: #0f1317;
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-summary-card .plan-heading h2, .fs-profile-editor .astro-plus-profile-page .astro-plus-summary-card .plan-heading span, .fs-profile-editor .astro-plus-profile-page .astro-plus-summary-card h3, .fs-profile-editor .astro-plus-profile-page .astro-plus-summary-card .plan-switch-link, .fs-profile-editor .astro-plus-profile-page .astro-plus-summary-card .check-dot, .fs-profile-editor .astro-plus-profile-page .astro-plus-upgrade-card h3 {
+  color: var(--astro-plus-bright);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-summary-card .check-dot, .fs-profile-editor .astro-plus-profile-page .astro-plus-upgrade-card li svg {
+  color: var(--astro-plus-bright);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-upgrade-card {
+  border-color: rgba(242, 169, 0, .58);
+  background: linear-gradient(145deg, rgba(57, 34, 4, .9), rgba(13, 14, 12, .98));
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-upgrade-card .astro-plus-button, .fs-profile-editor .astro-plus-profile-page .astro-plus-button {
+  background: linear-gradient(135deg, #b96b00, #f2a900);
+  color: white;
+  box-shadow: 0 8px 22px rgba(214, 139, 8, .28);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-upgrade-card .astro-plus-button:hover, .fs-profile-editor .astro-plus-profile-page .astro-plus-button:hover { background: linear-gradient(135deg, #d58b08, #ffd25a); }
+.fs-profile-editor .astro-plus-tier-profile-page .save-button {
+  background: var(--astro-tier);
+  color: #fff;
+}
+.fs-profile-editor .astro-plus-tier-profile-page .save-button:hover { background: #c17aff; }
+.fs-profile-editor .astro-plus-profile-page .save-button {
+  background: #e49a00;
+  color: #fff;
+}
+.fs-profile-editor .astro-plus-profile-page .save-button:hover { background: #f5b82b; }
+
+@media (max-width: 840px) {
+.fs-profile-editor .astro-plus-profile-page .astro-plus-banner-recommendation { margin-left: 0; }
+.fs-profile-editor .astro-plus-profile-page .astro-plus-summary-card { background-position: 70% center; }
+}
+
+/* ASTRO+ emblem: replace the generic plan avatar with the premium star mark used by the reference. */
+.fs-profile-editor .astro-plus-profile-page .astro-plus-plan-mark {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  color: #ffd45c;
+  border: 1px solid #f2a900;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,198,72,.30), rgba(76,41,3,.78));
+  box-shadow: 0 0 0 1px rgba(242,169,0,.24), 0 0 18px rgba(242,169,0,.54), inset 0 0 14px rgba(255,200,74,.34);
+}
+
+.fs-profile-editor .astro-plus-profile-page .locked-feature-list {
+  list-style: none;
+  display: grid;
+  gap: 9px;
+  padding: 12px 0 0;
+  margin: 12px 0 0;
+  border-top: 1px solid rgba(255,255,255,.07);
+}
+.fs-profile-editor .astro-plus-profile-page .locked-feature-list li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #a6a5b0;
+  font-size: 10px;
+}
+.fs-profile-editor .astro-plus-profile-page .locked-feature-list li svg {
+  flex: 0 0 auto;
+  color: #aeb2ba;
+}
+
+
+/* STYLE NOTE: ASTRO+ intermediate state — violet premium surfaces, selected Nebulosa frame, and a clear path to ASTRO PLUS. Keep this tier visually distinct from emerald ASTRO and gold ASTRO PLUS. */
+.fs-profile-editor .astro-plus-tier-profile-page {
+  --astro-tier: #a855f7;
+  --astro-tier-bright: #d2a2fa;
+  --astro-tier-deep: #2b1148;
+  background:
+    linear-gradient(180deg, #09080d 0%, #0d0b12 100%);
+}
+.fs-profile-editor .astro-plus-tier-profile-page .section-title-icon, .fs-profile-editor .astro-plus-tier-profile-page .section-title-icon-neutral, .fs-profile-editor .astro-plus-tier-profile-page .section-title h2, .fs-profile-editor .astro-plus-tier-profile-page .section-title p, .fs-profile-editor .astro-plus-tier-profile-page .control-label, .fs-profile-editor .astro-plus-tier-profile-page .profile-link b, .fs-profile-editor .astro-plus-tier-profile-page .decorations-heading button, .fs-profile-editor .astro-plus-tier-profile-page .astro-banner-heading .section-title-icon {
+  color: var(--astro-tier-bright);
+}
+.fs-profile-editor .astro-plus-tier-profile-page .text-input-wrap input, .fs-profile-editor .astro-plus-tier-profile-page .about-label textarea {
+  border-color: rgba(168, 85, 247, .22);
+  box-shadow: inset 0 0 0 1px rgba(168, 85, 247, .04);
+}
+.fs-profile-editor .astro-plus-tier-profile-page .text-input-wrap input:focus, .fs-profile-editor .astro-plus-tier-profile-page .about-label textarea:focus {
+  border-color: rgba(210, 162, 250, .78);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, .14);
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-avatar-large {
+  background: radial-gradient(circle at 52% 45%, rgba(167, 79, 246, .36), rgba(31, 12, 50, .86) 62%, #11051c 100%);
+  border-color: var(--astro-tier);
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, .26), 0 0 28px rgba(168, 85, 247, .28), inset 0 0 24px rgba(168, 85, 247, .16);
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-avatar-large img, .fs-profile-editor .astro-plus-tier-profile-page .plan-avatar-wrap img {
+  filter: hue-rotate(242deg) saturate(2.1) brightness(.9) contrast(1.12);
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-avatar-edit {
+  background: var(--astro-tier);
+  color: #fff;
+  border-color: #1d0b31;
+  box-shadow: 0 0 14px rgba(168, 85, 247, .48);
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-avatar-edit:hover { background: #c17aff; }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-banner-media {
+  border-color: rgba(168, 85, 247, .58);
+  box-shadow: inset 0 0 26px rgba(168, 85, 247, .17), 0 0 18px rgba(168, 85, 247, .1);
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-banner-media button {
+  background: var(--astro-tier);
+  color: #fff;
+  box-shadow: 0 0 15px rgba(168, 85, 247, .54);
+}
+.fs-profile-editor .astro-plus-tier-profile-page .banner-use-button b { background: var(--astro-tier) !important; color: #fff; }
+.fs-profile-editor .astro-plus-tier-profile-page .banner-use-button:hover b { background: #c17aff !important; }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-about-section .section-title-icon { color: var(--astro-tier-bright); }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-decorations-section { border-top-color: rgba(168, 85, 247, .28); }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-decorations-section .section-title-icon { color: var(--astro-tier-bright); }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-pill {
+  background: rgba(168, 85, 247, .18) !important;
+  color: var(--astro-tier-bright) !important;
+  border: 1px solid rgba(168, 85, 247, .54) !important;
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-decoration-item {
+  border-color: rgba(255,255,255,.055);
+  background: rgba(18, 14, 24, .9);
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-decoration-item:hover, .fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-decoration-item.decoration-selected {
+  border-color: var(--astro-tier);
+  box-shadow: 0 0 16px rgba(168, 85, 247, .27);
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-decoration-item.decoration-selected {
+  background: linear-gradient(180deg, rgba(70, 26, 113, .4), rgba(22, 16, 28, .94));
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-decoration-item small { color: var(--astro-tier-bright); }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-ring-1 { border-color: #bb72ff; box-shadow: 0 0 13px #bb72ff; }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-ring-2 { border-color: #72e4ff; box-shadow: 0 0 15px #72e4ff; }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-ring-3 { border-color: var(--astro-tier); box-shadow: 0 0 16px var(--astro-tier), inset 0 0 9px rgba(210, 162, 250, .72); }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-ring-4 { border-color: #ff7fe5; box-shadow: 0 0 15px #ff7fe5; }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-ring-5 { border-color: #ffa4f4; box-shadow: 0 0 15px #ffa4f4; }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-decoration-item .decoration-selected-check {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--astro-tier);
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-plan-column .plan-card, .fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-summary-card { border-color: rgba(168, 85, 247, .42); }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-summary-card {
+  background: #0f1317;
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-summary-card .plan-heading h2, .fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-summary-card .plan-heading span, .fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-summary-card h3, .fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-summary-card .plan-switch-link, .fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-summary-card .check-dot, .fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-upgrade-card h3 { color: var(--astro-tier-bright); }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-summary-card .check-dot {
+  background: var(--astro-tier);
+  color: #190b28;
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-upgrade-card li svg { color: var(--astro-tier-bright); }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-locked-list { border-top-color: rgba(168, 85, 247, .22); }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-locked-list li svg { color: #9c72c5; }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-compare-card .compare-head .astro-text { color: var(--astro-tier-bright); }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-compare-card .compare-current { color: #e2c9f8 !important; }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-compare-card .compare-current b { color: #190b28; background: var(--astro-tier); }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-compare-card .compare-next { color: #ffe08d !important; }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-compare-card .compare-next b { color: #2f1a05; background: #f2a900; }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-upgrade-card {
+  border-color: rgba(168, 85, 247, .5);
+  background: linear-gradient(145deg, rgba(42, 20, 66, .92), rgba(15, 13, 20, .98));
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-button {
+  background: linear-gradient(135deg, #7935b6, #b45cf1);
+  color: white;
+  box-shadow: 0 8px 22px rgba(148, 63, 216, .3);
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-button:hover { background: linear-gradient(135deg, #9144d5, #d080ff); }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-plan-mark {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  color: #e2b5ff;
+  border: 1px solid var(--astro-tier);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168, 85, 247, .34), rgba(52, 19, 82, .82));
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, .24), 0 0 18px rgba(168, 85, 247, .48), inset 0 0 14px rgba(210, 162, 250, .3);
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-gold-lock { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 10px 12px; border: 1px solid rgba(168, 85, 247, .45); border-radius: 5px; background: rgba(35, 15, 56, .42); }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-gold-lock > div { display: flex; align-items: flex-start; gap: 9px; min-width: 0; }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-gold-lock > div > svg { flex: none; color: var(--astro-tier-bright); margin-top: 1px; }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-gold-lock span { display: grid; gap: 4px; min-width: 0; }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-gold-lock b { color: #f0e5f8; font-size: 11px; }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-gold-lock small { color: #a996b7; font-size: 9px; }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-gold-lock button { flex: none; padding: 9px 14px; border-radius: 5px; background: var(--astro-tier); color: #fff; font-weight: 700; font-size: 11px; }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-gold-lock button:hover { background: #c17aff; }
+
+@media (max-width: 680px) {
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-gold-lock { display: grid; }
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-gold-lock button { width: 100%; }
+}
+
+
+/* STYLE NOTE: The four reference screens share one right-column composition. Premium tiers use a full-bleed cosmic card header; only the accent, mark, copy, and resource state change by plan. */
+.fs-profile-editor .plan-card-banner {
+  position: relative;
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+  margin: -17px -18px 0;
+  padding: 17px 18px 16px;
+  overflow: hidden;
+  border-radius: 8px 8px 0 0;
+  background-position: center;
+  background-size: cover;
+  isolation: isolate;
+}
+.fs-profile-editor .plan-card-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(5, 7, 10, .12), rgba(5, 7, 10, .22) 60%, rgba(5, 7, 10, .08));
+}
+.fs-profile-editor .plan-card-banner .plan-heading { position: relative; z-index: 1; }
+.fs-profile-editor .plan-card-banner .plan-heading span { color: rgba(246, 249, 250, .82); }
+.fs-profile-editor .plan-card-banner .plan-heading h2 { color: #fff; text-shadow: 0 1px 12px rgba(0,0,0,.28); }
+.fs-profile-editor .reference-plan-card-banner {
+  display: block;
+  min-height: 0;
+  height: auto;
+  padding: 0;
+  background: #0c1014;
+}
+.fs-profile-editor .reference-plan-card-banner::after { display: none; }
+.fs-profile-editor .reference-plan-card-banner img {
+  display: block;
+  width: 100%;
+  height: 160px;
+  object-fit: fill;
+  object-position: center;
+}
+.fs-profile-editor .astro-plus-tier-card-banner {
+  border-bottom: 1px solid rgba(168, 85, 247, .4);
+}
+.fs-profile-editor .astro-plus-gold-card-banner {
+  border-bottom: 1px solid rgba(242, 169, 0, .46);
+}
+@media (max-width: 1100px) {
+.fs-profile-editor .reference-plan-card-banner img { height: 148px; }
+}
+@media (max-width: 680px) {
+.fs-profile-editor .reference-plan-card-banner img { height: 138px; }
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-summary-card, .fs-profile-editor .astro-plus-profile-page .astro-plus-summary-card {
+  background: #0f1317;
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-summary-card .plan-divider, .fs-profile-editor .astro-plus-profile-page .astro-plus-summary-card .plan-divider {
+  margin-top: 17px;
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-summary-card .plan-heading h2 { color: #fff; }
+.fs-profile-editor .astro-plus-profile-page .astro-plus-summary-card .plan-heading h2 { color: #fff; }
+.fs-profile-editor .astro-plus-profile-page .astro-plus-summary-card .check-dot {
+  background: var(--astro-plus);
+  color: #2f1a05;
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-gold-available-list {
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid rgba(242, 169, 0, .24);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-gold-available-list li { color: #f7e3ae; }
+
+/* ASTRO PLUS gold comparison and upgrade identity: dark surfaces with amber copy and checks. */
+.fs-profile-editor .astro-plus-profile-page .astro-plus-gold-compare-card {
+  border-color: rgba(242, 169, 0, .52);
+  background: linear-gradient(180deg, rgba(31, 22, 8, .92), #0f1317 38%);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-gold-compare-card h3, .fs-profile-editor .astro-plus-profile-page .astro-plus-gold-compare-card .compare-head > span:last-child {
+  color: var(--astro-plus-bright);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-gold-compare-card .compare-table {
+  border-color: rgba(242, 169, 0, .34);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-gold-compare-card .compare-row > span + span {
+  border-left-color: rgba(242, 169, 0, .14);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-gold-compare-card .compare-next {
+  color: #f7d774 !important;
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-gold-compare-card .compare-next b {
+  color: #2f1a05;
+  background: var(--astro-plus);
+  box-shadow: 0 0 8px rgba(242, 169, 0, .26);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-upgrade-card {
+  border-color: rgba(242, 169, 0, .58);
+  background: linear-gradient(145deg, rgba(57, 34, 4, .94), rgba(13, 14, 12, .98));
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-upgrade-card h3, .fs-profile-editor .astro-plus-profile-page .astro-plus-upgrade-card li svg {
+  color: var(--astro-plus-bright);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-upgrade-card .astro-plus-button {
+  background: linear-gradient(135deg, #b96b00, #f2a900);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(214, 139, 8, .28);
+}
+.fs-profile-editor .astro-plus-profile-page .astro-plus-upgrade-card .astro-plus-button:hover {
+  background: linear-gradient(135deg, #d58b08, #ffd25a);
+}
+@media (max-width: 1100px) {
+.fs-profile-editor .plan-card-banner { min-height: 88px; }
+}
+@media (max-width: 680px) {
+.fs-profile-editor .plan-card-banner { min-height: 92px; }
+}
+
+
+/* STYLE NOTE: Interaction polish for the four-plan editor — motion stays brief and composited, tooltips remain compact, and the upgrade confirmation inherits each tier's emerald, violet, or amber accent. */
+.fs-profile-editor .plan-state-transition {
+  animation: plan-state-in 260ms var(--ease-out) both;
+}
+.fs-profile-editor .premium-item-hint {
+  width: 100%;
+  border: 0;
+  text-align: left;
+  cursor: help;
+}
+.fs-profile-editor .premium-item-hint:hover {
+  color: #e9f2f1;
+  background: rgba(255,255,255,.035);
+}
+.fs-profile-editor .locked-feature-hint {
+  cursor: help;
+  transition: color 160ms var(--ease-out), transform 160ms var(--ease-out);
+}
+.fs-profile-editor .locked-feature-hint:hover { color: #e7d6fa !important; transform: translateX(2px); }
+.fs-profile-editor .tier-tooltip {
+  max-width: 230px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: #191f25;
+  color: #eef3f4;
+  box-shadow: 0 10px 28px rgba(0,0,0,.32);
+  font-size: 10px;
+  line-height: 1.35;
+}
+@keyframes plan-state-in { from { opacity: .72; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+.fs-profile-editor .plan-state-transition { animation: none; }
+}
+
+/* STYLE NOTE: Fixed profile-editor canvas — keep the supplied desktop composition intact at every viewport; narrow screens scroll horizontally instead of reflowing the editor. */
+.fs-profile-editor .profile-crop-page {
+  min-width: 1280px;
+  overflow-x: auto;
+}
+.fs-profile-editor .profile-crop-page .main-layout {
+  width: 1260px;
+  min-width: 1260px;
+  max-width: 1260px;
+  grid-template-columns: 836px 410px;
+  gap: 14px;
+}
+.fs-profile-editor .profile-crop-page .editor-top-grid {
+  grid-template-columns: 240px 1fr;
+  gap: 0;
+}
+.fs-profile-editor .profile-crop-page .plan-column {
+  width: 410px;
+  min-width: 410px;
+  grid-template-columns: 1fr;
+}
+
+/* STYLE NOTE: All four plan cards share the exact 2048:877 header proportion from the ASTRO reference; artwork remains tier-specific while the menu geometry stays identical. */
+.fs-profile-editor .plan-summary-card .astro-card-banner {
+  display: block;
+  width: calc(100% + 36px);
+  aspect-ratio: 2048 / 877;
+  margin: -17px -18px 0;
+  overflow: hidden;
+  border-radius: 8px 8px 0 0;
+  background: #0c1014;
+}
+.fs-profile-editor .plan-summary-card .astro-card-banner img, .fs-profile-editor .astro-summary-card .astro-card-banner img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  object-fit: cover;
+  object-position: center;
+}
+@media (max-width: 680px) {
+.fs-profile-editor .plan-summary-card .astro-card-banner {
+    width: calc(100% + 28px);
+    margin-left: -14px;
+    margin-right: -14px;
+  }
+}
+
+/* STYLE NOTE: The plan menu header is intentionally a slim horizontal strip; keep the tier logo and title as the visual focal point without a tall card-like crop. */
+.fs-profile-editor .plan-summary-card .astro-card-banner, .fs-profile-editor .astro-summary-card .astro-card-banner {
+  height: 82px;
+  min-height: 82px;
+  aspect-ratio: auto;
+}
+.fs-profile-editor .plan-summary-card .astro-card-banner img, .fs-profile-editor .astro-summary-card .astro-card-banner img {
+  height: 82px;
+  object-fit: fill;
+  object-position: center center;
+}
+@media (max-width: 680px) {
+.fs-profile-editor .plan-summary-card .astro-card-banner, .fs-profile-editor .astro-summary-card .astro-card-banner, .fs-profile-editor .plan-summary-card .astro-card-banner img, .fs-profile-editor .astro-summary-card .astro-card-banner img {
+    height: 82px;
+    min-height: 82px;
+  }
+}
+
+
+/* STYLE NOTE: Compact framed editor — the profile editor sits as a centered fixed window like the supplied reference, with a slim plan header and no full-width stretch. */
+.fs-profile-editor .profile-crop-page {
+  width: 100%;
+  min-width: 1128px;
+  min-height: 100vh;
+  padding: 8px 0 18px;
+  overflow-x: auto;
+  overflow-y: auto;
+}
+.fs-profile-editor .profile-crop-page .main-layout {
+  width: 1128px;
+  min-width: 1128px;
+  max-width: 1128px;
+  margin: 0 auto;
+  grid-template-columns: 780px 338px;
+  gap: 10px;
+  padding: 0;
+}
+.fs-profile-editor .profile-crop-page .editor-top-grid {
+  grid-template-columns: 220px 1fr;
+}
+.fs-profile-editor .profile-crop-page .plan-column {
+  width: 338px;
+  min-width: 338px;
+}
+.fs-profile-editor .profile-crop-page .plan-summary-card .astro-card-banner, .fs-profile-editor .profile-crop-page .astro-summary-card .astro-card-banner {
+  height: 96px;
+  min-height: 96px;
+}
+.fs-profile-editor .profile-crop-page .plan-summary-card .astro-card-banner img, .fs-profile-editor .profile-crop-page .astro-summary-card .astro-card-banner img {
+  height: 96px;
+  object-fit: fill;
+}
+@media (max-width: 1127px) {
+.fs-profile-editor .profile-crop-page .main-layout {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+
+/* STYLE NOTE: Framed viewport fit — scale the fixed editor canvas as one unit so the bottom actions remain inside the supplied window composition. */
+.fs-profile-editor .profile-crop-page {
+  padding-bottom: 0;
+}
+.fs-profile-editor .profile-crop-page .main-layout {
+  transform: scale(.78);
+  transform-origin: top center;
+  margin-bottom: -180px;
+}
+
+
+/* STYLE NOTE: Final reference framing — the whole editor, including bottom actions, fits inside the compact window shown in the supplied screenshot. */
+.fs-profile-editor .profile-crop-page .main-layout {
+  transform: scale(.55);
+  margin-bottom: -470px;
+}
+
+
+/* STYLE NOTE: Full Friends Space shell — the profile editor lives inside the desktop application frame from the supplied 1536×1024 references. Preserve the three-zone body, the compact header, and the bottom actions inside the central column; tier colors only change accents and media. */
+.fs-profile-editor .profile-crop-page {
+  min-width: 0;
+  min-height: 100vh;
+  padding: 0;
+  overflow: hidden;
+  background: #080a0d;
+}
+.fs-profile-editor .profile-crop-page .friends-app-shell {
+  width: 100%;
+  min-height: 100vh;
+  height: 100vh;
+}
+.fs-profile-editor .profile-crop-page .app-body {
+  min-height: 0;
+  height: calc(100vh - 35px);
+}
+.fs-profile-editor .profile-crop-page .profile-main {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: auto;
+}
+.fs-profile-editor .profile-crop-page .profile-header {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  background: rgba(9, 12, 15, .97);
+  backdrop-filter: blur(12px);
+}
+.fs-profile-editor .profile-crop-page .main-layout {
+  width: auto;
+  min-width: 0;
+  max-width: 1370px;
+  margin: 0;
+  padding: 0 16px 18px;
+  grid-template-columns: minmax(0, 1fr) 410px;
+  gap: 18px;
+  transform: none;
+}
+.fs-profile-editor .profile-crop-page .editor-column, .fs-profile-editor .profile-crop-page .plan-column {
+  width: auto;
+  min-width: 0;
+  padding-top: 19px;
+}
+.fs-profile-editor .profile-crop-page .editor-top-grid {
+  grid-template-columns: minmax(190px, 29%) minmax(330px, 1fr);
+  gap: 0;
+}
+.fs-profile-editor .profile-crop-page .plan-column {
+  grid-template-columns: 1fr;
+}
+.fs-profile-editor .profile-crop-page .plan-summary-card .astro-card-banner, .fs-profile-editor .profile-crop-page .astro-summary-card .astro-card-banner {
+  height: 96px;
+  min-height: 96px;
+}
+.fs-profile-editor .profile-crop-page .plan-summary-card .astro-card-banner img, .fs-profile-editor .profile-crop-page .astro-summary-card .astro-card-banner img {
+  height: 96px;
+  object-fit: fill;
+}
+.fs-profile-editor .brand-mark {
+  width: 21px;
+  height: 21px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 6px;
+  background: rgba(25, 213, 107, .16);
+  color: var(--green);
+}
+.fs-profile-editor .astro-plus-tier-profile-page .brand-mark {
+  background: rgba(168, 85, 247, .16);
+  color: #a855f7;
+}
+.fs-profile-editor .astro-plus-profile-page .brand-mark {
+  background: rgba(245, 166, 35, .17);
+  color: #f5a623;
+}
+.fs-profile-editor .astro-plus-tier-profile-page .rail-button-active {
+  color: #170a25;
+  background: #a855f7;
+}
+.fs-profile-editor .astro-plus-profile-page .rail-button-active {
+  color: #251400;
+  background: #f5a623;
+}
+.fs-profile-editor .astro-plus-tier-profile-page .rail-button:hover { color: #c687ff; background: rgba(168, 85, 247, .12); }
+.fs-profile-editor .astro-plus-profile-page .rail-button:hover { color: #ffc45b; background: rgba(245, 166, 35, .12); }
+.fs-profile-editor .astro-plus-tier-profile-page .profile-header-actions button:hover { color: #b86cff; background: rgba(168, 85, 247, .13); }
+.fs-profile-editor .astro-plus-profile-page .profile-header-actions button:hover { color: #ffb632; background: rgba(245, 166, 35, .13); }
+
+@media (max-width: 1100px) {
+.fs-profile-editor .profile-crop-page .main-layout {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 14px;
+  }
+}
+@media (max-width: 760px) {
+.fs-profile-editor .profile-crop-page {
+    overflow: auto;
+  }
+.fs-profile-editor .profile-crop-page .friends-app-shell {
+    min-width: 0;
+    height: auto;
+  }
+.fs-profile-editor .profile-crop-page .app-body {
+    height: auto;
+    min-height: calc(100vh - 48px);
+  }
+.fs-profile-editor .profile-crop-page .profile-main {
+    height: auto;
+    overflow: visible;
+  }
+.fs-profile-editor .profile-crop-page .profile-header {
+    position: relative;
+  }
+.fs-profile-editor .profile-crop-page .main-layout {
+    padding: 0 12px 24px;
+    grid-template-columns: 1fr;
+  }
+.fs-profile-editor .profile-crop-page .editor-column, .fs-profile-editor .profile-crop-page .plan-column {
+    padding-top: 14px;
+  }
+}
+
+
+/* STYLE NOTE: Reference-fit density pass — shrink only the vertical gaps that caused the lower action bar to fall below the 1536×1024 frame. Media stays thin and tier-specific. */
+.fs-profile-editor .profile-crop-page .editor-top-grid {
+  min-height: 0;
+  padding-bottom: 12px;
+}
+.fs-profile-editor .profile-crop-page .profile-photo-section {
+  min-height: 268px;
+}
+.fs-profile-editor .profile-crop-page .section-title {
+  margin-bottom: 12px;
+}
+.fs-profile-editor .profile-crop-page .profile-avatar-large {
+  margin-top: 8px;
+  margin-bottom: 10px;
+}
+.fs-profile-editor .profile-crop-page .banner-section, .fs-profile-editor .profile-crop-page .about-section, .fs-profile-editor .profile-crop-page .decorations-section {
+  padding-top: 15px;
+}
+.fs-profile-editor .profile-crop-page .about-section {
+  padding-bottom: 15px;
+}
+.fs-profile-editor .profile-crop-page .about-label textarea {
+  min-height: 68px;
+}
+.fs-profile-editor .profile-crop-page .premium-card {
+  margin-top: 15px;
+  padding-top: 15px;
+  padding-bottom: 13px;
+}
+.fs-profile-editor .profile-crop-page .editor-actions {
+  padding-top: 13px;
+}
+.fs-profile-editor .profile-crop-page .decoration-strip {
+  margin-top: 0;
+}
+.fs-profile-editor .profile-crop-page .astro-plus-decoration-strip {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+.fs-profile-editor .profile-crop-page .astro-plus-decoration-strip .decoration-item {
+  padding-left: 1px;
+  padding-right: 1px;
+}
+.fs-profile-editor .decoration-next {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  padding: 0;
+  background: #11161b;
+  border: 1px solid rgba(255,255,255,.07);
+  color: #d8dfe0;
+  border-radius: 4px;
+}
+.fs-profile-editor .decoration-next:hover { background: #1d252a; }
+.fs-profile-editor .astro-plus-profile-page .astro-photo-section .profile-avatar-large img, .fs-profile-editor .astro-plus-profile-page .plan-avatar-wrap img {
+  filter: none;
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-photo-section .profile-avatar-large img, .fs-profile-editor .astro-plus-tier-profile-page .plan-avatar-wrap img {
+  filter: none;
+}
+.fs-profile-editor .astro-plus-tier-profile-page .astro-plus-tier-avatar-large img {
+  filter: none;
+}
+@media (max-width: 1100px) {
+.fs-profile-editor .profile-crop-page .profile-photo-section { min-height: 252px; }
+.fs-profile-editor .profile-crop-page .astro-plus-decoration-strip { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.fs-profile-editor .profile-crop-page .astro-plus-decoration-strip .decoration-item small { max-width: 58px; }
+.fs-profile-editor .profile-crop-page .astro-plus-decoration-strip .decoration-ring, .fs-profile-editor .profile-crop-page .astro-plus-decoration-strip .decoration-empty { width: 35px; height: 35px; }
+}
+
+
+/* STYLE NOTE: Overlay-only reference crop — this component is the layer that covers the existing app. Do not add application chrome here; render only the central editor and the tier panel in the supplied 1235×954 framing. */
+.fs-profile-editor .profile-crop-page {
+  width: 1235px;
+  min-width: 1235px;
+  max-width: 1235px;
+  height: 954px;
+  min-height: 954px;
+  margin: 0 auto;
+  padding: 20px 22px 18px;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: #090c0f;
+}
+.fs-profile-editor .profile-crop-page > .main-layout {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  grid-template-columns: minmax(0, 1fr) 404px;
+  gap: 18px;
+  transform: none;
+  align-items: start;
+}
+.fs-profile-editor .profile-crop-page > .main-layout > .editor-column {
+  min-width: 0;
+  width: auto;
+  padding-top: 0;
+}
+.fs-profile-editor .profile-crop-page > .main-layout > .plan-column {
+  min-width: 0;
+  width: auto;
+  padding-top: 0;
+}
+.fs-profile-editor .profile-crop-page .profile-photo-section { min-height: 286px; }
+.fs-profile-editor .profile-crop-page .editor-top-grid { grid-template-columns: 239px minmax(0, 1fr); }
+.fs-profile-editor .profile-crop-page .about-label textarea { min-height: 68px; }
+.fs-profile-editor .profile-crop-page .editor-actions { padding-bottom: 0; }
+@media (max-width: 1234px) {
+.fs-profile-editor .profile-crop-page { margin-left: 0; margin-right: 0; }
+}
+
+
+/* STYLE NOTE: Free overlay crop fidelity — the locked banner is a tall in-place cover with centered copy, while the bio field stays compact so the premium card and bottom actions remain visible. */
+.fs-profile-editor .profile-crop-page .profile-photo-section { min-height: 314px; }
+.fs-profile-editor .profile-crop-page .free-profile-banner {
+  height: 130px;
+  min-height: 130px;
+  background-size: 100% 100%;
+}
+.fs-profile-editor .profile-crop-page .locked-banner-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+  color: #f1f5f5;
+}
+.fs-profile-editor .profile-crop-page .locked-banner-content > svg { margin-bottom: 2px; color: #eef3f3; }
+.fs-profile-editor .profile-crop-page .locked-banner-content strong { font-size: 11px; font-weight: 600; }
+.fs-profile-editor .profile-crop-page .locked-banner-content .available-note { padding: 3px 7px; }
+.fs-profile-editor .profile-crop-page .locked-banner-content small { font-size: 10px; color: #e2e7e8; }
+.fs-profile-editor .profile-crop-page .about-label textarea { min-height: 52px; height: 52px; }
+.fs-profile-editor .profile-crop-page .premium-card { margin-top: 19px; }
+
+
+/* STYLE NOTE: Exact supplied crop — retain the editor card boundary, lower only the photo/basic-information contents inside the fixed top row, and preserve the reference's vertical rhythm below it. */
+.fs-profile-editor .profile-crop-page > .main-layout > .editor-column {
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 10px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.fs-profile-editor .profile-crop-page .editor-top-grid .profile-photo-section { padding-top: 27px; }
+.fs-profile-editor .profile-crop-page .editor-top-grid .basic-info-section { padding-top: 22px; }
+.fs-profile-editor .profile-crop-page:not(.astro-profile-page) .banner-section .section-title {
+  margin-bottom: 24px;
+}
+.fs-profile-editor .profile-crop-page:not(.astro-profile-page) .premium-card {
+  padding-bottom: 21px;
+}
+.fs-profile-editor .profile-crop-page:not(.astro-profile-page) .editor-actions {
+  padding-top: 25px;
+}
+
+
+/* STYLE NOTE: Horizontal fidelity to the supplied overlay — the editor card keeps an intentional right inset, matching the reference's internal content edge while the plan column stays flush beside it. */
+.fs-profile-editor .profile-crop-page > .main-layout > .editor-column {
+  padding-right: 33px;
+}
+.fs-profile-editor .profile-crop-page .editor-top-grid {
+  grid-template-columns: 235px minmax(0, 1fr);
+}
+.fs-profile-editor .profile-crop-page .editor-top-grid .basic-info-section {
+  padding-left: 36px;
+}
+.fs-profile-editor .profile-crop-page .editor-top-grid .profile-photo-section > .section-title, .fs-profile-editor .profile-crop-page .editor-top-grid .profile-photo-section > .profile-avatar-large, .fs-profile-editor .profile-crop-page .editor-top-grid .profile-photo-section > .photo-note {
+  transform: translateX(-11px);
+}
+.fs-profile-editor .profile-crop-page:not(.astro-profile-page) .about-section .section-title {
+  margin-bottom: 16px;
+}
+.fs-profile-editor .profile-crop-page:not(.astro-profile-page) .about-label textarea {
+  margin-top: 4px;
+}
+.fs-profile-editor .profile-crop-page:not(.astro-profile-page) .about-section {
+  padding-bottom: 3px;
+}
+.fs-profile-editor .profile-crop-page:not(.astro-profile-page) .editor-actions {
+  padding-top: 20px;
+}
+
+
+/* STYLE NOTE: The reference uses the same slim plan header as the editor menu. Keep every tier's right-card banner at 82px and tighten only the divider rhythm beneath it. */
+.fs-profile-editor .profile-crop-page .plan-summary-card .astro-card-banner, .fs-profile-editor .profile-crop-page .astro-summary-card .astro-card-banner, .fs-profile-editor .profile-crop-page .plan-summary-card .astro-card-banner img, .fs-profile-editor .profile-crop-page .astro-summary-card .astro-card-banner img {
+  height: 82px;
+  min-height: 82px;
+}
+.fs-profile-editor .profile-crop-page .plan-summary-card .plan-divider, .fs-profile-editor .profile-crop-page .astro-summary-card .plan-divider {
+  margin-top: 10px;
+  margin-bottom: 12px;
+}
+.fs-profile-editor .profile-crop-page .plan-column { gap: 12px; }
+
+
+/* STYLE NOTE: Free tier banner must remain a slim strip, matching the shared ASTRO menu proportion rather than a tall hero block. */
+.fs-profile-editor .profile-crop-page .free-profile-banner {
+  height: 82px;
+  min-height: 82px;
+  padding: 6px 12px;
+}
+.fs-profile-editor .profile-crop-page .locked-banner-content {
+  gap: 2px;
+}
+.fs-profile-editor .profile-crop-page .locked-banner-content > svg {
+  width: 17px;
+  height: 17px;
+  margin-bottom: 0;
+}
+.fs-profile-editor .profile-crop-page .locked-banner-content strong { font-size: 10px; }
+.fs-profile-editor .profile-crop-page .locked-banner-content .available-note { padding: 2px 6px; font-size: 9px; }
+.fs-profile-editor .profile-crop-page .locked-banner-content small { font-size: 8px; }
+
+
+/* STYLE NOTE: The supplied 416×92 Free header is the exact top-right card artwork; preserve its native 104:23 proportion and scope it only to the Free tier. */
+.fs-profile-editor .profile-crop-page .free-summary-card .astro-card-banner {
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 416 / 92;
+}
+.fs-profile-editor .profile-crop-page .free-summary-card .astro-card-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  object-position: center;
+}
+
+
+/* STYLE NOTE: The supplied ASTRO header is 407×103; preserve that 3.95:1 proportion in the top-right card instead of forcing the shared 82px crop. */
+.fs-profile-editor .profile-crop-page .astro-summary-card .astro-card-banner {
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 407 / 103;
+}
+.fs-profile-editor .profile-crop-page .astro-summary-card .astro-card-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  object-position: center;
+}
+
+
+/* STYLE NOTE: The supplied ASTRO PLUS header is 357×98; preserve its native 51:14 proportion in the gold top-right card. */
+.fs-profile-editor .profile-crop-page .astro-plus-summary-card .astro-card-banner {
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 357 / 98;
+}
+.fs-profile-editor .profile-crop-page .astro-plus-summary-card .astro-card-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  object-position: center;
+}
+
+
+/* STYLE NOTE: The supplied ASTRO+ artwork is a 1536×1024 canvas containing a centered purple header strip; crop the outer black canvas while preserving the strip's artwork. */
+.fs-profile-editor .profile-crop-page .astro-plus-tier-summary-card .astro-card-banner {
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 357 / 98;
+  background: #08000d;
+}
+.fs-profile-editor .profile-crop-page .astro-plus-tier-summary-card .astro-card-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.2);
+  transform-origin: center;
+}
+
+
+/* STYLE NOTE: Unify all top-right plan card headers to the exact same box dimensions and height so Gratuito, ASTRO, ASTRO+ and ASTRO PLUS look identical in layout. */
+.fs-profile-editor .profile-crop-page .plan-summary-card .astro-card-banner, .fs-profile-editor .profile-crop-page .astro-summary-card .astro-card-banner, .fs-profile-editor .profile-crop-page .free-summary-card .astro-card-banner, .fs-profile-editor .profile-crop-page .astro-plus-tier-summary-card .astro-card-banner, .fs-profile-editor .profile-crop-page .astro-plus-summary-card .astro-card-banner {
+  height: 82px !important;
+  min-height: 82px !important;
+  max-height: 82px !important;
+  aspect-ratio: auto !important;
+  width: calc(100% + 36px) !important;
+  margin: -17px -18px 0 !important;
+  overflow: hidden !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.fs-profile-editor .profile-crop-page .plan-summary-card .astro-card-banner img, .fs-profile-editor .profile-crop-page .astro-summary-card .astro-card-banner img, .fs-profile-editor .profile-crop-page .free-summary-card .astro-card-banner img, .fs-profile-editor .profile-crop-page .astro-plus-tier-summary-card .astro-card-banner img, .fs-profile-editor .profile-crop-page .astro-plus-summary-card .astro-card-banner img {
+  width: 100% !important;
+  height: 82px !important;
+  min-height: 82px !important;
+  max-height: 82px !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+  transform: none !important;
+}
+
+
+/* STYLE NOTE: Fix the Free main profile banner height and proportions so it does not get crushed by the top-right card unification rule. */
+.fs-profile-editor .profile-crop-page .locked-banner, .fs-profile-editor .profile-crop-page .free-profile-banner {
+  height: 120px !important;
+  min-height: 120px !important;
+  max-height: 120px !important;
+  aspect-ratio: 2560 / 640 !important;
+  background-size: cover !important;
+  background-position: center center !important;
+}
+
+
+/* STYLE NOTE: Force the Free main profile banner to be a slim 82px strip just like all other banners, preventing it from appearing thick or misaligned. */
+.fs-profile-editor .profile-crop-page .locked-banner, .fs-profile-editor .profile-crop-page .free-profile-banner {
+  height: 82px !important;
+  min-height: 82px !important;
+  max-height: 82px !important;
+  padding: 6px 16px !important;
+  background-size: cover !important;
+  background-position: center center !important;
+}
+.fs-profile-editor .profile-crop-page .locked-banner .locked-banner-content {
+  gap: 2px !important;
+}
+.fs-profile-editor .profile-crop-page .locked-banner .locked-banner-content > svg {
+  width: 15px !important;
+  height: 15px !important;
+  margin-bottom: 0 !important;
+}
+.fs-profile-editor .profile-crop-page .locked-banner .locked-banner-content strong {
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+}
+.fs-profile-editor .profile-crop-page .locked-banner .locked-banner-content .available-note {
+  padding: 1px 5px !important;
+  font-size: 9px !important;
+}
+.fs-profile-editor .profile-crop-page .locked-banner .locked-banner-content small {
+  font-size: 9px !important;
+  line-height: 1.1 !important;
+}
+
+
+/* STYLE NOTE: Remove the transparent/black side margins from the supplied Free banner crop while preserving its native proportions and the slim 82px strip. */
+.fs-profile-editor .profile-crop-page .free-profile-banner {
+  background-size: calc(100% + 32px) auto !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+}
+
+
+/* STYLE NOTE: The About field must stay visually contained inside the approved editor crop. Keep scrolling internal and hide the browser scrollbar/resizer that was leaking beside the field. */
+.fs-profile-editor .profile-crop-page .about-label textarea {
+  overflow-y: auto;
+  resize: none;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.fs-profile-editor .profile-crop-page .about-label textarea::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* STYLE NOTE: Bottom promotion bars must remain fully readable inside the fixed overlay. Give the plan rail its own vertical scroll context instead of clipping its final card at the 954px canvas edge. */
+.fs-profile-editor .profile-crop-page > .main-layout > .plan-column {
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  align-content: start;
+  padding-bottom: 22px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(174, 184, 190, .45) transparent;
+}
+.fs-profile-editor .profile-crop-page > .main-layout > .plan-column::-webkit-scrollbar { width: 5px; }
+.fs-profile-editor .profile-crop-page > .main-layout > .plan-column::-webkit-scrollbar-track { background: transparent; }
+.fs-profile-editor .profile-crop-page > .main-layout > .plan-column::-webkit-scrollbar-thumb { background: rgba(174, 184, 190, .45); border-radius: 999px; }
+.fs-profile-editor .profile-crop-page .astro-plus-tier-upgrade-card, .fs-profile-editor .profile-crop-page .astro-plus-upgrade-card { margin-bottom: 18px; min-height: 0; height: auto; }
+@media (max-width: 760px) {
+.fs-profile-editor .profile-crop-page > .main-layout > .plan-column { height: auto; max-height: none; overflow: visible; padding-bottom: 0; }
+}
+
+/* STYLE NOTE: The premium notices keep their complete copy and CTA visible when the fixed editor is viewed at compact heights. */
+.fs-profile-editor .profile-crop-page .astro-plus-gold-lock { min-height: 66px; height: auto; }
+.fs-profile-editor .profile-crop-page .astro-plus-gold-lock small { white-space: normal; }
+.fs-profile-editor .profile-crop-page .astro-plus-upgrade-card h3, .fs-profile-editor .profile-crop-page .astro-plus-upgrade-card p, .fs-profile-editor .profile-crop-page .astro-plus-tier-upgrade-card h3, .fs-profile-editor .profile-crop-page .astro-plus-tier-upgrade-card p, .fs-profile-editor .profile-crop-page .astro-plus-tier-upgrade-card ul, .fs-profile-editor .profile-crop-page .astro-plus-tier-upgrade-card button { overflow: visible; }
+
+/* STYLE NOTE: Premium right rails must fit the full reference composition. Compress only secondary spacing in ASTRO+ and ASTRO PLUS so the lower promotion cards are not truncated in the fixed 954px canvas. */
+.fs-profile-editor .profile-crop-page.astro-plus-tier-profile-page > .main-layout > .plan-column .plan-summary-card, .fs-profile-editor .profile-crop-page.astro-plus-profile-page > .main-layout > .plan-column .plan-summary-card {
+  padding: 11px 14px 9px;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-tier-profile-page > .main-layout > .plan-column .plan-divider, .fs-profile-editor .profile-crop-page.astro-plus-profile-page > .main-layout > .plan-column .plan-divider {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-tier-profile-page > .main-layout > .plan-column .available-list, .fs-profile-editor .profile-crop-page.astro-plus-profile-page > .main-layout > .plan-column .available-list {
+  gap: 5px;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-tier-profile-page > .main-layout > .plan-column .available-list li, .fs-profile-editor .profile-crop-page.astro-plus-profile-page > .main-layout > .plan-column .available-list li {
+  min-height: 12px;
+  font-size: 8.5px;
+  line-height: 1.15;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-profile-page > .main-layout > .plan-column .astro-plus-gold-available-list {
+  padding-top: 8px;
+  margin-top: 8px;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-tier-profile-page > .main-layout > .plan-column .compare-card, .fs-profile-editor .profile-crop-page.astro-plus-profile-page > .main-layout > .plan-column .compare-card {
+  padding: 10px 8px 8px;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-tier-profile-page > .main-layout > .plan-column .compare-row > span, .fs-profile-editor .profile-crop-page.astro-plus-profile-page > .main-layout > .plan-column .compare-row > span {
+  padding: 4px 4px;
+  font-size: 8px;
+  line-height: 1.15;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-tier-profile-page > .main-layout > .plan-column .upgrade-card, .fs-profile-editor .profile-crop-page.astro-plus-profile-page > .main-layout > .plan-column .upgrade-card {
+  padding: 11px 14px 12px;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-tier-profile-page > .main-layout > .plan-column .upgrade-card h3, .fs-profile-editor .profile-crop-page.astro-plus-profile-page > .main-layout > .plan-column .upgrade-card h3 {
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-tier-profile-page > .main-layout > .plan-column .upgrade-card p, .fs-profile-editor .profile-crop-page.astro-plus-profile-page > .main-layout > .plan-column .upgrade-card p {
+  font-size: 10px;
+  line-height: 1.3;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-tier-profile-page > .main-layout > .plan-column .upgrade-card ul, .fs-profile-editor .profile-crop-page.astro-plus-profile-page > .main-layout > .plan-column .upgrade-card ul {
+  gap: 5px;
+  margin: 8px 0 10px;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-tier-profile-page > .main-layout > .plan-column .upgrade-card li, .fs-profile-editor .profile-crop-page.astro-plus-profile-page > .main-layout > .plan-column .upgrade-card li {
+  gap: 6px;
+  font-size: 9px;
+  line-height: 1.2;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-tier-profile-page > .main-layout > .plan-column .astro-button, .fs-profile-editor .profile-crop-page.astro-plus-profile-page > .main-layout > .plan-column .astro-button {
+  padding: 9px 10px;
+  font-size: 11px;
+}
+
+/* Appearance Button and Modal Styles */
+.fs-profile-editor .basic-info-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.fs-profile-editor .basic-info-heading .section-title {
+  margin-bottom: 0;
+}
+.fs-profile-editor .edit-appearance-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+.fs-profile-editor .edit-appearance-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.fs-profile-editor .appearance-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  z-index: 9999;
+  padding: 20px;
+}
+.fs-profile-editor .appearance-modal {
+  width: 100%;
+  max-width: 480px;
+  background: #11161b;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  animation: modal-appear 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@keyframes modal-appear {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.fs-profile-editor .appearance-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.fs-profile-editor .appearance-modal-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fs-profile-editor .appearance-modal-header button {
+  background: transparent;
+  border: none;
+  color: #9ca5aa;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+.fs-profile-editor .appearance-modal-header button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.fs-profile-editor .appearance-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: 65vh;
+  overflow-y: auto;
+}
+.fs-profile-editor .appearance-live-preview {
+  padding: 14px 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(15, 19, 23, .8), rgba(23, 29, 35, .8));
+  display: grid;
+  gap: 8px;
+}
+.fs-profile-editor .appearance-live-preview-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #8d979d;
+}
+.fs-profile-editor .appearance-live-preview-text {
+  font-size: 13px;
+  line-height: 1.45;
+  transition: color 160ms ease;
+}
+.fs-profile-editor .appearance-live-preview-text b { color: var(--appearance-accent); font-weight: 700; }
+.fs-profile-editor .appearance-helper-text {
+  margin: -4px 0 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #7d878c;
+}
+.fs-profile-editor .appearance-group label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #aab3b7;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.fs-profile-editor .appearance-options-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.fs-profile-editor .appearance-options-grid button {
+  background: #182026;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #c7d0d3;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms ease;
+  text-align: center;
+}
+.fs-profile-editor .appearance-options-grid button:hover {
+  background: #202b33;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+.fs-profile-editor .appearance-options-grid button.selected {
+  background: var(--green);
+  color: #06140b;
+  border-color: transparent;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(25, 213, 107, 0.3);
+}
+.fs-profile-editor .appearance-color-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.fs-profile-editor .appearance-color-grid button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #182026;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #c7d0d3;
+  padding: 9px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.fs-profile-editor .appearance-color-grid button:hover {
+  background: #202b33;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+.fs-profile-editor .appearance-color-grid button.selected {
+  background: var(--green);
+  color: #06140b;
+  border-color: transparent;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(25, 213, 107, 0.3);
+}
+.fs-profile-editor .appearance-color-swatch {
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  display: inline-block;
+}
+.fs-profile-editor .appearance-modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: flex-end;
+  background: #0d1216;
+}
+.fs-profile-editor .appearance-modal-footer button {
+  background: var(--green);
+  color: #06140b;
+  border: none;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 8px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.fs-profile-editor .appearance-modal-footer button:hover {
+  opacity: 0.9;
+}
+
+/* GLOBAL APPEARANCE THEMES: the selected accent, font, and background are visible across the entire profile preview/editor. */
+.fs-profile-editor .profile-crop-page[data-appearance-theme] {
+  color: var(--appearance-accent-strong) !important;
+  background-color: var(--appearance-page-bg) !important;
+  background-image: var(--appearance-page-image) !important;
+  background-size: cover, cover !important;
+  background-position: center !important;
+}
+.fs-profile-editor .profile-crop-page[data-appearance-theme] *, .fs-profile-editor .profile-crop-page[data-appearance-theme] *::before, .fs-profile-editor .profile-crop-page[data-appearance-theme] *::after {
+  font-family: var(--appearance-font) !important;
+}
+.fs-profile-editor .profile-crop-page[data-appearance-theme] .section-title, .fs-profile-editor .profile-crop-page[data-appearance-theme] .section-title svg, .fs-profile-editor .profile-crop-page[data-appearance-theme] .control-label em, .fs-profile-editor .profile-crop-page[data-appearance-theme] .profile-link b, .fs-profile-editor .profile-crop-page[data-appearance-theme] .profile-link, .fs-profile-editor .profile-crop-page[data-appearance-theme] .about-label > span, .fs-profile-editor .profile-crop-page[data-appearance-theme] .basic-info-heading, .fs-profile-editor .profile-crop-page[data-appearance-theme] .premium-card h2 {
+  color: var(--appearance-accent-strong) !important;
+}
+.fs-profile-editor .profile-crop-page[data-appearance-theme] .editor-column, .fs-profile-editor .profile-crop-page[data-appearance-theme] .basic-info-section, .fs-profile-editor .profile-crop-page[data-appearance-theme] .about-section, .fs-profile-editor .profile-crop-page[data-appearance-theme] .plan-card, .fs-profile-editor .profile-crop-page[data-appearance-theme] .upgrade-card, .fs-profile-editor .profile-crop-page[data-appearance-theme] .premium-card, .fs-profile-editor .profile-crop-page[data-appearance-theme] .compare-table, .fs-profile-editor .profile-crop-page[data-appearance-theme] .text-input-wrap, .fs-profile-editor .profile-crop-page[data-appearance-theme] input, .fs-profile-editor .profile-crop-page[data-appearance-theme] textarea, .fs-profile-editor .profile-crop-page[data-appearance-theme] .locked-banner {
+  border-color: var(--appearance-accent-soft) !important;
+}
+.fs-profile-editor .profile-crop-page[data-appearance-theme] input:focus, .fs-profile-editor .profile-crop-page[data-appearance-theme] textarea:focus, .fs-profile-editor .profile-crop-page[data-appearance-theme] .text-input-wrap:focus-within {
+  border-color: var(--appearance-accent) !important;
+  box-shadow: 0 0 0 2px var(--appearance-accent-soft), 0 0 18px var(--appearance-glow) !important;
+}
+.fs-profile-editor .profile-crop-page[data-appearance-theme] .edit-appearance-button, .fs-profile-editor .profile-crop-page[data-appearance-theme] .save-button:not(:disabled), .fs-profile-editor .profile-crop-page[data-appearance-theme] .appearance-modal-footer button {
+  background: var(--appearance-accent) !important;
+  border-color: var(--appearance-accent) !important;
+  color: #07100d !important;
+  box-shadow: 0 0 16px var(--appearance-glow) !important;
+}
+.fs-profile-editor .profile-crop-page[data-appearance-theme] .edit-appearance-button:hover, .fs-profile-editor .profile-crop-page[data-appearance-theme] .save-button:not(:disabled):hover, .fs-profile-editor .profile-crop-page[data-appearance-theme] .appearance-modal-footer button:hover {
+  background: var(--appearance-accent-strong) !important;
+  border-color: var(--appearance-accent-strong) !important;
+  filter: brightness(1.04);
+}
+.fs-profile-editor .profile-crop-page[data-appearance-theme] .check-dot, .fs-profile-editor .profile-crop-page[data-appearance-theme] .compare-current, .fs-profile-editor .profile-crop-page[data-appearance-theme] .available-note {
+  background: var(--appearance-accent) !important;
+  color: #07100d !important;
+}
+.fs-profile-editor .profile-crop-page[data-appearance-theme] .astro-text, .fs-profile-editor .profile-crop-page[data-appearance-theme] .compare-astro, .fs-profile-editor .profile-crop-page[data-appearance-theme] .check-dot svg, .fs-profile-editor .profile-crop-page[data-appearance-theme] .available-list li svg, .fs-profile-editor .profile-crop-page[data-appearance-theme] .premium-item svg {
+  color: var(--appearance-accent) !important;
+}
+.fs-profile-editor .profile-crop-page[data-appearance-theme] .appearance-options-grid button.selected {
+  background: var(--appearance-accent) !important;
+  border-color: var(--appearance-accent) !important;
+  color: #07100d !important;
+  box-shadow: 0 0 14px var(--appearance-glow) !important;
+}
+.fs-profile-editor .profile-crop-page[data-appearance-theme] .appearance-modal-header h3 svg {
+  color: var(--appearance-accent) !important;
+}
+.fs-profile-editor .profile-crop-page[data-appearance-theme] .appearance-modal {
+  border-color: var(--appearance-accent-soft) !important;
+  box-shadow: 0 20px 40px rgba(0,0,0,.6), 0 0 28px var(--appearance-glow) !important;
+}
+.fs-profile-editor .profile-crop-page[data-appearance-theme] ::selection {
+  background: var(--appearance-accent) !important;
+  color: #07100d !important;
+}
+.fs-profile-editor .profile-crop-page[data-appearance-text-color]:not([data-appearance-text-color="default"]) .profile-preview-content h3,
+.fs-profile-editor .profile-crop-page[data-appearance-text-color]:not([data-appearance-text-color="default"]) .profile-preview-content p,
+.fs-profile-editor .profile-crop-page[data-appearance-text-color]:not([data-appearance-text-color="default"]) .profile-preview-meta b,
+.fs-profile-editor .profile-crop-page[data-appearance-text-color]:not([data-appearance-text-color="default"]) .profile-mural-widget strong {
+  color: var(--appearance-text) !important;
+}
+.fs-profile-editor .profile-crop-page[data-appearance-text-color]:not([data-appearance-text-color="default"]) .appearance-live-preview-text {
+  color: var(--appearance-text) !important;
+}
+
+/* LIGHT MODE & REFINED APPEARANCE TOKENS */
+.fs-profile-editor .profile-crop-page[data-appearance-theme="white"], .fs-profile-editor .profile-crop-page[data-appearance-bg="white"] {
+  color: #0f172a !important;
+  background-color: #f8fafc !important;
+}
+.fs-profile-editor .profile-crop-page[data-appearance-theme="white"] .editor-column, .fs-profile-editor .profile-crop-page[data-appearance-theme="white"] .basic-info-section, .fs-profile-editor .profile-crop-page[data-appearance-theme="white"] .about-section, .fs-profile-editor .profile-crop-page[data-appearance-theme="white"] .plan-card, .fs-profile-editor .profile-crop-page[data-appearance-theme="white"] .upgrade-card, .fs-profile-editor .profile-crop-page[data-appearance-theme="white"] .premium-card, .fs-profile-editor .profile-crop-page[data-appearance-theme="white"] .compare-table, .fs-profile-editor .profile-crop-page[data-appearance-theme="white"] .text-input-wrap, .fs-profile-editor .profile-crop-page[data-appearance-theme="white"] input, .fs-profile-editor .profile-crop-page[data-appearance-theme="white"] textarea {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: rgba(15,23,42,.15) !important;
+}
+.fs-profile-editor .profile-crop-page[data-appearance-theme="white"] input::placeholder, .fs-profile-editor .profile-crop-page[data-appearance-theme="white"] textarea::placeholder {
+  color: #64748b !important;
+}
+.fs-profile-editor .profile-crop-page[data-appearance-theme="white"] .section-title, .fs-profile-editor .profile-crop-page[data-appearance-theme="white"] .basic-info-heading, .fs-profile-editor .profile-crop-page[data-appearance-theme="white"] .control-label {
+  color: #0f172a !important;
+}
+
+/* FRAMES SHOP MODAL ("VER TODAS") */
+.fs-profile-editor .frames-shop-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 7, 9, 0.85);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease-out;
+}
+.fs-profile-editor .frames-shop-modal {
+  width: 100%;
+  max-width: 850px;
+  max-height: 90vh;
+  background: #0d131a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+}
+.fs-profile-editor .frames-shop-header {
+  padding: 1.5rem 2rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.fs-profile-editor .frames-shop-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+.fs-profile-editor .frames-shop-header p {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin: 0.25rem 0 0 0;
+}
+.fs-profile-editor .frames-shop-close {
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  color: #cbd5e1;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.fs-profile-editor .frames-shop-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+.fs-profile-editor .frames-shop-body {
+  padding: 1.5rem 2rem;
+  overflow-y: auto;
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+.fs-profile-editor .frame-shop-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  transition: all 0.2s;
+}
+.fs-profile-editor .frame-shop-item:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+.fs-profile-editor .frame-shop-item.selected {
+  border-color: var(--accent-color, #10b981);
+  background: rgba(16, 185, 129, 0.04);
+}
+.fs-profile-editor .frame-shop-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 1rem;
+}
+.fs-profile-editor .frame-shop-item h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 0.25rem 0;
+}
+.fs-profile-editor .frame-shop-item span {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+.fs-profile-editor .frame-shop-item button {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+.fs-profile-editor .frame-shop-item button.equip-btn {
+  background: #10b981;
+  color: #fff;
+}
+.fs-profile-editor .frame-shop-item button.equip-btn:hover {
+  background: #059669;
+}
+.fs-profile-editor .frame-shop-item button.locked-btn {
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+}
+
+/* SOCIAL SETTINGS MODAL */
+.fs-profile-editor .social-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 7, 9, 0.85);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease-out;
+}
+.fs-profile-editor .social-modal {
+  width: 100%;
+  max-width: 540px;
+  background: #0d131a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+}
+.fs-profile-editor .social-modal-header {
+  padding: 1.5rem 2rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.fs-profile-editor .social-modal-header h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+.fs-profile-editor .social-modal-body {
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+.fs-profile-editor .social-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.fs-profile-editor .social-control-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+.fs-profile-editor .social-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+.fs-profile-editor .social-status-btn {
+  padding: 0.6rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+.fs-profile-editor .social-status-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+.fs-profile-editor .social-status-btn.selected {
+  background: var(--appearance-accent, #10b981);
+  color: #000;
+  border-color: transparent;
+  font-weight: 600;
+}
+.fs-profile-editor .social-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.fs-profile-editor .social-input:focus {
+  border-color: var(--appearance-accent, #10b981);
+}
+.fs-profile-editor .social-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.fs-profile-editor .social-toggle-row span {
+  font-size: 0.9rem;
+  color: #e2e8f0;
+}
+.fs-profile-editor .social-switch {
+  width: 44px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+  border: none;
+}
+.fs-profile-editor .social-switch.active {
+  background: var(--appearance-accent, #10b981);
+}
+.fs-profile-editor .social-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+.fs-profile-editor .social-switch.active::after {
+  transform: translateX(20px);
+}
+.fs-profile-editor .social-modal-footer {
+  padding: 1rem 2rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: flex-end;
+}
+.fs-profile-editor .social-modal-footer button {
+  padding: 0.6rem 1.25rem;
+  background: var(--appearance-accent, #10b981);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.fs-profile-editor .social-modal-footer button:hover {
+  opacity: 0.9;
+}
+.fs-profile-editor .header-social-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.fs-profile-editor .header-social-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.fs-profile-editor .profile-crop-page[data-appearance-font="poppins"] { font-family: 'Poppins', sans-serif !important; }
+.fs-profile-editor .profile-crop-page[data-appearance-font="montserrat"] { font-family: 'Montserrat', sans-serif !important; }
+.fs-profile-editor .profile-crop-page[data-appearance-font="outfit"] { font-family: 'Outfit', sans-serif !important; }
+.fs-profile-editor .profile-crop-page[data-appearance-font="roboto"] { font-family: 'Roboto', sans-serif !important; }
+.fs-profile-editor .profile-crop-page[data-appearance-font="playfair"] { font-family: 'Playfair Display', serif !important; }
+.fs-profile-editor .profile-crop-page[data-appearance-font="jetbrains"] { font-family: 'JetBrains Mono', monospace !important; }
+
+
+/* STYLE NOTE: Social/Mural and preview layer — keep the editor dark, compact, tier-aware, and immediately legible. The mural is intentionally free-form; the preview mirrors every field without imposing a fixed taxonomy. */
+.fs-profile-editor .social-modal-expanded { max-width: 760px; }
+.fs-profile-editor .social-modal-expanded .social-modal-body { gap: 1rem; max-height: min(76vh, 720px); }
+.fs-profile-editor .mural-settings-group { padding-top: .2rem; border-top: 1px solid rgba(255,255,255,.07); }
+.fs-profile-editor .mural-settings-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.fs-profile-editor .mural-settings-heading p { margin: .25rem 0 0; color: #7f8b98; font-size: .75rem; line-height: 1.4; max-width: 510px; }
+.fs-profile-editor .mural-settings-heading > span { flex: none; padding: .2rem .48rem; border: 1px solid var(--appearance-accent, #10b981); border-radius: 999px; color: var(--appearance-accent, #10b981); font-size: .7rem; font-weight: 700; }
+.fs-profile-editor .mural-fields-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem; }
+.fs-profile-editor .mural-field { display: flex; flex-direction: column; gap: .35rem; }
+.fs-profile-editor .mural-field > span { color: #cbd5e1; font-size: .72rem; font-weight: 600; }
+.fs-profile-editor .mural-field .social-input { min-height: 39px; padding: .6rem .75rem; font-size: .78rem; }
+.fs-profile-editor .mural-field .social-input::placeholder { color: #64748b; }
+.fs-profile-editor .mural-widget-editor { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 10px; min-width: 0; padding: 8px; border: 1px solid rgba(255,255,255,.08); border-radius: 9px; background: rgba(255,255,255,.025); }
+.fs-profile-editor .mural-widget-editor-image { position: relative; overflow: hidden; min-height: 86px; border-radius: 7px; background: #121b22; }
+.fs-profile-editor .mural-widget-editor-image img { display: block; width: 100%; height: 100%; min-height: 86px; object-fit: cover; }
+.fs-profile-editor .mural-widget-load-state { position: absolute; right: 4px; bottom: 4px; padding: 3px 4px; border-radius: 4px; background: rgba(2,7,10,.8); color: #a7b5bf; font-size: 7px; line-height: 1; }
+.fs-profile-editor .mural-widget-load-state.is-loading { color: #facc15; }
+.fs-profile-editor .mural-widget-load-state.has-error { color: #cbd5e1; }
+.fs-profile-editor .mural-widget-editor-fields { display: grid; min-width: 0; align-content: center; gap: 6px; }
+.fs-profile-editor .mural-widget-editor-fields label { display: grid; gap: 4px; min-width: 0; }
+.fs-profile-editor .mural-widget-editor-fields label > span { color: var(--appearance-text, #dbe5ed); font-size: 8px; font-weight: 700; }
+.fs-profile-editor .mural-widget-editor-fields .social-input { width: 100%; min-width: 0; }
+.fs-profile-editor .mural-widget-editor-footer { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }
+.fs-profile-editor .mural-widget-editor-footer small { overflow: hidden; color: #71808e; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.fs-profile-editor .mural-widget-editor-footer button { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; padding: 5px 6px; border: 1px solid var(--appearance-accent, #10b981); border-radius: 5px; background: transparent; color: var(--appearance-accent, #10b981); font-size: 7px; font-weight: 800; cursor: pointer; }
+.fs-profile-editor .mural-widget-editor-footer button:disabled { cursor: not-allowed; opacity: .45; }
+
+/* Real-time profile preview */
+.fs-profile-editor .profile-preview-section { margin-top: 16px; padding: 15px; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; background: linear-gradient(145deg, rgba(17,23,29,.98), rgba(9,13,17,.98)); box-shadow: 0 12px 28px rgba(0,0,0,.16); }
+.fs-profile-editor .profile-preview-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 12px; }
+.fs-profile-editor .profile-preview-heading h2 { margin: 3px 0 2px; color: #f8fafc; font-size: 14px; line-height: 1.1; }
+.fs-profile-editor .profile-preview-heading p { margin: 0; color: #7f8b98; font-size: 9px; }
+.fs-profile-editor .profile-preview-kicker { color: var(--appearance-accent, #10b981); font-size: 8px; font-weight: 800; letter-spacing: .14em; }
+.fs-profile-editor .profile-preview-plan { flex: none; padding: 5px 8px; border: 1px solid var(--appearance-accent, #10b981); border-radius: 999px; color: var(--appearance-accent, #10b981); font-size: 8px; font-weight: 800; letter-spacing: .08em; }
+.fs-profile-editor .profile-preview-card { position: relative; overflow: hidden; min-height: 264px; border: 1px solid rgba(255,255,255,.1); border-radius: 9px; background: #0e141a; }
+.fs-profile-editor .profile-preview-cover { height: 64px; background: linear-gradient(90deg, var(--appearance-glow, rgba(16,185,129,.28)), rgba(8,13,18,.04)), var(--appearance-page-image, none), var(--appearance-page-bg, #0c151b); border-bottom: 1px solid rgba(255,255,255,.08); }
+.fs-profile-editor .profile-preview-avatar { position: relative; z-index: 2; display: grid; place-items: center; width: 70px; height: 70px; margin: -35px 0 0 16px; border: 4px solid #0e141a; border-radius: 50%; background: #111820; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+.fs-profile-editor .profile-preview-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.fs-profile-editor .profile-preview-content { padding: 9px 16px 16px; }
+.fs-profile-editor .profile-preview-name-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.fs-profile-editor .profile-preview-name-row h3 { margin: 0; color: var(--appearance-text, #f8fafc); font-size: 14px; line-height: 1.1; }
+.fs-profile-editor .profile-preview-name-row p { margin: 3px 0 0; color: #82909e; font-size: 9px; }
+.fs-profile-editor .profile-preview-status { display: inline-flex; align-items: center; gap: 5px; color: #cbd5e1; font-size: 9px; font-weight: 700; }
+.fs-profile-editor .profile-preview-status i { width: 7px; height: 7px; border-radius: 50%; box-shadow: 0 0 0 3px rgba(255,255,255,.06); }
+.fs-profile-editor .profile-preview-message, .fs-profile-editor .profile-preview-about { margin: 10px 0 0; color: var(--appearance-text, #dbe5ed); font-size: 10px; line-height: 1.45; }
+.fs-profile-editor .profile-preview-message { padding: 7px 9px; border-left: 2px solid var(--appearance-accent, #10b981); background: var(--appearance-accent-soft, rgba(16,185,129,.12)); }
+.fs-profile-editor .profile-preview-about { color: #91a0ad; }
+.fs-profile-editor .profile-preview-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
+.fs-profile-editor .profile-preview-meta span { padding: 4px 7px; border: 1px solid rgba(255,255,255,.08); border-radius: 5px; color: #8b98a6; font-size: 8px; }
+.fs-profile-editor .profile-preview-meta b { color: var(--appearance-accent, #10b981); font-weight: 700; }
+.fs-profile-editor .profile-mural-preview { margin-top: 13px; padding: 11px; border: 1px solid rgba(255,255,255,.08); border-radius: 7px; background: rgba(255,255,255,.025); }
+.fs-profile-editor .profile-mural-header { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; margin-bottom: 8px; color: var(--appearance-accent, #10b981); }
+.fs-profile-editor .profile-mural-header h4 { margin: 3px 0 0; color: var(--appearance-text, #f8fafc); font-size: 10px; }
+.fs-profile-editor .profile-mural-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.fs-profile-editor .profile-mural-widget { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: 7px; min-width: 0; padding: 5px; border: 1px solid rgba(255,255,255,.07); border-radius: 7px; background: rgba(255,255,255,.025); }
+.fs-profile-editor .profile-mural-widget img { width: 42px; height: 42px; border-radius: 5px; object-fit: cover; }
+.fs-profile-editor .profile-mural-widget div { min-width: 0; }
+.fs-profile-editor .profile-mural-widget span { display: block; margin-bottom: 2px; overflow: hidden; color: #73808d; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.fs-profile-editor .profile-mural-widget strong { display: block; overflow: hidden; color: var(--appearance-text, #dbe5ed); font-size: 8px; font-weight: 650; line-height: 1.25; overflow-wrap: anywhere; }
+.fs-profile-editor .profile-mural-empty { margin: 0; color: #73808d; font-size: 9px; line-height: 1.45; }
+.fs-profile-editor .profile-preview-heading-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; }
+.fs-profile-editor .profile-preview-view-button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 6px 9px; border: 1px solid var(--appearance-accent, #10b981); border-radius: 6px; background: var(--appearance-accent-soft, rgba(16,185,129,.12)); color: var(--appearance-accent, #10b981); font-size: 8px; font-weight: 800; cursor: pointer; transition: transform .18s ease-out, background .18s ease-out, color .18s ease-out; }
+.fs-profile-editor .profile-preview-view-button:hover { transform: translateY(-1px); background: var(--appearance-accent, #10b981); color: #06100d; }
+
+/* Full public profile view opened from the live preview. It keeps the social surface dark while reflecting the active tier accent. */
+.fs-profile-editor .public-profile-overlay { position: fixed; inset: 0; z-index: 1100; display: flex; align-items: center; justify-content: center; padding: 1.25rem; background: rgba(2, 5, 8, .88); backdrop-filter: blur(12px); animation: fadeIn .2s ease-out; }
+.fs-profile-editor .public-profile-modal { display: flex; width: min(900px, 100%); max-height: 90vh; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,.13); border-radius: 18px; background: #0c1218; color: #e2e8f0; box-shadow: 0 28px 70px rgba(0,0,0,.62); }
+.fs-profile-editor .public-profile-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.025); }
+.fs-profile-editor .public-profile-modal-header h2 { margin: 4px 0 3px; color: #f8fafc; font-size: 17px; }
+.fs-profile-editor .public-profile-modal-header p { margin: 0; color: #82909e; font-size: 10px; }
+.fs-profile-editor .public-profile-body { min-height: 0; overflow-y: auto; padding: 1.25rem 1.5rem; scrollbar-width: none; -ms-overflow-style: none; }
+.fs-profile-editor .public-profile-body::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.fs-profile-editor .public-profile-hero { overflow: hidden; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; background: #0e141a; }
+.fs-profile-editor .public-profile-cover { height: 112px; background: linear-gradient(90deg, var(--appearance-glow, rgba(16,185,129,.3)), rgba(8,13,18,.08)), var(--appearance-page-image, none), var(--appearance-page-bg, #0c151b); border-bottom: 1px solid rgba(255,255,255,.08); }
+.fs-profile-editor .public-profile-identity { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: end; gap: 14px; padding: 0 20px 18px; }
+.fs-profile-editor .public-profile-avatar { position: relative; z-index: 1; display: grid; place-items: center; width: 92px; height: 92px; margin-top: -45px; border: 5px solid #0e141a; border-radius: 50%; background: #111820; box-shadow: 0 8px 22px rgba(0,0,0,.4); isolation: isolate; }
+.fs-profile-editor .public-profile-avatar img { position: relative; z-index: 1; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.fs-profile-editor .public-profile-name { min-width: 0; padding-bottom: 2px; }
+.fs-profile-editor .public-profile-plan { color: var(--appearance-accent, #10b981); font-size: 8px; font-weight: 900; letter-spacing: .13em; }
+.fs-profile-editor .public-profile-name h3 { margin: 4px 0 2px; color: #f8fafc; font-size: 22px; line-height: 1; }
+.fs-profile-editor .public-profile-name p { margin: 0; color: #8795a3; font-size: 11px; }
+.fs-profile-editor .public-profile-status { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; color: #cbd5e1; font-size: 9px; font-weight: 700; }
+.fs-profile-editor .public-profile-status i { width: 7px; height: 7px; border-radius: 50%; box-shadow: 0 0 0 3px rgba(255,255,255,.06); }
+.fs-profile-editor .public-profile-frame-note { display: grid; gap: 4px; min-width: 95px; padding: 9px 11px; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; background: rgba(255,255,255,.03); }
+.fs-profile-editor .public-profile-frame-note span { color: #71808e; font-size: 8px; text-transform: uppercase; letter-spacing: .1em; }
+.fs-profile-editor .public-profile-frame-note strong { color: var(--appearance-accent, #10b981); font-size: 10px; }
+.fs-profile-editor .public-profile-grid { display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 12px; margin-top: 12px; }
+.fs-profile-editor .public-profile-main, .fs-profile-editor .public-profile-side { display: grid; align-content: start; gap: 12px; min-width: 0; }
+.fs-profile-editor .public-profile-panel { padding: 13px 14px; border: 1px solid rgba(255,255,255,.09); border-radius: 10px; background: linear-gradient(145deg, rgba(17,23,29,.98), rgba(9,13,17,.98)); }
+.fs-profile-editor .public-profile-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: 10px; color: var(--appearance-accent, #10b981); }
+.fs-profile-editor .public-profile-panel-heading span { font-size: 8px; font-weight: 900; letter-spacing: .14em; }
+.fs-profile-editor .public-profile-message { margin: 0 0 9px; padding: 8px 10px; border-left: 2px solid var(--appearance-accent, #10b981); background: var(--appearance-accent-soft, rgba(16,185,129,.12)); color: #e2e8f0; font-size: 10px; line-height: 1.45; }
+.fs-profile-editor .public-profile-about { margin: 0; color: #cbd5e1; font-size: 11px; line-height: 1.55; }
+.fs-profile-editor .public-profile-about.is-empty, .fs-profile-editor .public-profile-empty { color: #71808e; }
+.fs-profile-editor .public-profile-empty { margin: 0; font-size: 10px; line-height: 1.5; }
+.fs-profile-editor .public-profile-mural-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.fs-profile-editor .public-profile-mural-widget { display: grid; grid-template-columns: 56px minmax(0, 1fr); align-items: center; gap: 9px; min-width: 0; padding: 7px; border: 1px solid rgba(255,255,255,.07); border-radius: 8px; background: rgba(255,255,255,.025); }
+.fs-profile-editor .public-profile-mural-widget img { width: 56px; height: 56px; border-radius: 6px; object-fit: cover; }
+.fs-profile-editor .public-profile-mural-widget div { min-width: 0; }
+.fs-profile-editor .public-profile-mural-widget span { display: block; margin-bottom: 4px; color: #71808e; font-size: 8px; }
+.fs-profile-editor .public-profile-mural-widget strong { display: block; overflow: hidden; color: #e2e8f0; font-size: 10px; font-weight: 650; line-height: 1.35; overflow-wrap: anywhere; }
+.fs-profile-editor .public-profile-visibility-list { display: grid; gap: 7px; }
+.fs-profile-editor .public-profile-visibility-list span { display: block; padding: 7px 8px; border: 1px solid rgba(255,255,255,.07); border-radius: 6px; color: #8896a4; font-size: 9px; }
+.fs-profile-editor .public-profile-visibility-list span.visible { border-color: color-mix(in srgb, var(--appearance-accent, #10b981) 45%, transparent); background: var(--appearance-accent-soft, rgba(16,185,129,.12)); color: #dcefe5; }
+.fs-profile-editor .public-profile-visibility-list span.hidden { opacity: .72; }
+.fs-profile-editor .public-profile-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .9rem 1.5rem; border-top: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.025); }
+.fs-profile-editor .public-profile-footer span { color: #71808e; font-size: 9px; }
+.fs-profile-editor .public-profile-footer button { padding: .6rem 1rem; border: 0; border-radius: 7px; background: var(--appearance-accent, #10b981); color: #06100d; font-size: 10px; font-weight: 800; cursor: pointer; }
+@media (max-width: 760px) { .mural-fields-grid { grid-template-columns: 1fr; } .public-profile-grid { grid-template-columns: 1fr; } .profile-mural-list, .public-profile-mural-list { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .public-profile-identity { grid-template-columns: auto minmax(0, 1fr); } .public-profile-frame-note { grid-column: 1 / -1; } .public-profile-footer { align-items: stretch; flex-direction: column; } .public-profile-footer button { width: 100%; } }
+
+/* Frame rings are CSS-only so every selection updates instantly without replacing supplied avatar assets. */
+.fs-profile-editor .profile-frame-none::before { display: none; }
+.fs-profile-editor .profile-avatar-large[class*="profile-frame-"], .fs-profile-editor .profile-preview-avatar[class*="profile-frame-"], .fs-profile-editor .frame-shop-sample[class*="profile-frame-"] { position: relative; }
+.fs-profile-editor .profile-avatar-large[class*="profile-frame-"], .fs-profile-editor .profile-preview-avatar[class*="profile-frame-"], .fs-profile-editor .frame-shop-sample[class*="profile-frame-"] { isolation: isolate; }
+.fs-profile-editor .profile-avatar-large[class*="profile-frame-"]::before, .fs-profile-editor .profile-preview-avatar[class*="profile-frame-"]::before, .fs-profile-editor .frame-shop-sample[class*="profile-frame-"]::before { content: ""; position: absolute; inset: -6px; z-index: 0; border-radius: 50%; pointer-events: none; }
+.fs-profile-editor .profile-frame-pulsar::before { background: conic-gradient(#22c55e, #86efac, #0f766e, #22c55e); box-shadow: 0 0 12px rgba(34,197,94,.62); }
+.fs-profile-editor .profile-frame-aurora::before { background: conic-gradient(#7dd3fc, #c084fc, #f0abfc, #7dd3fc); box-shadow: 0 0 14px rgba(192,132,252,.6); }
+.fs-profile-editor .profile-frame-nebulosa::before { background: conic-gradient(#8b5cf6, #ec4899, #38bdf8, #8b5cf6); box-shadow: 0 0 15px rgba(139,92,246,.65); }
+.fs-profile-editor .profile-frame-estelar::before { background: conic-gradient(#f9a8d4, #fde68a, #fff, #f9a8d4); box-shadow: 0 0 13px rgba(253,230,138,.6); }
+.fs-profile-editor .profile-frame-supernova::before { background: conic-gradient(#f97316, #facc15, #ef4444, #f97316); box-shadow: 0 0 15px rgba(249,115,22,.72); }
+.fs-profile-editor .profile-frame-galaxia::before { background: conic-gradient(#38bdf8, #8b5cf6, #ec4899, #38bdf8); box-shadow: 0 0 16px rgba(168,85,247,.7); }
+.fs-profile-editor .profile-frame-infinito::before { background: conic-gradient(#fef3c7, #f59e0b, #fde68a, #fef3c7); box-shadow: 0 0 17px rgba(245,158,11,.8); }
+.fs-profile-editor .profile-avatar-large[class*="profile-frame-"] img, .fs-profile-editor .profile-preview-avatar[class*="profile-frame-"] img { position: relative; z-index: 1; }
+.fs-profile-editor .profile-avatar-large[class*="profile-frame-"] button { z-index: 3; }
+
+/* Frames shop modal */
+.fs-profile-editor .frames-shop-overlay { position: fixed; inset: 0; z-index: 1001; display: flex; align-items: center; justify-content: center; padding: 1.5rem; background: rgba(4,7,9,.86); backdrop-filter: blur(10px); animation: fadeIn .2s ease-out; }
+.fs-profile-editor .frames-shop-modal { width: min(680px, 100%); overflow: hidden; border: 1px solid rgba(255,255,255,.12); border-radius: 18px; background: #0d131a; box-shadow: 0 25px 50px -12px rgba(0,0,0,.72); }
+.fs-profile-editor .frames-shop-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.35rem 1.6rem; border-bottom: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.02); }
+.fs-profile-editor .frames-shop-header h2 { margin: 4px 0 4px; color: #fff; font-size: 18px; }
+.fs-profile-editor .frames-shop-header p { margin: 0; color: #81909d; font-size: 11px; }
+.fs-profile-editor .frames-shop-body { padding: 1.25rem 1.6rem 1.45rem; }
+.fs-profile-editor .frames-shop-plan-note { margin-bottom: 12px; color: #8d9aa7; font-size: 11px; }
+.fs-profile-editor .frames-shop-plan-note b { color: var(--appearance-accent, #10b981); }
+.fs-profile-editor .frames-shop-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+.fs-profile-editor .frame-shop-option { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 5px; padding: 12px 7px 10px; border: 1px solid rgba(255,255,255,.09); border-radius: 11px; background: rgba(255,255,255,.025); color: #cbd5e1; cursor: pointer; transition: transform .18s ease-out, border-color .18s ease-out, background .18s ease-out; }
+.fs-profile-editor .frame-shop-option:hover { transform: translateY(-2px); border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.055); }
+.fs-profile-editor .frame-shop-option.selected { border-color: var(--appearance-accent, #10b981); background: var(--appearance-accent-soft, rgba(16,185,129,.12)); }
+.fs-profile-editor .frame-shop-option.locked { opacity: .62; }
+.fs-profile-editor .frame-shop-option strong { color: #f8fafc; font-size: 10px; }
+.fs-profile-editor .frame-shop-option small { display: inline-flex; align-items: center; gap: 3px; min-height: 22px; color: #7f8b98; font-size: 8px; text-align: center; }
+.fs-profile-editor .frame-shop-sample { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: #111820; }
+.fs-profile-editor .frame-shop-sample > span { position: relative; z-index: 1; width: 40px; height: 40px; border-radius: 50%; background: #2a3440; }
+.fs-profile-editor .frame-shop-sample[class*="profile-frame-"]::before { inset: -3px; z-index: 0; }
+.fs-profile-editor .frames-shop-footer { display: flex; justify-content: flex-end; padding: .9rem 1.6rem; border-top: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.02); }
+.fs-profile-editor .frames-shop-footer button { padding: .55rem 1rem; border: 0; border-radius: 9px; background: var(--appearance-accent, #10b981); color: #000; font-size: 11px; font-weight: 700; cursor: pointer; }
+@media (max-width: 720px) { .mural-fields-grid, .profile-mural-list { grid-template-columns: 1fr; } .frames-shop-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (prefers-reduced-motion: reduce) { .frame-shop-option { transition: none; } }
+
+
+/* STYLE NOTE: Social modal preview composition — the editable controls remain on the left while the live profile card stays pinned on the right inside the standalone overlay. */
+.fs-profile-editor .social-modal-expanded { max-width: 1040px; max-height: 90vh; }
+.fs-profile-editor .social-modal-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; min-height: 0; }
+.fs-profile-editor .social-modal-layout .social-modal-body { min-width: 0; max-height: 72vh; overflow-y: auto; padding: 1.25rem 1.6rem 1.4rem; }
+.fs-profile-editor .social-modal-layout .profile-preview-section { min-width: 0; margin: 1.25rem 1.6rem 1.25rem 0; align-self: start; }
+.fs-profile-editor .social-modal-layout .profile-preview-heading { display: block; }
+.fs-profile-editor .social-modal-layout .profile-preview-plan { display: inline-block; margin-top: 10px; }
+.fs-profile-editor .social-modal-layout .profile-preview-card { min-height: 0; }
+.fs-profile-editor .social-modal-layout .profile-mural-list { grid-template-columns: 1fr; }
+@media (max-width: 900px) {
+.fs-profile-editor .social-modal-expanded { max-width: 680px; }
+.fs-profile-editor .social-modal-layout { grid-template-columns: 1fr; }
+.fs-profile-editor .social-modal-layout .profile-preview-section { margin: 0 1.6rem 1.25rem; }
+.fs-profile-editor .social-modal-layout .social-modal-body { max-height: 55vh; }
+}
+
+
+/* STYLE NOTE: Header actions stay compact but must read as two separate controls rather than a single combined button. */
+.fs-profile-editor .basic-info-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+/* STYLE NOTE: Scroll remains available for compact overlays, but the browser scrollbar must not compete with the fixed Friends Space canvas. */
+.fs-profile-editor html, .fs-profile-editor body, .fs-profile-editor .profile-crop-page, .fs-profile-editor .profile-main, .fs-profile-editor .social-modal-body, .fs-profile-editor .frames-shop-body, .fs-profile-editor .editor-column, .fs-profile-editor .plan-column {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.fs-profile-editor html::-webkit-scrollbar, .fs-profile-editor body::-webkit-scrollbar, .fs-profile-editor .profile-crop-page::-webkit-scrollbar, .fs-profile-editor .profile-main::-webkit-scrollbar, .fs-profile-editor .social-modal-body::-webkit-scrollbar, .fs-profile-editor .frames-shop-body::-webkit-scrollbar, .fs-profile-editor .editor-column::-webkit-scrollbar, .fs-profile-editor .plan-column::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+
+/* STYLE NOTE: White appearance uses ink-colored editorial text on pale surfaces, while Social/Frames overlays remain dark surfaces with light controls. */
+.fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .section-title h2, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .section-title p, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .photo-note, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .photo-note button, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .profile-link, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .text-input-wrap small, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .about-counter, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .premium-item, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .premium-card h2, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .plan-card h3, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .available-list li, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .locked-feature-list li, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .locked-feature-hint, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .compare-row > span, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .upgrade-card p, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .upgrade-card li, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .plan-switch-link {
+  color: #334155 !important;
+}
+.fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .section-title h2, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .basic-info-heading, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .plan-card h3, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .upgrade-card h3 {
+  color: #0f172a !important;
+}
+.fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .premium-item svg, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .locked-feature-list li svg, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .upgrade-card li svg {
+  color: #475569 !important;
+}
+.fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .compare-head > span {
+  color: #0f172a !important;
+}
+.fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .compare-free, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .compare-astro, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .compare-current, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .compare-next {
+  color: #334155 !important;
+}
+
+/* Keep dark overlay surfaces readable when white appearance is active. */
+.fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .social-modal, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .frames-shop-modal {
+  color: #e2e8f0 !important;
+}
+.fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .social-modal span, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .social-modal label, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .social-modal p, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .frames-shop-modal span, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .frames-shop-modal p, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .frames-shop-modal label {
+  color: #cbd5e1 !important;
+}
+.fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .social-modal-header h2, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .social-modal .mural-settings-heading h3, .fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .social-modal .profile-preview-heading h3 {
+  color: #f8fafc !important;
+}
+
+
+/* White theme verification marks: never use white-on-white for the resource checks. */
+.fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .check-dot {
+  background: #10b981 !important;
+  color: #052e16 !important;
+  box-shadow: 0 0 0 1px rgba(5, 46, 22, .16), 0 2px 5px rgba(16, 185, 129, .24) !important;
+}
+.fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .check-dot svg {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: #052e16 !important;
+  stroke: #052e16 !important;
+}
+.fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .astro-plus-tier-summary-card .check-dot {
+  background: #a855f7 !important;
+  color: #190b28 !important;
+}
+.fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .astro-plus-tier-summary-card .check-dot svg {
+  color: #190b28 !important;
+  stroke: #190b28 !important;
+}
+.fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .astro-plus-summary-card .check-dot {
+  background: #f2a900 !important;
+  color: #2f1a05 !important;
+}
+.fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .astro-plus-summary-card .check-dot svg {
+  color: #2f1a05 !important;
+  stroke: #2f1a05 !important;
+}
+
+
+/* Verification icon contrast: the check stroke must differ from its accent-colored circle. */
+.fs-profile-editor .profile-crop-page[data-appearance-theme] .check-dot svg, .fs-profile-editor .profile-crop-page[data-appearance-bg] .check-dot svg {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: #07100d !important;
+  stroke: #07100d !important;
+}
+
+/* Tier-specific verification marks override the appearance accent so checks never become white-on-white. */
+.fs-profile-editor .profile-crop-page .free-summary-card .check-dot {
+  background: #16c96a !important;
+  color: #052e16 !important;
+}
+.fs-profile-editor .profile-crop-page .astro-summary-card .check-dot {
+  background: #16d967 !important;
+  color: #052e16 !important;
+}
+.fs-profile-editor .profile-crop-page .astro-plus-tier-summary-card .check-dot {
+  background: #a855f7 !important;
+  color: #190b28 !important;
+}
+.fs-profile-editor .profile-crop-page .astro-plus-summary-card .check-dot {
+  background: #f2a900 !important;
+  color: #2f1a05 !important;
+}
+.fs-profile-editor .profile-crop-page .free-summary-card .check-dot svg, .fs-profile-editor .profile-crop-page .astro-summary-card .check-dot svg {
+  color: #052e16 !important;
+  stroke: #052e16 !important;
+}
+.fs-profile-editor .profile-crop-page .astro-plus-tier-summary-card .check-dot svg {
+  color: #190b28 !important;
+  stroke: #190b28 !important;
+}
+.fs-profile-editor .profile-crop-page .astro-plus-summary-card .check-dot svg {
+  color: #2f1a05 !important;
+  stroke: #2f1a05 !important;
+}
+
+
+/* ASTRO green verification pattern: match the comparison cells exactly. */
+.fs-profile-editor .profile-crop-page .astro-summary-card .check-dot, .fs-profile-editor .profile-crop-page .astro-compare-card .compare-current b, .fs-profile-editor .profile-crop-page .compare-astro b {
+  background: #23cb70 !important;
+  color: #07160c !important;
+  border-radius: 50%;
+}
+.fs-profile-editor .profile-crop-page .astro-summary-card .check-dot svg, .fs-profile-editor .profile-crop-page .astro-compare-card .compare-current b svg, .fs-profile-editor .profile-crop-page .compare-astro b svg {
+  color: #07160c !important;
+  stroke: #07160c !important;
+}
+
+
+/* Requested verification contrast: dark surfaces use white marks with black checks; white mode inverts them. */
+.fs-profile-editor .profile-crop-page .available-list .check-dot {
+  background: #f8fafc !important;
+  color: #05070a !important;
+  border: 1px solid rgba(5, 7, 10, .14);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .28) !important;
+}
+.fs-profile-editor .profile-crop-page .available-list .check-dot svg {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: #05070a !important;
+  stroke: #05070a !important;
+}
+.fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .available-list .check-dot {
+  background: #0b1117 !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, .18);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, .2) !important;
+}
+.fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .available-list .check-dot svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+
+/* Header Social action: keep it visible beside Appearance in every plan and theme. */
+.fs-profile-editor .profile-crop-page .basic-info-actions {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-width: max-content;
+  position: relative;
+  z-index: 3;
+}
+.fs-profile-editor .profile-crop-page .basic-info-actions .header-social-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  visibility: visible !important;
+  opacity: 1 !important;
+  flex: 0 0 auto;
+  min-width: 74px;
+  white-space: nowrap;
+  background: #171d24 !important;
+  border: 1px solid rgba(255, 255, 255, .18) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+}
+.fs-profile-editor .profile-crop-page .basic-info-actions .header-social-btn svg {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: currentColor !important;
+  stroke: currentColor !important;
+}
+.fs-profile-editor .profile-crop-page .basic-info-actions .header-social-btn:hover {
+  background: #242d36 !important;
+  border-color: rgba(255, 255, 255, .34) !important;
+}
+.fs-profile-editor .profile-crop-page:is([data-appearance-theme="white"], .fs-profile-editor [data-appearance-bg="white"]) .basic-info-actions .header-social-btn {
+  background: #0b1117 !important;
+  border-color: #0b1117 !important;
+  color: #ffffff !important;
+}
+
+
+/* ASTRO comparison column: use a deeper green surface to match the darker premium comparison treatment. */
+.fs-profile-editor .profile-crop-page .astro-compare-card .compare-current {
+  background: #0b5b3a !important;
+  color: #d8ffe7 !important;
+  border-left-color: rgba(75, 240, 148, .16) !important;
+  border-right-color: rgba(75, 240, 148, .16) !important;
+}
+.fs-profile-editor .profile-crop-page .astro-compare-card .compare-current b {
+  background: #23cb70 !important;
+  color: #07160c !important;
+}
+.fs-profile-editor .profile-crop-page .astro-compare-card .compare-current b.compare-unavailable {
+  background: linear-gradient(145deg, #dfe5e8, #9da8af) !important;
+  color: #1b2025 !important;
+}
+.fs-profile-editor .profile-crop-page .astro-compare-card .compare-current b svg {
+  color: currentColor !important;
+  stroke: currentColor !important;
+}
+
+
+/* ASTRO+ comparison column: purple text and verification markers must win over global appearance accents. */
+.fs-profile-editor .profile-crop-page .astro-compare-card .compare-next {
+  color: #d2a2fa !important;
+}
+.fs-profile-editor .profile-crop-page .astro-compare-card .compare-next b {
+  background: #b565f0 !important;
+  color: #170827 !important;
+}
+.fs-profile-editor .profile-crop-page .astro-compare-card .compare-next b svg {
+  color: currentColor !important;
+  stroke: currentColor !important;
+}
+
+
+/* Final comparison treatment: dark surfaces first; plan colors remain only on text and verification markers. */
+.fs-profile-editor .profile-crop-page .astro-compare-card .compare-current {
+  background: #082d21 !important;
+  color: #e2ffed !important;
+  box-shadow: inset 0 1px 0 rgba(58, 190, 119, .08), inset 0 -1px 0 rgba(0, 0, 0, .16);
+}
+.fs-profile-editor .profile-crop-page .astro-compare-card .compare-next {
+  background: #11161b !important;
+  color: #d2a2fa !important;
+  box-shadow: inset 0 1px 0 rgba(181, 101, 240, .06), inset 0 -1px 0 rgba(0, 0, 0, .16);
+}
+.fs-profile-editor .profile-crop-page .astro-compare-card .compare-current b {
+  background: #23cb70 !important;
+  color: #06140b !important;
+}
+.fs-profile-editor .profile-crop-page .astro-compare-card .compare-next b {
+  background: #b565f0 !important;
+  color: #170827 !important;
+}
+.fs-profile-editor .profile-crop-page .astro-compare-card .compare-current b.compare-unavailable {
+  background: linear-gradient(145deg, #dfe5e8, #9da8af) !important;
+  color: #1b2025 !important;
+}
+
+
+/* Reference-matched dark comparison surface: the ASTRO current column reads nearly black, not neon green. */
+.fs-profile-editor .profile-crop-page .astro-compare-card .compare-current {
+  background: #06130f !important;
+  color: #e2ffed !important;
+  box-shadow: inset 0 1px 0 rgba(46, 120, 79, .12), inset 0 -1px 0 rgba(0, 0, 0, .24) !important;
+}
+.fs-profile-editor .profile-crop-page .astro-compare-card .compare-next {
+  background: #0d1218 !important;
+  color: #d2a2fa !important;
+  box-shadow: inset 0 1px 0 rgba(181, 101, 240, .08), inset 0 -1px 0 rgba(0, 0, 0, .24) !important;
+}
+
+/* STYLE NOTE: ASTRO normal action controls use the plan's deep emerald rather than the brighter appearance accent, preserving the darker reference treatment. */
+.fs-profile-editor .profile-crop-page.astro-profile-page[data-appearance-theme] .edit-appearance-button, .fs-profile-editor .profile-crop-page.astro-profile-page[data-appearance-theme] .save-button:not(:disabled) {
+  background: #063b22 !important;
+  border-color: #0d7b45 !important;
+  color: #e4ffed !important;
+  box-shadow: 0 0 12px rgba(11, 123, 69, .16) !important;
+}
+.fs-profile-editor .profile-crop-page.astro-profile-page[data-appearance-theme] .edit-appearance-button:hover, .fs-profile-editor .profile-crop-page.astro-profile-page[data-appearance-theme] .save-button:not(:disabled):hover {
+  background: #075b32 !important;
+  border-color: #149457 !important;
+  color: #ffffff !important;
+}
+
+/* STYLE NOTE: ASTRO+ comparison current column uses a near-black surface; violet remains only on labels and verification markers. */
+.fs-profile-editor .profile-crop-page .astro-plus-tier-compare-card .compare-current {
+  background: #0d1118 !important;
+  color: #d8c0f2 !important;
+  border-left-color: rgba(181, 101, 240, .14) !important;
+  border-right-color: rgba(181, 101, 240, .14) !important;
+  box-shadow: inset 0 1px 0 rgba(181, 101, 240, .07), inset 0 -1px 0 rgba(0, 0, 0, .24) !important;
+}
+.fs-profile-editor .profile-crop-page .astro-plus-tier-compare-card .compare-current b {
+  background: #b565f0 !important;
+  color: #170827 !important;
+}
+.fs-profile-editor .profile-crop-page .astro-plus-tier-compare-card .compare-current b.compare-unavailable {
+  background: linear-gradient(145deg, #dfe5e8, #9da8af) !important;
+  color: #1b2025 !important;
+}
+.fs-profile-editor .profile-crop-page .astro-plus-tier-compare-card .compare-current b svg {
+  color: currentColor !important;
+  stroke: currentColor !important;
+}
+
+/* Final ASTRO PLUS override: this sits after the generic crop contrast rules so the gold identity cannot be replaced by green or white. */
+.fs-profile-editor .profile-crop-page.astro-plus-profile-page .astro-plus-summary-card .check-dot, .fs-profile-editor .profile-crop-page.astro-plus-profile-page .astro-plus-gold-compare-card .compare-next b {
+  background: #f2a900 !important;
+  color: #2f1a05 !important;
+  border-color: rgba(242, 169, 0, .52) !important;
+  box-shadow: 0 0 8px rgba(242, 169, 0, .26) !important;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-profile-page .astro-plus-summary-card .check-dot svg, .fs-profile-editor .profile-crop-page.astro-plus-profile-page .astro-plus-gold-compare-card .compare-next b svg {
+  color: #2f1a05 !important;
+  stroke: #2f1a05 !important;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-profile-page .astro-plus-gold-compare-card {
+  background: #0f1317 !important;
+  border-color: rgba(242, 169, 0, .52) !important;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-profile-page .astro-plus-gold-compare-card .compare-next {
+  background: #11161b !important;
+  color: #f7d774 !important;
+  border-left-color: rgba(242, 169, 0, .16) !important;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-profile-page .astro-plus-gold-compare-card .compare-head > span:last-child, .fs-profile-editor .profile-crop-page.astro-plus-profile-page .astro-plus-gold-compare-card h3, .fs-profile-editor .profile-crop-page.astro-plus-profile-page .astro-plus-upgrade-card h3 {
+  color: #ffc84a !important;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-profile-page .astro-plus-upgrade-card {
+  background: linear-gradient(145deg, rgba(57, 34, 4, .94), rgba(13, 14, 12, .98)) !important;
+  border-color: rgba(242, 169, 0, .58) !important;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-profile-page .astro-plus-upgrade-card li svg {
+  color: #ffc84a !important;
+  stroke: #ffc84a !important;
+}
+.fs-profile-editor .profile-crop-page.astro-plus-profile-page .astro-plus-upgrade-card .astro-plus-button {
+  background: linear-gradient(135deg, #b96b00, #f2a900) !important;
+  color: #fff !important;
+}
+
+
+.fs-profile-editor { position: fixed; inset: 0; z-index: 600; overflow: auto; background: rgba(4, 6, 9, .55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.fs-profile-editor .fs-profile-editor-window { width: calc(100vw - 40px); max-width: 1400px; height: calc(100vh - 40px); max-height: 92vh; display: flex; flex-direction: column; background: #0a0d10; border: 1px solid rgba(255,255,255,.1); border-radius: 16px; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,.6); }
+.fs-profile-editor .fs-profile-editor-body { display: block; flex: 1; min-height: 0; overflow: auto; }
+.fs-profile-editor-topbar { flex: 0 0 44px; display: flex; align-items: center; gap: 12px; padding: 0 12px; border-bottom: 1px solid rgba(255,255,255,.085); background: #07090c; position: sticky; top: 0; z-index: 30; }
+.fs-profile-editor-topbar-title { margin: 0 auto; font-family: "Space Grotesk", sans-serif; font-size: 14px; font-weight: 700; color: #f0f3f5; }
+.fs-profile-editor .profile-crop-page { min-height: 100%; }
+.fs-profile-editor .fs-profile-editor-body { font-family: "Inter", system-ui, sans-serif; font-size: 13px; color: #f0f3f5; }
+.fs-profile-editor-back, .fs-profile-editor-close { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.085); background: #11161b; border-radius: 8px; color: #d9e0e3; cursor: pointer; }
+.fs-profile-editor-back { width: auto; padding: 0 12px; gap: 8px; font-family: "Space Grotesk", sans-serif; font-size: 13px; font-weight: 600; display: inline-flex; }
+.fs-profile-editor-close { margin-left: auto; }
+.fs-profile-editor-back:hover, .fs-profile-editor-close:hover { background: #1b242a; }
+.fs-profile-editor textarea, .fs-profile-editor input { font-family: inherit; }
+.fs-profile-editor .ph-username-error { margin: 0 0 10px; color: var(--red, #ff5964); font-size: 11px; line-height: 1.4; }
+.fs-profile-editor .fs-profile-editor-body .toast-status { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 410; display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 9px; background: #11171c; border: 1px solid rgba(255,255,255,.12); color: #eef3f4; font-size: 12px; box-shadow: 0 12px 28px rgba(0,0,0,.32); animation: plan-state-in 220ms var(--ease-out) both; }
+.fs-profile-editor .fs-profile-editor-body .toast-status svg { color: var(--green, #19d56b); }
+
+/* MINI BANNER PENCIL + ASTRO RESOURCES TOGGLE */
+.fs-profile-editor .plan-summary-card .astro-card-banner { position: relative; }
+.fs-profile-editor .astro-card-banner-edit {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .25);
+  border-radius: 8px;
+  background: rgba(8, 10, 13, .72);
+  color: #eef3f4;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: background 160ms var(--ease-out), transform 160ms var(--ease-out);
+}
+.fs-profile-editor .astro-card-banner-edit:hover { background: rgba(25, 213, 107, .85); color: #06140b; transform: scale(1.05); }
+.fs-profile-editor .astro-card-banner-edit:active { transform: scale(.96); }
+.fs-profile-editor .plan-resources-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.fs-profile-editor .plan-resources-heading h3 { margin: 0 0 13px; flex: 1; }
+.fs-profile-editor .resources-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+  border: 0;
+  padding: 2px 0;
+  cursor: pointer;
+  color: #8d979d;
+}
+.fs-profile-editor .resources-toggle small { font-size: 9px; font-weight: 600; line-height: 1; }
+.fs-profile-editor .resources-toggle-track {
+  width: 30px;
+  height: 17px;
+  border-radius: 999px;
+  background: #20272d;
+  border: 1px solid rgba(255,255,255,.12);
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  transition: background 160ms var(--ease-out);
+}
+.fs-profile-editor .resources-toggle-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #9aa4aa;
+  transition: transform 160ms var(--ease-out), background 160ms var(--ease-out);
+}
+.fs-profile-editor .resources-toggle.is-hidden .resources-toggle-track { background: var(--green, #19d56b); border-color: var(--green, #19d56b); }
+.fs-profile-editor .resources-toggle.is-hidden .resources-toggle-thumb { transform: translateX(13px); background: #06140b; }
+.fs-profile-editor .resources-toggle.is-hidden small { color: #9ef5be; }
+
+.fs-profile-editor .mural-category-selector { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+.fs-profile-editor .mural-category-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-secondary); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.fs-profile-editor .mural-category-toggle:hover { border-color: var(--accent); color: var(--text-primary); }
+.fs-profile-editor .mural-category-toggle > span { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--bg-secondary); font-size: 11px; font-weight: 800; }
+.fs-profile-editor .mural-category-toggle.selected { background: var(--accent); border-color: var(--accent); color: #04120a; }
+.fs-profile-editor .mural-category-toggle.selected > span { background: rgba(0, 0, 0, 0.2); }
+.fs-profile-editor .mural-selected-categories { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
+.fs-profile-editor .mural-selection-empty { color: var(--text-muted); font-size: 12.5px; margin: 8px 0 0; }
+.fs-profile-editor .mural-category-editor { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--bg-secondary); }
+.fs-profile-editor .mural-category-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.fs-profile-editor .mural-category-heading strong { display: block; font-size: 13.5px; color: var(--text-primary); }
+.fs-profile-editor .mural-category-heading small { color: var(--text-muted); font-size: 11.5px; }
+.fs-profile-editor .mural-add-item-button { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.fs-profile-editor .mural-items-list { display: flex; flex-direction: column; gap: 10px; }
+.fs-profile-editor .mural-item-editor { display: flex; gap: 10px; padding: 10px; border-radius: 10px; background: var(--bg-tertiary); border: 1px solid var(--border); }
+.fs-profile-editor .mural-category-empty { color: var(--text-muted); font-size: 12.5px; margin: 0; }
+.fs-profile-editor .mural-item-actions { display: flex; align-items: center; gap: 6px; }
+.fs-profile-editor .mural-remove-item { padding: 6px 8px; border-radius: 7px; border: 1px solid #ef4444; background: transparent; color: #ef4444; cursor: pointer; display: inline-flex; align-items: center; }
+@media (max-width: 720px) {
+  .fs-profile-editor .mural-item-editor { flex-direction: column; }
+}
+
+/* Editar perfil sem caixas: esconde as linhas dos containers (coluna do
+   formulario e cards laterais) mantendo o espaçamento original */
+.fs-profile-editor .profile-crop-page .main-layout,
+.fs-profile-editor .profile-crop-page > .main-layout > .editor-column,
+.fs-profile-editor .profile-crop-page > .main-layout > .plan-column,
+.fs-profile-editor .profile-crop-page > .main-layout > .plan-column > *,
+.fs-profile-editor .profile-crop-page .editor-column,
+.fs-profile-editor .profile-crop-page .editor-top-grid,
+.fs-profile-editor .profile-crop-page .plan-summary-card,
+.fs-profile-editor .profile-crop-page .astro-summary-card,
+.fs-profile-editor .profile-crop-page .compare-card,
+.fs-profile-editor .profile-crop-page .upgrade-card,
+.fs-profile-editor .profile-crop-page .premium-card { border: 0 !important; outline: none !important; box-shadow: none !important; }

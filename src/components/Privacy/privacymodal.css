@@ -1,0 +1,70 @@
+/* PrivacyModal — overlay + janela centralizada, mesmo padrão do
+   Editar Perfil (blur 14px) e do Discover. O conteúdo (.fs-privacy)
+   é o PrivacySettings; aqui só o invólucro de janela. */
+
+.fs-privacy-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(4, 6, 9, .55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: fs-privacy-fade-in .2s ease-out;
+}
+
+.fs-privacy-modal-window {
+  position: relative;
+  width: min(874px, 100%);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px 22px 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--bg-secondary) 97%, transparent), color-mix(in srgb, var(--bg-tertiary) 95%, transparent));
+  box-shadow: 0 28px 80px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .03);
+  animation: fs-privacy-rise-in .24s cubic-bezier(.23, 1, .32, 1);
+}
+
+.fs-privacy-modal-window::-webkit-scrollbar { width: 6px; }
+.fs-privacy-modal-window::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 999px; }
+.fs-privacy-modal-window::-webkit-scrollbar-track { background: transparent; }
+
+.fs-privacy-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-tertiary) 60%, transparent);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color .16s ease, color .16s ease, background .16s ease;
+}
+.fs-privacy-modal-close:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+@keyframes fs-privacy-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fs-privacy-rise-in {
+  from { opacity: 0; transform: translateY(7px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 620px) {
+  .fs-privacy-modal { padding: 10px; align-items: stretch; }
+  .fs-privacy-modal-window { max-height: calc(100dvh - 20px); padding: 16px 14px 14px; border-radius: 14px; }
+}

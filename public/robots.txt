@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Allow: /assets/
+Disallow: /?invite=
+
+Sitemap: https://friends-space.pages.dev/sitemap.xml

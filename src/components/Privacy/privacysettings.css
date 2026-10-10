@@ -1,0 +1,192 @@
+/* ============================================================
+   PrivacySettings — janela de privacidade.
+   Portada de "friends-space-privacidade" com as variáveis de
+   tema do app (claro/escuro) + campos reais do Friends Space.
+   ============================================================ */
+
+.fs-privacy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fs-privacy-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 48px;
+  padding: 0 6px 7px;
+}
+
+.fs-privacy-heading-icon,
+.fs-privacy-section-icon,
+.fs-privacy-row-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--accent);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 22%, transparent), color-mix(in srgb, var(--accent) 8%, transparent));
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: inset 0 0 16px color-mix(in srgb, var(--accent) 8%, transparent), 0 0 14px color-mix(in srgb, var(--accent) 5%, transparent);
+}
+.fs-privacy-heading-icon { width: 42px; height: 42px; border-radius: 9px; }
+.fs-privacy-heading h1,
+.fs-privacy-section-heading h2,
+.fs-privacy-row-copy strong { margin: 0; color: var(--text-primary); }
+.fs-privacy-heading h1 { font: 600 19px/1.05 'Space Grotesk', 'Poppins', sans-serif; letter-spacing: -.02em; }
+.fs-privacy-heading p,
+.fs-privacy-section-heading p,
+.fs-privacy-row-copy small,
+.fs-privacy-option-copy small { margin: 4px 0 0; color: var(--text-muted); font-size: 10px; line-height: 1.35; letter-spacing: .01em; }
+
+.fs-privacy-card {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--bg-secondary) 92%, transparent), color-mix(in srgb, var(--bg-tertiary) 88%, transparent));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .018), 0 8px 20px rgba(0, 0, 0, .12);
+  padding: 9px 8px 8px;
+}
+
+.fs-privacy-section-heading { display: flex; align-items: center; gap: 12px; padding: 0 5px 8px; }
+.fs-privacy-section-icon { width: 29px; height: 29px; border-radius: 6px; }
+.fs-privacy-section-heading h2 { font-size: 12px; line-height: 1.1; font-weight: 600; letter-spacing: .01em; }
+.fs-privacy-section-heading p { margin-top: 3px; font-size: 9px; }
+
+.fs-privacy-radio-list,
+.fs-privacy-toggle-list {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bg-tertiary) 35%, transparent);
+}
+
+.fs-privacy-radio,
+.fs-privacy-toggle-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  color: inherit;
+  background: color-mix(in srgb, var(--bg-primary) 30%, transparent);
+}
+.fs-privacy-radio:last-child,
+.fs-privacy-toggle-row:last-child { border-bottom: 0; }
+.fs-privacy-radio { min-height: 45px; gap: 12px; padding: 8px 11px; cursor: pointer; transition: background .16s ease, border-color .16s ease; }
+.fs-privacy-radio:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.fs-privacy-radio.is-selected {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 16%, transparent), color-mix(in srgb, var(--accent) 4%, transparent));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.fs-privacy-radio-control {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--text-muted);
+  border-radius: 50%;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+.fs-privacy-radio-control.is-selected { border-color: var(--accent); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent); }
+.fs-privacy-radio-control span { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.fs-privacy-option-copy,
+.fs-privacy-row-copy { min-width: 0; display: flex; flex-direction: column; }
+.fs-privacy-option-copy strong { color: var(--text-primary); font-size: 10px; line-height: 1.2; font-weight: 600; }
+.fs-privacy-option-copy small { margin-top: 2px; font-size: 8.5px; }
+
+.fs-privacy-toggle-row { min-height: 44px; gap: 12px; padding: 7px 10px; }
+.fs-privacy-row-icon { width: 26px; height: 26px; border: 0; background: transparent; box-shadow: none; color: var(--text-secondary); }
+.fs-privacy-row-copy strong { font-size: 10px; line-height: 1.25; font-weight: 600; }
+.fs-privacy-row-copy small { max-width: 620px; margin-top: 2px; font-size: 8.5px; }
+.fs-privacy-switch {
+  position: relative;
+  width: 34px;
+  height: 18px;
+  padding: 0;
+  margin-left: auto;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  background: var(--bg-hover);
+  box-shadow: inset 0 0 0 1px var(--border);
+  transition: background .18s ease, box-shadow .18s ease;
+}
+.fs-privacy-switch span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .4);
+  transition: transform .18s cubic-bezier(.23, 1, .32, 1), background .18s ease;
+}
+.fs-privacy-switch.is-on { background: var(--accent); box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 22%, transparent), inset 0 0 0 1px rgba(255, 255, 255, .16); }
+.fs-privacy-switch.is-on span { background: #f0fff4; transform: translateX(16px); }
+
+.fs-privacy-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 44px;
+  gap: 15px;
+  padding: 9px 2px 1px;
+}
+.fs-privacy-save-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--accent);
+  font-size: 10px;
+  opacity: 0;
+  transform: translateY(3px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+.fs-privacy-save-status.is-visible { opacity: 1; transform: translateY(0); }
+.fs-privacy-save-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 128px;
+  height: 33px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--bg-tertiary);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 88%, white), var(--accent));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 20%, transparent), inset 0 1px 0 rgba(255, 255, 255, .34);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .16s ease, filter .16s ease, box-shadow .16s ease;
+}
+.fs-privacy-save-button:hover { filter: brightness(1.08); box-shadow: 0 0 26px color-mix(in srgb, var(--accent) 30%, transparent), inset 0 1px 0 rgba(255, 255, 255, .4); }
+.fs-privacy-save-button:active { transform: scale(.97); }
+
+@media (max-width: 620px) {
+  .fs-privacy-heading { gap: 10px; padding: 1px 4px 7px; }
+  .fs-privacy-heading-icon { width: 38px; height: 38px; }
+  .fs-privacy-heading h1 { font-size: 17px; }
+  .fs-privacy-heading p { max-width: 255px; font-size: 9px; }
+  .fs-privacy-section-heading { gap: 9px; padding-left: 3px; }
+  .fs-privacy-section-icon { width: 27px; height: 27px; }
+  .fs-privacy-section-heading h2 { font-size: 11px; }
+  .fs-privacy-section-heading p { font-size: 8px; }
+  .fs-privacy-radio { min-height: 49px; padding: 8px 9px; }
+  .fs-privacy-option-copy small,
+  .fs-privacy-row-copy small { font-size: 8px; }
+  .fs-privacy-toggle-row { min-height: 48px; gap: 8px; padding: 7px 8px; }
+  .fs-privacy-row-copy strong { font-size: 9px; }
+  .fs-privacy-switch { width: 32px; }
+  .fs-privacy-switch.is-on span { transform: translateX(14px); }
+  .fs-privacy-actions { min-height: 50px; }
+  .fs-privacy-save-button { width: 100%; height: 37px; }
+}

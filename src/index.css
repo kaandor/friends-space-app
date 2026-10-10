@@ -1,0 +1,314 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #151515;
+  --bg-hover: #3d3d3d;
+  --bg-active: #444444;
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --text-muted: #8a8a8a;
+  --accent: #00ff88;
+  --accent-hover: #00cc6a;
+  --accent-dim: rgba(0, 255, 136, 0.12);
+  --danger: #e74c3c;
+  --danger-hover: #c0392b;
+  --warning: #faa81a;
+  --border: #3a3a3a;
+  --border-light: #4a4a4a;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 30px;
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-weight-body: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --connection-dot: #00ff88;
+}
+
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f2f3f5;
+  --bg-tertiary: #e8e8e8;
+  --bg-hover: #dbdee1;
+  --bg-active: #d4d7dc;
+  --text-primary: #1a1a1a;
+  --text-secondary: #4f545c;
+  --text-muted: #8a8a8a;
+  --accent: #00cc6a;
+  --accent-hover: #00aa55;
+  --accent-dim: rgba(0, 204, 106, 0.1);
+  --danger: #e74c3c;
+  --danger-hover: #c0392b;
+  --warning: #faa81a;
+  --border: #d4d7dc;
+  --border-light: #c4c9ce;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  --connection-dot: #00cc6a;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* APARENCIA GLOBAL: tema/fonte/bg/cor do Editar Aparencia valem no site inteiro.
+   Calls/DMs/servidores/menus/modais herdam as variaveis aplicadas no <html>. */
+html[data-appearance-theme] {
+  font-family: var(--appearance-font, var(--sans));
+  color: var(--appearance-text, var(--text-primary));
+}
+html[data-appearance-theme] body {
+  font-family: var(--appearance-font, var(--sans));
+  color: var(--appearance-text, var(--text-primary));
+  background: var(--appearance-page-bg, var(--bg-primary));
+}
+html[data-appearance-theme] #root {
+  font-family: var(--appearance-font, var(--sans));
+  color: var(--appearance-text, var(--text-primary));
+}
+/* Fundos de call seguem o tema (antes eram #000 fixo e quebravam o modo branco) */
+html[data-appearance-theme] .vc-main-screen,
+html[data-appearance-theme] .vc-mosaic,
+html[data-appearance-theme] .vc-mosaic-tile,
+html[data-appearance-theme] .vc-mosaic-tile video,
+html[data-appearance-theme] .vc-stage,
+html[data-appearance-theme] .vc-screen-video,
+html[data-appearance-theme] .vc-screen-video video,
+html[data-appearance-theme] .vc-video-stage,
+html[data-appearance-theme] .vc-empty-call {
+  background: var(--bg-tertiary);
+}
+html[data-appearance-theme] .vc-mosaic-header {
+  background: color-mix(in srgb, var(--bg-tertiary) 82%, transparent);
+  color: var(--text-primary);
+}
+html[data-appearance-theme] .vc-mosaic-header button {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+/* Textos que eram #fff fixo passam a seguir a cor das letras */
+html[data-appearance-theme]:not([data-appearance-text-color="default"]) body,
+html[data-appearance-theme]:not([data-appearance-text-color="default"]) #root {
+  color: var(--appearance-text);
+}
+
+/* Transicao suave entre temas/fundos de aparencia (evita salto visual) */
+html {
+  transition: color 300ms ease, background-color 300ms ease;
+}
+html[data-appearance-theme],
+html[data-appearance-bg],
+html[data-appearance-text-color] {
+  transition: color 300ms ease, background-color 300ms ease;
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: var(--font-weight-body);
+  letter-spacing: -0.006em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Hierarquia tipografica: titulos 600/700, nomes 600, texto 400/500 */
+h1, h2, h3, h4 {
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.012em;
+}
+
+/* Microinteracoes globais discretas */
+button {
+  transition: background-color .15s ease, color .15s ease, opacity .15s ease, transform .1s ease, border-color .15s ease;
+}
+button:active {
+  transform: scale(.97);
+}
+input, textarea, select {
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent) !important;
+}
+
+/* Nome brilhante Astro (gradiente animado) */
+@keyframes fs-name-shine-anim {
+  0% { background-position: 0% 50% }
+  50% { background-position: 100% 50% }
+  100% { background-position: 0% 50% }
+}
+.fs-name-shine {
+  background: linear-gradient(110deg, #4ade80, #67e8f9, #d8b4fe, #f7d774, #4ade80);
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  animation: fs-name-shine-anim 3.5s linear infinite;
+}
+
+/* Curtida com feedback elegante */
+@keyframes fs-like-pop {
+  0% { transform: scale(1) }
+  40% { transform: scale(1.28) }
+  100% { transform: scale(1) }
+}
+.fs-like-pop {
+  animation: fs-like-pop .28s ease;
+}
+
+/* Menus e popovers abrem com fade + deslize suave */
+@keyframes fs-menu-in {
+  from { opacity: 0; transform: translateY(-4px) scale(.98) }
+  to { opacity: 1; transform: translateY(0) scale(1) }
+}
+.fs-menu-in {
+  animation: fs-menu-in .14s ease;
+}
+
+/* Modais entram com fade suave */
+@keyframes fs-modal-in {
+  from { opacity: 0; transform: translateY(8px) scale(.985) }
+  to { opacity: 1; transform: translateY(0) scale(1) }
+}
+.fs-modal-in {
+  animation: fs-modal-in .18s ease;
+}
+
+/* Seletor de emoji moderno e organizado */
+.fs-emoji-btn {
+  transition: background-color .12s ease, transform .12s ease;
+}
+button.fs-emoji-btn:hover {
+  background: var(--bg-hover);
+}
+button.fs-emoji-btn:active {
+  transform: scale(.9);
+}
+
+/* Stories com hover suave */
+.fs-story-ring {
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.fs-story-ring:hover {
+  transform: scale(1.06);
+}
+
+/* Icones de acao com hover circular discreto */
+.fs-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  transition: background-color .15s ease, color .15s ease;
+}
+button.fs-icon-btn:hover {
+  background: var(--bg-hover);
+}
+button.fs-icon-btn:active {
+  transform: scale(.94);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-light);
+}
+
+input, textarea, select, button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+@keyframes friends-space-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes fsPulse {
+  from { opacity: 0.5; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1.15); }
+}
+
+.sync-spinner {
+  position: fixed;
+  top: 10px;
+  right: 38px;
+  width: 22px;
+  height: 22px;
+  border: 3px solid rgba(255, 255, 255, 0.18);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: friends-space-spin 0.65s linear infinite;
+  z-index: 1001;
+  pointer-events: none;
+}
+
+[data-theme="light"] .sync-spinner {
+  border-color: rgba(0, 0, 0, 0.12);
+  border-top-color: var(--accent);
+}
+
+.inline-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: friends-space-spin 0.65s linear infinite;
+}
+
+[data-theme="light"] .inline-spinner {
+  border-color: rgba(0, 0, 0, 0.15);
+  border-top-color: var(--accent);
+}
