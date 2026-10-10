@@ -370,7 +370,7 @@ export interface CallSession {
   participantIds: string[]
   screenSharingUserId: string
   callMode?: 'audio' | 'video'
-  quality?: '480p' | '720p' | '1080p' | '2k'
+  quality?: '480p' | '720p' | '1080p' | '2k' | '4k'
   fps?: 30 | 60
   bitrateKbps?: number
   createdAt: number

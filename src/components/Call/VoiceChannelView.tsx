@@ -605,7 +605,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
             )}
             <div style={{ padding: '7px 10px 3px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>Qualidade instantânea · {getStreamPlanLabel(currentUser).label}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '4px 10px 8px' }}>
-              {(['480p', '720p', '1080p', '2k'] as const).map(q => {
+              {(['480p', '720p', '1080p', '2k', '4k'] as const).map(q => {
                 const blocked = isQualityBlocked(currentUser, q)
                 const active = preferredQuality === q
                 return (
@@ -620,7 +620,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
                 {([30, 60] as const).map(f => <option key={f} value={f} disabled={currentUser ? f > getMaxStreamFps(currentUser) : false}>{f > (currentUser ? getMaxStreamFps(currentUser) : 30) ? `🔒${f}fps` : `${f}fps`}</option>)}
               </select>
               <select value={preferredBitrate} onChange={e => { void setPreferredBitrate(Number(e.target.value)) }} style={{ flex: 1, background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 6, padding: 6, fontSize: 12 }}>
-                {[2000, 4000, 6000, 8000, 12000, 16000, 25000].map(k => <option key={k} value={k} disabled={currentUser ? k > getMaxBitrateKbps(currentUser) : false}>{k >= 1000 ? `${k / 1000}M` : `${k}k`}</option>)}
+                {[2000, 4000, 6000, 8000, 12000, 16000, 25000, 35000, 45000].map(k => <option key={k} value={k} disabled={currentUser ? k > getMaxBitrateKbps(currentUser) : false}>{k >= 1000 ? `${k / 1000}M` : `${k}k`}</option>)}
               </select>
             </div>
             <div style={{ borderTop: '1px solid #1e1f22', margin: '4px 0' }} />

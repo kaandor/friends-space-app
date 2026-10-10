@@ -1,6 +1,6 @@
 export type AstroTier = 'astro' | 'astro_plus' | 'astro_ultimate'
 export type AstroTierOrNone = AstroTier | 'none'
-export type CallQuality = '480p' | '720p' | '1080p' | '2k'
+export type CallQuality = '480p' | '720p' | '1080p' | '2k' | '4k'
 
 export interface AstroPlanDef {
   tier: AstroTier
@@ -85,15 +85,15 @@ export const ASTRO_PLANS: Record<AstroTier, AstroPlanDef> = {
     monthlyPrice: 39.9,
     yearlyPrice: 399.0,
     maxUploadMB: 5120,
-    maxStreamQuality: '2k',
+    maxStreamQuality: '4k',
     maxStreamFps: 60,
-    maxBitrateKbps: 25000,
-    maxScreenHeight: 1440,
+    maxBitrateKbps: 45000,
+    maxScreenHeight: 2160,
     features: [
       'Tudo do plano ASTRO+',
       'Insígnia ASTRO Plus',
       'Upload de arquivos até 5 GB',
-      'Streaming em 2K / 60 FPS',
+      'Streaming em 4K / 60 FPS',
       'Perfil totalmente personalizavel',
       'Nome com efeito animado',
       'Efeitos exclusivos em mensagens',
@@ -162,7 +162,7 @@ export function getServerLimitLabel(user?: { settings?: Record<string, unknown> 
   return String(limit)
 }
 
-const QUALITY_ORDER: CallQuality[] = ['480p', '720p', '1080p', '2k']
+const QUALITY_ORDER: CallQuality[] = ['480p', '720p', '1080p', '2k', '4k']
 
 // Nome amigavel do plano do usuario (para exibicao na transmicao / debug).
 export function getStreamPlanLabel(user?: { settings?: Record<string, unknown> } | null): { label: string; color: string } {

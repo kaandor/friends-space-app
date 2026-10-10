@@ -255,6 +255,28 @@ const screenTransceivers = new Map<string, RTCRtpTransceiver>()
 // o watchdog de 20s recria de um lado, a oferta velha do outro lado falha,
 // o handler recria deste lado, e os dois ficam se resetando em loop.
 const peerResetAt = new Map<string, number>()
+// Geração (epoch) da PC por peer: incrementa a cada closePeer (todo reset).
+// Vai embutida em cada offer/renegotiate (payload.fsGen). Ofertas de geração
+// mais velha que a já vista são descartadas — isso quebra o ping-pong de
+// reset mútuo ESTRUTURALMENTE (o guarda por timestamp falhava quando as
+// ofertas cruzadas nasciam DEPOIS do reset, vindas da geração antiga remota).
+// Peers em build velho não mandam fsGen: passam sempre (compat).
+const peerGen = new Map<string, number>()
+const remoteGen = new Map<string, number>()
+// Falhas de m-line consecutivas por peer (60s): com 5+, para de auto-resetar
+// (evita loop quente de CPU/bateria quando o remoto insiste em layout
+// incompatível, ex.: build velho) e avisa para sair/entrar de novo.
+const mlineFails = new Map<string, number[]>()
+const mlineToasted = new Set<string>()
+// Client de cada peer ('web' | 'electron'): aprendido via offer/answer.
+// Dirige o DOWNSCALE por peer — EXE manda 1080p/2k/4k, mas quem está no
+// navegador recebe 720p (limite do Chrome) com o bitrate alto original
+// (720p nítido); EXE recebe full. Sem isso o browser tentava engolir 4K.
+// Peers em build velho não mandam client: tratados como 'web' (seguro).
+const peerClient = new Map<string, 'web' | 'electron'>()
+// Boost de controle remoto por peer: enquanto controlamos a tela de alguém
+// (só EXE→EXE), o sharer sobe o bitrate daquele peer ao teto para não travar.
+const controlBoosted = new Set<string>()
 async function attachScreenTrack(pc: RTCPeerConnection, peerId: string, track: MediaStreamTrack, stream: MediaStream) {
   const old = screenTransceivers.get(peerId)
   if (old && old.direction !== 'stopped') {
@@ -281,6 +303,7 @@ function detachScreenTrack(pc: RTCPeerConnection, localStream: MediaStream | nul
 }
 function closePeer(peerId: string) {
   peerResetAt.set(peerId, Date.now())
+  peerGen.set(peerId, (peerGen.get(peerId) ?? 0) + 1)
   const pc = peerConnections.get(peerId)
   if (pc) { try { pc.close() } catch { } }
   peerConnections.delete(peerId)
@@ -458,6 +481,34 @@ async function sendControlMessage(peerId: string, message: unknown) {
   try {
     const dc = dataChannels.get(peerId)
     if (dc && dc.readyState === 'open' && dc.bufferedAmount < 262144) dc.send(JSON.stringify(message))
+  } catch { }
+}
+
+// Monta o payload de offer/renegotiate com a geração atual (fsGen). O
+// receptor usa para descartar ofertas de gerações velhas. Chaves extras no
+// payload são ignoradas pelo setRemoteDescription.
+function offerPayload(peerId: string, offer: RTCSessionDescriptionInit): Record<string, unknown> {
+  return { ...(offer as unknown as Record<string, unknown>), fsGen: peerGen.get(peerId) ?? 0, client: myClientType() }
+}
+
+// 'web' | 'electron' deste client (para o downscale por peer no remoto).
+function myClientType(): 'web' | 'electron' {
+  try {
+    return getElectronAPI()?.isElectron ? 'electron' : 'web'
+  } catch {
+    return 'web'
+  }
+}
+
+// Aprende o client do peer a partir de offer/answer/renegotiate e reaplica o
+// budget (pode ligar/desligar o downscale 720p na hora).
+function learnPeerClient(peerId: string, payload: unknown): void {
+  try {
+    const c = (payload as unknown as Record<string, unknown> | undefined)?.client
+    if (c !== 'web' && c !== 'electron') return
+    if (peerClient.get(peerId) === c) return
+    peerClient.set(peerId, c)
+    void applyPeerVideoBudget(peerId)
   } catch { }
 }
 
@@ -644,6 +695,8 @@ function handleControlMessage(peerId: string, raw: string) {
     }
     case 'control-accepted':
       useCallStore.setState(state => state.controlPending === peerId ? { controlling: peerId, controlPending: null } : {})
+      // Controle ativo: pede bitrate máximo ao sharer (não trava o mouse).
+      try { sendControlMessage(peerId, { type: 'control-boost', on: true }) } catch { }
       break
     case 'control-denied':
       useCallStore.setState(state => state.controlPending === peerId ? { controlPending: null } : {})
@@ -657,7 +710,19 @@ function handleControlMessage(peerId: string, raw: string) {
           controlledBy: wasControlled ? null : state.controlledBy,
         }
       })
+      // Quem controlava saiu: volta o bitrate normal desse peer.
+      if (controlBoosted.delete(peerId)) void applyPeerVideoBudget(peerId)
       break
+    case 'control-boost': {
+      // Pedido de bitrate máximo de quem nos controla (só EXE→EXE chega
+      // aqui: web é barrada no request e no accept).
+      const on = (message as unknown as { on?: unknown }).on === true
+      if (on && useCallStore.getState().controlledBy !== peerId) break
+      if (on) controlBoosted.add(peerId)
+      else controlBoosted.delete(peerId)
+      void applyPeerVideoBudget(peerId)
+      break
+    }
     case 'cursor':
       if (useCallStore.getState().controlling === peerId) {
         const c = message as unknown as { x: number; y: number; width: number; height: number; scaleFactor?: number; visible?: boolean }
@@ -685,7 +750,7 @@ async function triggerRenegotiation(peerId: string, attempt = 0) {
   try {
     const offer = await pc.createOffer({ iceRestart: true })
     await pc.setLocalDescription(offer)
-    await sendSignal({ sessionId: state.sessionId, fromUserId: currentUser.id, toUserId: peerId, type: 'renegotiate', payload: offer })
+    await sendSignal({ sessionId: state.sessionId, fromUserId: currentUser.id, toUserId: peerId, type: 'renegotiate', payload: offerPayload(peerId, offer) })
   } catch {
     if (attempt < 2) window.setTimeout(() => { void triggerRenegotiation(peerId, attempt + 1) }, 2000)
   }
@@ -717,7 +782,7 @@ async function triggerMediaRenegotiation(peerId: string, attempt = 0) {
   try {
     const offer = await pc.createOffer()
     await pc.setLocalDescription(offer)
-    await sendSignal({ sessionId: state.sessionId, fromUserId: currentUser.id, toUserId: peerId, type: 'renegotiate', payload: offer })
+    await sendSignal({ sessionId: state.sessionId, fromUserId: currentUser.id, toUserId: peerId, type: 'renegotiate', payload: offerPayload(peerId, offer) })
   } catch {
     if (attempt < 3) window.setTimeout(() => { void triggerMediaRenegotiation(peerId, attempt + 1) }, 2000)
   }
@@ -739,13 +804,34 @@ async function applyPeerVideoBudget(peerId: string) {
   const cameraBudget = Math.max(MIN_PEER_VIDEO_KBPS, Math.round(baseBudget / divisor))
   const screenTrack = state.screenStream?.getVideoTracks()[0]
   const qualityCeiling = QUALITY_BITRATE_KBPS[state.preferredQuality] || MAX_PEER_VIDEO_KBPS
+  // Teto do plano (kbps): o menu já bloqueia acima, mas valor salvo antigo
+  // pode estar maior — trava aqui também.
+  const me = useUserStore.getState().currentUser
+  const myPlanCap = getMaxBitrateKbps(me as never)
+  const peerIsWeb = (peerClient.get(peerId) ?? 'web') === 'web'
+  const boosted = controlBoosted.has(peerId)
+  // Altura real capturada (para o fator de downscale web).
+  let scrCapH = 0
+  try { scrCapH = screenTrack?.getSettings()?.height || 0 } catch { }
   for (const sender of pc.getSenders()) {
     const track = sender.track
     if (!track || track.kind !== 'video') continue
     let target = cameraBudget
     const isScreen = Boolean(screenTrack && track === screenTrack)
+    // Fator de downscale (só tela, só p/ web, só se capturamos >720p):
+    // 1080p→1.5, 1440→2, 2160→3. O bitrate continua ALTO (teto original) =
+    // 720p nítido no navegador. EXE recebe full.
+    let scaleDown = 1
     if (isScreen) {
-      target = Math.max(SCREEN_MIN_VIDEO_KBPS, Math.min(25000, state.preferredBitrate * 1000))
+      if (boosted) {
+        // Controle remoto ativo: bitrate no teto para não travar.
+        target = Math.min(45000, Math.max(20000, state.preferredBitrate))
+      } else {
+        target = Math.max(SCREEN_MIN_VIDEO_KBPS, Math.min(Math.min(25000, myPlanCap), state.preferredBitrate))
+      }
+      if (peerIsWeb && !boosted && scrCapH > 720) {
+        scaleDown = scrCapH / 720
+      }
     } else {
       target = Math.max(MIN_PEER_VIDEO_KBPS, Math.min(qualityCeiling, Math.round(cameraBudget)))
     }
@@ -755,6 +841,9 @@ async function applyPeerVideoBudget(peerId: string) {
       params.encodings.forEach(enc => {
         enc.maxBitrate = target * 1000
         enc.maxFramerate = state.preferredFps
+        if (isScreen) {
+          try { (enc as RTCRtpEncodingParameters & { scaleResolutionDownBy?: number }).scaleResolutionDownBy = scaleDown } catch { }
+        }
       })
       if (isScreen) {
         try { (params as RTCRtpSendParameters & { degradationPreference?: string }).degradationPreference = 'maintain-framerate' } catch { }
@@ -1133,7 +1222,7 @@ async function createPeerConnection(peerId: string, initiator: boolean) {
         // re-offer watchdog (20s) recria a PC e reenvia — o Vercel ja estara
         // quente e o offer chega. ANTES, o await bloqueava por 75s e o catch
         // engolia o erro, o offer nunca chegava ao backend (0 offers na sessao).
-        void sendSignal({ sessionId: state.sessionId, fromUserId: currentUser.id, toUserId: peerId, type: 'offer', payload: offer }).catch(() => { })
+        void sendSignal({ sessionId: state.sessionId, fromUserId: currentUser.id, toUserId: peerId, type: 'offer', payload: offerPayload(peerId, offer) }).catch(() => { })
         void processCallSignals().catch(() => { })
       } catch (offerErr) {
         // NAO fechar a PC aqui. Se o sendSignal falhar (timeout/rede), fechar e
@@ -1167,9 +1256,18 @@ if (useCallStore.getState().livekitActive) return
 
 async function applySignal(signal: CallSignal) {
   if (signal.type === 'resync') {
-    // O peer resetou a PC (ex.: SCTP travado) e precisa de oferta nova.
+    // O peer resetou a PC (ex.: SCTP travado, m-line) e precisa de oferta nova.
     const st = useCallStore.getState()
-    if (st.activeCall && st.screenSharing && peerConnections.has(signal.fromUserId)) {
+    const me = useUserStore.getState().currentUser
+    if (!st.activeCall || !me) return
+    // Iniciador canônico re-oferta (vale p/ voz pura também — ANTES só
+    // re-ofertava se estivéssemos compartilhando tela, e call só-voz
+    // ficava 0/2 presa para sempre após um reset).
+    if (me.id < signal.fromUserId && peerConnections.has(signal.fromUserId)) {
+      void triggerMediaRenegotiation(signal.fromUserId)
+      return
+    }
+    if (st.screenSharing && peerConnections.has(signal.fromUserId)) {
       void triggerMediaRenegotiation(signal.fromUserId)
     }
     return
@@ -1220,6 +1318,17 @@ async function applySignal(signal: CallSignal) {
     return
   }
   if (signal.type === 'offer' || signal.type === 'renegotiate') {
+    // Geração: descarta oferta de geração velha (pc antiga do remoto).
+    // Sem fsGen (build velho): processa sempre (compat).
+    try {
+      const rGen = (signal.payload as unknown as Record<string, unknown> | undefined)?.fsGen
+      if (typeof rGen === 'number') {
+        const seen = remoteGen.get(signal.fromUserId) ?? 0
+        if (rGen < seen) return
+        remoteGen.set(signal.fromUserId, Math.max(seen, rGen))
+      }
+    } catch { }
+    learnPeerClient(signal.fromUserId, signal.payload)
     // Descarta oferta velha (geração anterior da PC remota): criada antes do
     // nosso último reset local, suas m-lines não batem com a PC nova.
     // Retornar sem erro marca como processada e quebra o loop de reset
@@ -1261,7 +1370,7 @@ async function applySignal(signal: CallSignal) {
         if (!me) return
         for (let a = 0; a < 3; a++) {
           try {
-            await sendSignal({ sessionId: signal.sessionId, fromUserId: me.id, toUserId: peerId, type: 'answer', payload: answer })
+            await sendSignal({ sessionId: signal.sessionId, fromUserId: me.id, toUserId: peerId, type: 'answer', payload: { ...(answer as unknown as Record<string, unknown>), client: myClientType() } })
             return
           } catch {
             if (a < 2) await new Promise(r => setTimeout(r, 2000 * (a + 1)))
@@ -1269,23 +1378,71 @@ async function applySignal(signal: CallSignal) {
         }
       })().catch(() => { })
       await flushPendingCandidates(signal.fromUserId, pc)
+      // Oferta aceita: zera o contador de falhas de m-line desse peer.
+      mlineFails.delete(signal.fromUserId)
+      mlineToasted.delete(signal.fromUserId)
     } catch (offerErr) {
       // Visibilidade do erro de processamento de oferta (09/2026): a call
       // mostrava 11 offers + 187 candidates no backend mas 0 answers — o answer
       // nunca era criado porque este bloco falhava (createAnswer/setLocalDescription)
       // e o catch ANTIGO engolia tudo silenciosamente. Logar aqui para o painel.
       const msg = offerErr instanceof Error ? offerErr.message : String(offerErr)
-      lastSignalErrors.push({ type: `offer-proc:${pc.signalingState}`, msg, ts: Date.now() })
+      // Contagem de m-lines (local x oferta): diagnostica o mismatch sem
+      // precisar reproduzir a call.
+      let mInfo = ''
+      try {
+        const sdp = String((signal.payload as unknown as { sdp?: unknown })?.sdp || '')
+        const rCount = (sdp.match(/^m=/gm) || []).length
+        mInfo = ` m=${pc.getTransceivers().length}/${rCount}`
+      } catch { }
+      lastSignalErrors.push({ type: `offer-proc:${pc.signalingState}`, msg: msg + mInfo, ts: Date.now() })
       if (lastSignalErrors.length > 20) lastSignalErrors.shift()
-      console.error('[CALL] applySignal offer error:', msg, 'signalingState:', pc.signalingState)
+      console.error('[CALL] applySignal offer error:', msg + mInfo, 'signalingState:', pc.signalingState)
       // SCTP travado: a PC local ja tem transporte SCTP (datachannel da conexao
       // original) e a oferta renegociada propoe outro — o Chrome nao inicia o
       // novo transporte, o answer nunca sai e a tela fica preta para sempre
       // (cada re-offer falha igual). Reseta a PC e pede oferta nova ao peer.
       if (/sctp|m-line|m-lines|sdp|rtp|extension|mid=|candidate/i.test(msg)) {
         const peerId = signal.fromUserId
+        // Cap anti-loop: 5+ falhas em 60s = remoto insistindo em layout
+        // incompatível (ex.: build velho). Para de resetar e avisa — sem isso
+        // os dois lados se resetam para sempre (ping-pong quente).
+        const now = Date.now()
+        const arr = (mlineFails.get(peerId) ?? []).filter(t => now - t < 60000)
+        arr.push(now)
+        mlineFails.set(peerId, arr)
+        if (arr.length >= 5) {
+          if (!mlineToasted.has(peerId)) {
+            mlineToasted.add(peerId)
+            try {
+              const nm = useCallStore.getState().participants.find(p => p.userId === peerId)?.userName || 'Usuário'
+              window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: `Falha ao sincronizar com ${nm} — peça para sair e entrar de novo na call` }))
+            } catch { }
+          }
+          return
+        }
         try { closePeer(peerId) } catch { }
         try { await createPeerConnection(peerId, false) } catch { }
+        // Se somos o iniciador canônico, re-oferta IMEDIATAMENTE (não espera
+        // o poll: a pc fresh existe, então o poll não re-oferta; e o resync
+        // abaixo só funciona se o remoto compartilhar tela). Sem isso a call
+        // só-voz ficava 0/2 presa para sempre após um reset. Glare eventual
+        // converge (quem recebe em have-local-offer faz rollback e cede).
+        try {
+          const me = useUserStore.getState().currentUser
+          const fresh = peerConnections.get(peerId)
+          if (me && me.id < peerId && fresh && fresh.signalingState === 'stable') {
+            const offer2 = await fresh.createOffer()
+            await fresh.setLocalDescription(offer2)
+            signalBackoffIndex = 0
+            void sendSignal({ sessionId: signal.sessionId, fromUserId: me.id, toUserId: peerId, type: 'offer', payload: offerPayload(peerId, offer2) }).catch(() => { })
+            void processCallSignals().catch(() => { })
+          }
+        } catch (reOfferErr) {
+          const m2 = reOfferErr instanceof Error ? reOfferErr.message : String(reOfferErr)
+          lastSignalErrors.push({ type: 'offer-criacao', msg: m2, ts: Date.now() })
+          if (lastSignalErrors.length > 20) lastSignalErrors.shift()
+        }
         // O re-offer pode cair no vazio (DC do sharer ainda parece aberto logo
         // apos o reset) — repete o pedido ate a tela chegar (5s x 6).
         let tries = 0
@@ -1306,6 +1463,7 @@ async function applySignal(signal: CallSignal) {
       }
     }
   } else if (signal.type === 'answer') {
+    learnPeerClient(signal.fromUserId, signal.payload)
     if (pc.signalingState !== 'have-local-offer') {
       // Fora de hora: se JA temos remote, e duplicata (ignora). Se NAO temos,
       // pode ser answer valido que chegou cedo/tarde — lanca para tentar de
@@ -1384,6 +1542,12 @@ async function processCallSignals() {
     const cutoff = Date.now() - 5 * 60 * 1000
     for (const [pid, ts] of peerResetAt) { if (ts < cutoff) peerResetAt.delete(pid) }
   }
+  // peerGen/remoteGen/mlineFails só valem na call ativa; poda por tamanho.
+  if (peerGen.size > 50) peerGen.clear()
+  if (remoteGen.size > 50) remoteGen.clear()
+  if (mlineFails.size > 50) mlineFails.clear()
+  if (mlineToasted.size > 50) mlineToasted.clear()
+  if (peerClient.size > 100) peerClient.clear()
   if (declinedSessions.size > 50) declinedSessions.clear()
   for (const participant of state.participants) {
     if (participant.userId === currentUser.id) continue
@@ -2130,6 +2294,12 @@ export const useCallStore = create<CallState>((set, get) => ({
   },
   endCall: () => {
     screenTransceivers.clear()
+    controlBoosted.clear()
+    peerClient.clear()
+    peerGen.clear()
+    remoteGen.clear()
+    mlineFails.clear()
+    mlineToasted.clear()
     // Derruba o grafo do audio limpo (senao o worklet continua gastando CPU).
     try {
       void import('../services/rnnoise').then(m => { try { m.disposeCleanAudio() } catch { } }).catch(() => { })
@@ -2341,10 +2511,12 @@ export const useCallStore = create<CallState>((set, get) => ({
     } else {
       try {
         const { preferredQuality, preferredFps, preferredBitrate } = get()
-        // Captura na resolucao escolhida: 2k captura 2560x1440 de verdade
-        // (se o SO/driver nao suportar, o fallback OverconstrainedError
+        // Captura na resolucao escolhida: 4k captura 3840x2160 e 2k 2560x1440
+        // de verdade (se o SO/driver nao suportar, o fallback OverconstrainedError
         // abaixo cai para 720p em vez de quebrar o picker).
-        const targetDim = preferredQuality === '2k'
+        const targetDim = preferredQuality === '4k'
+          ? { width: { ideal: 3840, max: 3840 }, height: { ideal: 2160, max: 2160 } }
+          : preferredQuality === '2k'
           ? { width: { ideal: 2560, max: 2560 }, height: { ideal: 1440, max: 1440 } }
           : preferredQuality === '1080p'
             ? { width: { ideal: 1920, max: 1920 }, height: { ideal: 1080, max: 1080 } }
@@ -2870,6 +3042,19 @@ export const useCallStore = create<CallState>((set, get) => ({
     void syncSession(get())
   },
   requestControl: (peerId) => {
+    // Controle remoto é EXE→EXE: exige app desktop nos dois lados (execução
+    // de mouse/teclado via PowerShell/xdotool só existe no EXE).
+    if (myClientType() !== 'electron') {
+      try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Controle remoto só no app desktop (EXE)' })) } catch { }
+      return
+    }
+    if ((peerClient.get(peerId) ?? 'electron') === 'web') {
+      try {
+        const nm = get().participants.find(p => p.userId === peerId)?.userName || 'Usuário'
+        window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: `${nm} está no navegador — controle remoto é EXE para EXE` }))
+      } catch { }
+      return
+    }
     const currentUser = useUserStore.getState().currentUser
     set({ controlPending: peerId })
     sendControlMessage(peerId, { type: 'request-control', userName: currentUser?.name || '' })
@@ -2893,7 +3078,10 @@ export const useCallStore = create<CallState>((set, get) => ({
   stopControlling: () => {
     const peerId = get().controlling
     set({ controlling: null, remoteCursor: null })
-    if (peerId) sendControlMessage(peerId, { type: 'control-revoked' })
+    if (peerId) {
+      try { sendControlMessage(peerId, { type: 'control-boost', on: false }) } catch { }
+      sendControlMessage(peerId, { type: 'control-revoked' })
+    }
   },
   revokeControl: () => {
     const peerId = get().controlledBy

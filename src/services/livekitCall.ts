@@ -41,7 +41,8 @@ function userLabel(identity: string): { name: string; photo: string } {
 
 function qualityEncoding(quality: CallQuality, fps: number, bitrateKbps: number): { maxBitrate: number; maxFramerate: number } {
   const f = Math.min(Math.max(fps || 30, 15), 60)
-  const br = Math.min(Math.max(bitrateKbps || 4000, 500), 16000) * 1000
+  const br = Math.min(Math.max(bitrateKbps || 4000, 500), 45000) * 1000
+  if (quality === '4k') return { maxBitrate: Math.min(br, 35000000), maxFramerate: Math.min(f, 60) }
   if (quality === '2k') return { maxBitrate: Math.min(br, 16000000), maxFramerate: Math.min(f, 60) }
   if (quality === '1080p') return { maxBitrate: Math.min(br, 8000000), maxFramerate: Math.min(f, 60) }
   if (quality === '720p') return { maxBitrate: Math.min(br, 3000000), maxFramerate: Math.min(f, 60) }
@@ -49,6 +50,7 @@ function qualityEncoding(quality: CallQuality, fps: number, bitrateKbps: number)
 }
 
 function cameraResolution(quality: CallQuality) {
+  if (quality === '4k') return VideoPresets.h2160.resolution
   if (quality === '2k') return VideoPresets.h1440.resolution
   if (quality === '1080p') return VideoPresets.h1080.resolution
   if (quality === '720p') return VideoPresets.h720.resolution
@@ -415,10 +417,12 @@ export async function livekitToggleScreen(): Promise<void> {
   } catch {}
   try {
     const q = useCallStore.getState().preferredQuality
-    // 2k compartilha em 2560x1440 de verdade; demais qualidades usam o padrao.
-    const captureOpts = q === '2k'
-      ? { audio: shareAudio, resolution: VideoPresets.h1440.resolution }
-      : { audio: shareAudio }
+    // 4k compartilha em 3840x2160 de verdade; 2k em 2560x1440; demais usam o padrao.
+    const captureOpts = q === '4k'
+      ? { audio: shareAudio, resolution: VideoPresets.h2160.resolution }
+      : q === '2k'
+        ? { audio: shareAudio, resolution: VideoPresets.h1440.resolution }
+        : { audio: shareAudio }
     await room.localParticipant.setScreenShareEnabled(true, captureOpts as never)
   } catch (e) {
     const name = e instanceof Error ? e.name : ''

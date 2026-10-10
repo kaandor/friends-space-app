@@ -196,7 +196,7 @@ export function SettingsModal(_props: SettingsModalProps) {
                   <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>Liberado até <b style={{ color: 'var(--text-primary)' }}>{isQualityBlocked(currentUser, preferredQuality) ? `${getMaxStreamQuality(currentUser)} (atual acima do plano)` : preferredQuality}</b></span>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                  {(['480p', '720p', '1080p', '2k'] as const).map(q => {
+                  {(['480p', '720p', '1080p', '2k', '4k'] as const).map(q => {
                     const blocked = isQualityBlocked(currentUser, q)
                     const active = preferredQuality === q
                     return (
@@ -246,7 +246,7 @@ export function SettingsModal(_props: SettingsModalProps) {
                       onChange={e => { void useCallStore.getState().setPreferredBitrate(Number(e.target.value)) }}
                       style={select}
                     >
-                      {[2000, 4000, 6000, 8000, 12000, 16000, 25000].map(k => {
+                      {[2000, 4000, 6000, 8000, 12000, 16000, 25000, 35000, 45000].map(k => {
                         const blocked = isBitrateBlocked(currentUser, k)
                         const label = k >= 1000 ? `${(k / 1000).toFixed(k % 1000 === 0 ? 0 : 1)} Mbps` : `${k} kbps`
                         return (

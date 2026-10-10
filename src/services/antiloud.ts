@@ -1,4 +1,4 @@
-export type CallQuality = '480p' | '720p' | '1080p' | '2k'
+export type CallQuality = '480p' | '720p' | '1080p' | '2k' | '4k'
 export type CallFps = 30 | 60
 export type CallMode = 'audio' | 'video'
 
@@ -7,16 +7,18 @@ const VIDEO_PRESETS: Record<CallQuality, { width: MediaTrackConstraints['width']
   '720p': { width: { ideal: 1280 }, height: { ideal: 720 } },
   '1080p': { width: { ideal: 1920 }, height: { ideal: 1080 } },
   '2k': { width: { ideal: 2560 }, height: { ideal: 1440 } },
+  '4k': { width: { ideal: 3840 }, height: { ideal: 2160 } },
 }
 
 // Bitrate sugerido por qualidade (kbps). Baseado no padrao de transmissao
 // para entrega nitida: 480p ~2.5 Mbps, 720p ~5 Mbps, 1080p ~9 Mbps,
-// 2k ~14 Mbps. E usado como ceiling do encoder da camera.
+// 2k ~14 Mbps, 4k ~35 Mbps. E usado como ceiling do encoder da camera.
 export const QUALITY_BITRATE_KBPS: Record<CallQuality, number> = {
   '480p': 3000,
   '720p': 6000,
   '1080p': 12000,
   '2k': 16000,
+  '4k': 35000,
 }
 
 export function buildAudioConstraints(): MediaTrackConstraints {

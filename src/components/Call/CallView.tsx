@@ -854,7 +854,7 @@ export function CallView() {
             <div style={{ borderTop: '1px solid #1e1f22', margin: '4px 0' }} />
             <div style={{ padding: '7px 10px 3px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>Qualidade instant�nea � {getStreamPlanLabel(currentUser).label}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '4px 10px 8px' }}>
-              {(['480p', '720p', '1080p', '2k'] as const).map(q => {
+              {(['480p', '720p', '1080p', '2k', '4k'] as const).map(q => {
                 const blocked = isQualityBlocked(currentUser, q)
                 const active = preferredQuality === q
                 return (
@@ -869,7 +869,7 @@ export function CallView() {
                 {([30, 60] as const).map(f => <option key={f} value={f} disabled={currentUser ? f > getMaxStreamFps(currentUser) : false}>{f > (currentUser ? getMaxStreamFps(currentUser) : 30) ? `??${f}fps` : `${f}fps`}</option>)}
               </select>
               <select value={preferredBitrate} onChange={e => { void setPreferredBitrate(Number(e.target.value)) }} style={{ flex: 1, background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 6, padding: 6, fontSize: 12 }}>
-                {[2000, 4000, 6000, 8000, 12000, 16000, 25000].map(k => <option key={k} value={k} disabled={currentUser ? k > getMaxBitrateKbps(currentUser) : false}>{k >= 1000 ? `${k / 1000}M` : `${k}k`}</option>)}
+                {[2000, 4000, 6000, 8000, 12000, 16000, 25000, 35000, 45000].map(k => <option key={k} value={k} disabled={currentUser ? k > getMaxBitrateKbps(currentUser) : false}>{k >= 1000 ? `${k / 1000}M` : `${k}k`}</option>)}
               </select>
             </div>
             <div style={{ borderTop: '1px solid #1e1f22', margin: '4px 0', }} />
@@ -1017,7 +1017,7 @@ export function CallView() {
               <i className="fa-solid fa-video" style={{ fontSize: 10 }} />
               Atual: <b style={{ color: 'var(--text-secondary)' }}>{preferredQuality} � {preferredFps} fps � {preferredBitrate >= 1000 ? `${(preferredBitrate / 1000).toFixed(preferredBitrate % 1000 === 0 ? 0 : 1)} Mbps` : `${preferredBitrate} kbps`}</b>
             </div>
-            {(['480p', '720p', '1080p', '2k'] as const).map(quality => {
+            {(['480p', '720p', '1080p', '2k', '4k'] as const).map(quality => {
               const blocked = isQualityBlocked(currentUser, quality)
               return (
                 <button key={quality} disabled={blocked} onClick={() => { setPreferredQuality(quality); setQualityMenu(false) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: preferredQuality === quality ? 'var(--accent)' : blocked ? '#4a4d52' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: blocked ? 'not-allowed' : 'pointer', opacity: blocked ? 0.55 : 1 }} title={blocked ? `Qualidade bloqueada no seu plano ${getStreamPlanLabel(currentUser).label}. Assine ASTRO+ para liberar.` : undefined}>
@@ -1039,7 +1039,7 @@ export function CallView() {
               )
             })}
             <div style={{ padding: '7px 10px 0', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>Bitrate</div>
-            {([2000, 4000, 6000, 8000, 12000, 16000, 25000] as const).map(kbps => {
+            {([2000, 4000, 6000, 8000, 12000, 16000, 25000, 35000, 45000] as const).map(kbps => {
               const bitrateBlocked = kbps > getMaxBitrateKbps(currentUser)
               return (
               <button key={kbps} disabled={bitrateBlocked} onClick={() => { void setPreferredBitrate(kbps); setQualityMenu(false) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: preferredBitrate === kbps ? 'var(--accent)' : bitrateBlocked ? '#4a4d52' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: bitrateBlocked ? 'not-allowed' : 'pointer', opacity: bitrateBlocked ? 0.55 : 1 }} title={bitrateBlocked ? 'Bitrate bloqueado no seu plano. Assine ASTRO+ para liberar.' : undefined}>
