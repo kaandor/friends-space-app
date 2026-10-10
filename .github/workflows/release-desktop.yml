@@ -58,12 +58,13 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      # A versão do app segue o tag (desktop-v1.2.0 -> 1.2.0).
+      # A versão do app segue o tag (desktop-v1.2.0 -> 1.2.0); sem erro se igual.
       - name: Sync version from tag
         shell: bash
         run: |
           VER="${GITHUB_REF_NAME#desktop-v}"
-          npm version --no-git-tag-version "$VER"
+          CUR="$(node -p "require('./package.json').version")"
+          if [ "$CUR" != "$VER" ]; then npm version --no-git-tag-version "$VER"; fi
       # Secret do Google embutido no asar (main.cjs lê electron/auth-secret.json).
       # Sem isso o login Google quebra nos builds do CI.
       - name: Write Google client secret
