@@ -420,7 +420,6 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
                 participants={allParticipants}
                 focusedScreen={focusedScreen}
                 onFocus={(id) => { setFocusedScreen(id); try { localStorage.setItem('friends-space:screen-focus', id || '') } catch { } }}
-                onStopSharing={toggleScreenShare}
                 onTileContextMenu={(id, x, y) => setScreenMenu({ x, y, userId: id })}
                 isTileFsActive={isTileFsActive}
                 onExitTileFs={exitTileFs}
@@ -776,7 +775,7 @@ function MosaicScreenTile({ tileId, stream, label, focused, speaking, onFocus, o
   )
 }
 
-function ScreenMosaicView({ currentUser, screenSharing, screenStream, remoteScreenStreams, participants, focusedScreen, onFocus, onStopSharing, onTileContextMenu, isTileFsActive, onExitTileFs, speakingUsers }: {
+function ScreenMosaicView({ currentUser, screenSharing, screenStream, remoteScreenStreams, participants, focusedScreen, onFocus, onTileContextMenu, isTileFsActive, onExitTileFs, speakingUsers }: {
   focusedScreen: string | null
   currentUser: { id: string } | null
   screenSharing: boolean
@@ -784,7 +783,6 @@ function ScreenMosaicView({ currentUser, screenSharing, screenStream, remoteScre
   remoteScreenStreams: Record<string, MediaStream>
   participants: { userId: string; userName: string }[]
   onFocus: (id: string | null) => void
-  onStopSharing: () => void
   onTileContextMenu: (id: string, x: number, y: number) => void
   isTileFsActive: (id: string) => boolean
   onExitTileFs: () => void
@@ -818,11 +816,6 @@ function ScreenMosaicView({ currentUser, screenSharing, screenStream, remoteScre
           />
         ))}
       </div>
-      {screenSharing && (
-        <button onClick={onStopSharing} title="Parar de compartilhar a tela" className="vc-mosaic-stop">
-          Parar compartilhamento
-        </button>
-      )}
     </div>
   )
 }

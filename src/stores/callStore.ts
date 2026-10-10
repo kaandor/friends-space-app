@@ -664,6 +664,19 @@ function handleControlMessage(peerId: string, raw: string) {
     try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Gravação da call encerrada' })) } catch { }
     return
   }
+  if (message.t === 'media-state') {
+    // Mute/deafen do remoto em tempo real: atualiza o participante para os
+    // indicadores vermelhos acenderem (tiles, strip, sidebar) em todos.
+    const m = message as unknown as { userId?: unknown; muted?: unknown; deafened?: unknown }
+    if (typeof m.userId === 'string' && m.userId) {
+      useCallStore.setState(state => ({
+        participants: state.participants.map(p => p.userId === m.userId
+          ? { ...p, muted: m.muted === true ? true : m.muted === false ? false : p.muted, deafened: m.deafened === true ? true : m.deafened === false ? false : p.deafened }
+          : p),
+      }))
+    }
+    return
+  }
   if (message.t === 'call-leave') {
     const leavingId = (message.userId as string) || peerId
     playSound('call-leave')
@@ -744,7 +757,6 @@ function handleControlMessage(peerId: string, raw: string) {
       }
       break
     case 'input':
-      if (useCallStore.getState().controlledBy !== peerId) break
       void executeRemoteInput(message as unknown as { it: 'move' | 'button' | 'wheel' | 'key'; x?: number; y?: number; button?: string; down?: boolean; deltaY?: number; key?: string })
       break
   }
@@ -2476,6 +2488,9 @@ export const useCallStore = create<CallState>((set, get) => ({
         p.userId === currentUser.id ? { ...p, muted: newMuted } : p
       )
       set({ participants })
+      // Sincroniza o mute com todos: sem isso os outros veem seu mic sempre
+      // aberto (participants remotos nascem muted:false e nunca atualizam).
+      try { broadcastCallData({ t: 'media-state', userId: currentUser.id, muted: newMuted }) } catch { }
     }
     void syncSession(get())
   },
@@ -2499,6 +2514,7 @@ export const useCallStore = create<CallState>((set, get) => ({
         p.userId === currentUser.id ? { ...p, muted: newDeafened } : p
       )
       set({ participants })
+      try { broadcastCallData({ t: 'media-state', userId: currentUser.id, muted: newDeafened, deafened: newDeafened }) } catch { }
     }
     void syncSession(get())
   },

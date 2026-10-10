@@ -200,13 +200,35 @@ export function disposeCleanAudio(keepSource = false): void {
 async function loadAssets(): Promise<{ glue: string; wasm: ArrayBuffer } | null> {
   try {
     if (!glueTextCache || !wasmBytesCache) {
-      const [glueRes, wasmRes] = await Promise.all([
-        fetch(assetAbs('rnnoise/rnnoise.js'), { cache: 'force-cache' }),
-        fetch(assetAbs('rnnoise/rnnoise.wasm'), { cache: 'force-cache' }),
-      ])
-      if (!glueRes.ok || !wasmRes.ok) return null
-      glueTextCache = await glueRes.text()
-      wasmBytesCache = await wasmRes.arrayBuffer()
+      // No EXE empacotado, fetch(file://) é bloqueado: pede os bytes ao main
+      // via IPC (lê do asar). Na web, fetch normal.
+      let viaIpc: { glue: string; wasm: ArrayBuffer } | null = null
+      try {
+        const api = (window as unknown as { electronAPI?: { isElectron?: boolean; loadRnnoiseAssets?: () => Promise<{ glue?: unknown; wasmBase64?: unknown } | null> } }).electronAPI
+        if (api?.isElectron && typeof api.loadRnnoiseAssets === 'function') {
+          const res = await api.loadRnnoiseAssets()
+          const glue = typeof res?.glue === 'string' ? res.glue : ''
+          const b64 = typeof res?.wasmBase64 === 'string' ? res.wasmBase64 : ''
+          if (glue && b64) {
+            const bin = atob(b64)
+            const bytes = new Uint8Array(bin.length)
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+            viaIpc = { glue, wasm: bytes.buffer }
+          }
+        }
+      } catch { /* cai no fetch abaixo */ }
+      if (viaIpc) {
+        glueTextCache = viaIpc.glue
+        wasmBytesCache = viaIpc.wasm
+      } else {
+        const [glueRes, wasmRes] = await Promise.all([
+          fetch(assetAbs('rnnoise/rnnoise.js'), { cache: 'force-cache' }),
+          fetch(assetAbs('rnnoise/rnnoise.wasm'), { cache: 'force-cache' }),
+        ])
+        if (!glueRes.ok || !wasmRes.ok) return null
+        glueTextCache = await glueRes.text()
+        wasmBytesCache = await wasmRes.arrayBuffer()
+      }
     }
     return { glue: glueTextCache, wasm: wasmBytesCache.slice(0) }
   } catch {

@@ -472,6 +472,26 @@ ipcMain.handle('app:version', () => {
   try { return app.getVersion() } catch { return '1.0.0' }
 })
 
+// RNNoise (áudio limpo) no app empacotado: fetch(file://) é bloqueado pelo
+// Chromium, então o renderer pede os bytes por aqui (fs funciona no asar).
+ipcMain.handle('rnnoise:load', () => {
+  try {
+    const cands = (name) => [
+      path.join(__dirname, '..', 'dist', 'rnnoise', name),
+      path.join(__dirname, '..', 'public', 'rnnoise', name),
+    ]
+    let gluePath = null
+    let wasmPath = null
+    for (const p of cands('rnnoise.js')) { try { if (fs.existsSync(p)) { gluePath = p; break } } catch { } }
+    for (const p of cands('rnnoise.wasm')) { try { if (fs.existsSync(p)) { wasmPath = p; break } } catch { } }
+    if (!gluePath || !wasmPath) return null
+    return {
+      glue: fs.readFileSync(gluePath, 'utf8'),
+      wasmBase64: fs.readFileSync(wasmPath).toString('base64'),
+    }
+  } catch { return null }
+})
+
 function buildTray() {
   const icon = path.join(__dirname, '..', 'build', 'icon.ico')
   const trayIcon = fs.existsSync(icon) ? icon : undefined

@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('overlay-render', listener)
   },
   appVersion: () => ipcRenderer.invoke('app:version'),
+  loadRnnoiseAssets: () => ipcRenderer.invoke('rnnoise:load'),
   checkForUpdates: () => ipcRenderer.invoke('update:check'),
   installUpdate: () => ipcRenderer.invoke('update:install'),
   onAppUpdate: (cb) => {
