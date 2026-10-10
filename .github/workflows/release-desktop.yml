@@ -85,3 +85,4 @@ jobs:
           -c.publish.provider=github
           -c.publish.owner=kaandor
           -c.publish.repo=update-electro
+          -c.publish.releaseType=release
