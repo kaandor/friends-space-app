@@ -568,6 +568,13 @@ function broadcastCallData(obj: unknown) {
   })()
 }
 const screenRetryTimers = new Map<string, number>()
+// Turbo de tela: até este instante o poll HTTP não desacelera (mín 1s mesmo
+// com tudo conectado). Ligado ao iniciar/receber tela — tela tem que chegar
+// junto da voz, não 8s depois no poll lento de call estável.
+let screenTurboUntil = 0
+export function pokeScreenTurbo(ms = 45000) {
+  try { screenTurboUntil = Math.max(screenTurboUntil, Date.now() + ms) } catch { }
+}
 export function requestScreenResync(peerId: string) {
   try {
     const cur = useCallStore.getState()
@@ -579,20 +586,25 @@ export function requestScreenResync(peerId: string) {
 function scheduleScreenRetry(peerId: string, attempt = 0) {
   const prev = screenRetryTimers.get(peerId)
   if (prev !== undefined) window.clearTimeout(prev)
+  // Progressivo e rápido (3s/6s/8s/8s/8s): a tela aparece junto da voz em
+  // vez de 8s×3. Cada tentativa chuta o poll + pede resync ao sharer.
+  const delay = attempt <= 0 ? 3000 : attempt === 1 ? 6000 : 8000
   screenRetryTimers.set(peerId, window.setTimeout(() => {
     screenRetryTimers.delete(peerId)
     try {
       const cur = useCallStore.getState()
       if (!cur.activeCall || !cur.sharingPeers.includes(peerId)) return
       if (cur.remoteScreenStreams[peerId]) return
-      if (attempt >= 3) {
+      if (attempt >= 5) {
         try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Não foi possível carregar a tela — peça para parar e compartilhar de novo' })) } catch { }
         return
       }
+      pokeScreenTurbo()
+      kickSignalPoll()
       requestScreenResync(peerId)
       scheduleScreenRetry(peerId, attempt + 1)
     } catch { }
-  }, 8000))
+  }, delay))
 }
 export function startCallPresence() {
   if (presenceTimer !== null) {
@@ -625,6 +637,8 @@ function handleControlMessage(peerId: string, raw: string) {
         const u = useUserStore.getState().users.find(x => x.id === sharerId)
         window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: `${u?.name || 'Usuário'} começou a transmitir` }))
       } catch { }
+      pokeScreenTurbo()
+      kickSignalPoll()
       scheduleScreenRetry(sharerId)
     }
     return
@@ -1723,7 +1737,10 @@ function scheduleSignalLoop() {
   // instantanea como o Discord. Depois disso, volta ao backoff normal.
   const callStartedAt = state.createdAt || Date.now()
   const inTurbo = !allConnected && Date.now() - callStartedAt < 10000
-  const delay = allConnected ? 8000 : (inTurbo ? 100 : SIGNAL_BACKOFF_STEPS[signalBackoffIndex])
+  // Turbo de tela: com tela recém-iniciada/recebida, o poll não desacelera
+  // (mín 1s) — a oferta da tela chega junto da voz.
+  const inScreenTurbo = Date.now() < screenTurboUntil
+  const delay = allConnected ? (inScreenTurbo ? 1000 : 8000) : (inTurbo ? 100 : SIGNAL_BACKOFF_STEPS[signalBackoffIndex])
   signalTimer = window.setTimeout(() => {
     signalTimer = null
     // Nao martela o backend quando offline (sem internet real). Em background
@@ -2603,6 +2620,7 @@ export const useCallStore = create<CallState>((set, get) => ({
         }
         // A resposta (answer) a renegociacao chega pelo poll: chuta para nao
         // esperar ate 8s com a tela preta do outro lado.
+        pokeScreenTurbo()
         kickSignalPoll()
         videoTrack.onended = () => {
           set({ screenSharing: false, screenStream: null })
