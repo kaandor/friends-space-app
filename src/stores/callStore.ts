@@ -318,6 +318,7 @@ function closePeer(peerId: string) {
   if (dtlsTimer !== undefined) { window.clearTimeout(dtlsTimer); dtlsStuckTimers.delete(peerId) }
   renegotiationAttempts.delete(peerId)
   iceRestartAt.delete(peerId)
+  relayFallbackDone.delete(peerId)
   screenTransceivers.delete(peerId)
   // Para tracks de midia remota e limpa registros de sinal/candidato
   const streams = { ...useCallStore.getState().remoteStreams }
@@ -412,9 +413,68 @@ export function warmIceServers() {
     }).catch(() => { })
   } catch { }
 }
+// Diagnóstico real de TURN na máquina/rede do usuário: cria uma PC
+// temporária, coleta candidatos e diz se há relay/srflx/host. Usado pelo
+// botão "Testar TURN" do Debug — testa o caminho de verdade (não adivinha).
+export interface TurnTestResult { relay: boolean; srflx: boolean; host: boolean; ms: number; source: string; error?: string }
+export async function testTurnConnectivity(): Promise<TurnTestResult> {
+  const t0 = Date.now()
+  const res: TurnTestResult = { relay: false, srflx: false, host: false, ms: 0, source: 'fallback' }
+  let servers: RTCIceServer[] = []
+  try {
+    const data = await Promise.race([
+      requestBackend<{ iceServers?: RTCIceServer[] | null }>('getTurnCredentials', {}),
+      new Promise<null>(r => window.setTimeout(() => r(null), 8000)),
+    ])
+    if (data && Array.isArray(data.iceServers) && data.iceServers.length) {
+      servers = data.iceServers
+      res.source = 'backend'
+    }
+  } catch { }
+  if (!servers.length) servers = fallbackIceServers()
+  return new Promise<TurnTestResult>((resolve) => {
+    let done = false
+    let pc: RTCPeerConnection | null = null
+    const finish = (error?: string) => {
+      if (done) return
+      done = true
+      res.ms = Date.now() - t0
+      if (error && !res.relay && !res.srflx) res.error = error
+      try { pc?.close() } catch { }
+      resolve(res)
+    }
+    try {
+      pc = new RTCPeerConnection({ iceServers: servers })
+    } catch { finish('pc-failed'); return }
+    const cur = pc
+    cur.onicecandidate = (e) => {
+      const c = (e.candidate && e.candidate.candidate) || ''
+      if (c.includes(' typ relay ')) res.relay = true
+      else if (c.includes(' typ srflx ')) res.srflx = true
+      else if (c.includes(' typ host ')) res.host = true
+      if (res.relay && res.srflx) finish()
+    }
+    cur.onicegatheringstatechange = () => {
+      if (cur.iceGatheringState === 'complete') finish()
+    }
+    try {
+      cur.createDataChannel('turn-test')
+      void cur.createOffer()
+        .then(o => cur.setLocalDescription(o))
+        .catch(() => finish('offer-failed'))
+    } catch { finish('offer-failed'); return }
+    window.setTimeout(() => finish('timeout'), 10000)
+  })
+}
 // DTLS travado com ICE ok: restartIce (preserva m-lines, sem glare) em vez de
 // recriar a PC. Recriar no meio do handshake reiniciava o ciclo para sempre.
 const iceRestartAt = new Map<string, number>()
+// Fallback relay (uma vez por peer por call): após 35s preso em
+// connecting/disconnected, se EXISTE candidato relay coletado, força
+// iceTransportPolicy 'relay' + restartIce (salva 4G/CGNAT onde P2P falha).
+// Sem relay coletado, o problema são as credenciais — avisa 1x/2min.
+const relayFallbackDone = new Set<string>()
+let relayToastAt = 0
 function watchStuckDtls(peerId: string, pc: RTCPeerConnection) {
   const state = pc.connectionState
   if (state !== 'connecting' && state !== 'disconnected') {
@@ -429,6 +489,27 @@ function watchStuckDtls(peerId: string, pc: RTCPeerConnection) {
   if (Date.now() - since > 15000) {
     iceRestartAt.set(peerId, Date.now() + 60000)
     try { pc.restartIce() } catch { }
+  }
+  if (Date.now() - since > 35000 && !relayFallbackDone.has(peerId)) {
+    relayFallbackDone.add(peerId)
+    void (async () => {
+      try {
+        let relay = false
+        const stats = await pc.getStats()
+        stats.forEach(report => {
+          const r = report as unknown as { type?: string; candidateType?: string; url?: string }
+          if (r.type === 'local-candidate' && (r.candidateType === 'relay' || String(r.url || '').startsWith('turn'))) relay = true
+        })
+        if (relay) {
+          try { pc.setConfiguration({ iceTransportPolicy: 'relay' }) } catch { }
+          try { pc.restartIce() } catch { }
+          iceRestartAt.set(peerId, Date.now())
+        } else if (Date.now() - relayToastAt > 120000) {
+          relayToastAt = Date.now()
+          try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Sem rota relay (TURN) — abra o Debug e toque em Testar TURN' })) } catch { }
+        }
+      } catch { }
+    })()
   }
 }
 

@@ -468,11 +468,12 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
             <div className="vc-people-strip">
               {allParticipants.map(p => {
                 const isSelf = p.userId === currentUser?.id
-                const speaking = Boolean(speakingUsers[p.userId]) && !p.muted
+                const pMuted = Boolean(p.muted || p.deafened)
+                const speaking = Boolean(speakingUsers[p.userId]) && !pMuted
                 return (
                   <div
                     key={p.userId}
-                    className={`vc-strip-chip${speaking ? ' speaking' : ''}`}
+                    className={`vc-strip-chip${speaking ? ' speaking' : ''}${pMuted ? ' muted-ring' : ''}`}
                     onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); openUserMenu({ id: p.userId, name: p.userName, photoUrl: p.userPhoto, bio: '', friendCode: '', createdAt: 0 }, e.clientX, e.clientY) }}
                     title={`${p.userName} (botão direito: ver perfil)`}
                   >
@@ -495,8 +496,9 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
               const pMuted = isSelf ? muted : p.muted
               const pDeafened = isSelf ? deafened : p.deafened
               const speaking = Boolean(speakingUsers[p.userId]) && !pMuted
+              const isMuted = Boolean(pMuted || pDeafened)
               return (
-                <div key={p.userId} className={`vc-tile${speaking ? ' speaking' : ''}`}>
+                <div key={p.userId} className={`vc-tile${speaking ? ' speaking' : ''}${isMuted ? ' muted-ring' : ''}`}>
                   <div className="vc-tile-ring">
                     <Avatar src={p.userPhoto} name={p.userName} size={84} />
                   </div>
@@ -738,12 +740,13 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
 }
 
 
-function MosaicScreenTile({ tileId, stream, label, focused, speaking, onFocus, onContextMenu, fsActive, onExitFs }: {
+function MosaicScreenTile({ tileId, stream, label, focused, speaking, muted, onFocus, onContextMenu, fsActive, onExitFs }: {
   tileId: string
   stream: MediaStream | null
   label: string
   focused: boolean
   speaking: boolean
+  muted: boolean
   onFocus: () => void
   onContextMenu: (x: number, y: number) => void
   fsActive: boolean
@@ -758,7 +761,7 @@ function MosaicScreenTile({ tileId, stream, label, focused, speaking, onFocus, o
   return (
     <div
       id={`vc-mosaic-tile-${tileId}`}
-      className={`vc-mosaic-tile${focused ? ' focused' : ''}${speaking ? ' speaking' : ''}`}
+      className={`vc-mosaic-tile${focused ? ' focused' : ''}${!muted && speaking ? ' speaking' : ''}${muted ? ' muted' : ''}`}
       onClick={onFocus}
       onContextMenu={e => { e.preventDefault(); e.stopPropagation(); onContextMenu(e.clientX, e.clientY) }}
       title={focused ? 'Clique para soltar o destaque; botão direito: opções' : 'Clique para destacar esta tela; botão direito: opções'}
@@ -788,6 +791,10 @@ function ScreenMosaicView({ currentUser, screenSharing, screenStream, remoteScre
   onExitTileFs: () => void
   speakingUsers: Record<string, boolean>
 }) {
+  // Mute real (store) para o anel vermelho: a prop `participants` aqui não
+  // tem os flags, então lê do store (sincronizado via media-state).
+  const liveParts = useCallStore(s => s.participants)
+  const selfMuted = useCallStore(s => s.muted || s.deafened)
   const tiles: { id: string; stream: MediaStream | null; label: string; remote: boolean }[] = []
   if (screenSharing && screenStream) {
     tiles.push({ id: currentUser?.id || 'local', stream: screenStream, label: 'Sua tela', remote: false })
@@ -801,7 +808,10 @@ function ScreenMosaicView({ currentUser, screenSharing, screenStream, remoteScre
   return (
     <div className="vc-voice-mosaic-wrap">
       <div className="vc-voice-mosaic">
-        {tiles.map(t => (
+        {tiles.map(t => {
+          const mp = t.remote ? liveParts.find(p => p.userId === t.id) : null
+          const tileMuted = t.remote ? Boolean(mp?.muted || mp?.deafened) : selfMuted
+          return (
           <MosaicScreenTile
             key={t.id}
             tileId={t.id}
@@ -809,12 +819,14 @@ function ScreenMosaicView({ currentUser, screenSharing, screenStream, remoteScre
             label={t.label}
             focused={focusedScreen === t.id}
             speaking={Boolean(speakingUsers[t.id])}
+            muted={tileMuted}
             onFocus={() => onFocus(focusedScreen === t.id ? null : t.id)}
             onContextMenu={(x, y) => onTileContextMenu(t.id, x, y)}
             fsActive={isTileFsActive(t.id)}
             onExitFs={onExitTileFs}
           />
-        ))}
+          )
+        })}
       </div>
     </div>
   )

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { getCallDiagnostics, useCallStore } from '../../stores/callStore'
-import type { CallDiagnostics } from '../../stores/callStore'
+import { getCallDiagnostics, testTurnConnectivity, useCallStore } from '../../stores/callStore'
+import type { CallDiagnostics, TurnTestResult } from '../../stores/callStore'
 import { useUserStore } from '../../stores/userStore'
 import { getStreamPlanLabel } from '../../utils/astro'
 import { requestBackend } from '../../services/backend'
@@ -168,6 +168,19 @@ export default function DebugWindow({ onClose }: { onClose: () => void }) {
   const [downHist, setDownHist] = useState<(number | null)[]>([])
   const [bugText, setBugText] = useState('')
   const [bugState, setBugState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [turnTest, setTurnTest] = useState<{ running: boolean; text: string }>({ running: false, text: '' })
+
+  const runTurnTest = useCallback(async () => {
+    if (turnTest.running) return
+    setTurnTest({ running: true, text: 'testando…' })
+    try {
+      const r: TurnTestResult = await testTurnConnectivity()
+      const parts = [`relay:${r.relay ? 'OK' : 'NÃO'}`, `srflx:${r.srflx ? 'OK' : 'NÃO'}`, `host:${r.host ? 'OK' : 'NÃO'}`]
+      setTurnTest({ running: false, text: `${parts.join(' · ')} · ${r.source} · ${r.ms}ms${r.error ? ` (${r.error})` : ''}` })
+    } catch {
+      setTurnTest({ running: false, text: 'falhou' })
+    }
+  }, [turnTest.running])
 
   useEffect(() => {
     let mounted = true
@@ -315,6 +328,20 @@ export default function DebugWindow({ onClose }: { onClose: () => void }) {
                   {avgLatency != null ? `${avgLatency} ms` : '—'} / {maxLatency != null ? `${maxLatency} ms` : '—'}
                 </b>
               </Row>
+              <Row label="TURN (relay)">
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <b style={{ color: turnTest.text.includes('relay:OK') ? '#23a55a' : turnTest.text ? '#f0b232' : 'var(--text-muted)', fontSize: 12 }}>
+                    {turnTest.text || 'não testado'}
+                  </b>
+                  <button
+                    onClick={() => { void runTurnTest() }}
+                    disabled={turnTest.running}
+                    style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 10px', fontSize: 11, fontWeight: 700, cursor: turnTest.running ? 'wait' : 'pointer', opacity: turnTest.running ? 0.6 : 1 }}
+                  >
+                    {turnTest.running ? '…' : 'Testar'}
+                  </button>
+                </span>
+              </Row>
               {diag && diag.signalErrors.length > 0 && (
                 <div style={{ marginTop: 6, padding: 8, background: 'rgba(240,71,71,0.1)', borderRadius: 8, fontSize: 11 }}>
                   <div style={{ color: '#f04747', fontWeight: 700 }}>Erros de sinal ({diag.signalErrors.length})</div>
@@ -357,7 +384,7 @@ export default function DebugWindow({ onClose }: { onClose: () => void }) {
                       {d.audioLoss ?? '—'}/{d.videoLoss ?? '—'} · {d.videoFps != null ? `${d.videoFps} fps` : 'só voz'}
                     </span>
                   </Row>
-                  <Row label="Rota"><span style={{ fontSize: 11 }}>{[d.remoteCandidateType, d.dataChannelState ? `DC ${d.dataChannelState}` : '', d.audioCodec ? d.audioCodec.split('/')[1] : ''].filter(Boolean).join(' · ') || '—'}</span></Row>
+                  <Row label="Rota"><span style={{ fontSize: 11 }}>{[d.candidates && d.candidates.includes('relay') ? 'relay🛟' : '', d.remoteCandidateType, d.dataChannelState ? `DC ${d.dataChannelState}` : '', d.audioCodec ? d.audioCodec.split('/')[1] : ''].filter(Boolean).join(' · ') || '—'}</span></Row>
                 </div>
               ))}
             </div>

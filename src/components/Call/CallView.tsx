@@ -409,6 +409,9 @@ export function CallView() {
 
   const fsKey = screenUserId ? `screen:${screenUserId}` : 'screen'
   const showMosaic = allRemoteScreenIds.length > 0 && mosaic && !popout && !controlling
+  // Ids mutados (anel vermelho fixo nas telas): Set por render (N pequeno).
+  const mutedIds = new Set<string>()
+  try { for (const p of participants) { if (p.muted || (p as { deafened?: boolean }).deafened) mutedIds.add(p.userId) } } catch { }
   // Menu da PRÓPRIA tela (sem userId ou próprio id): sem mixer.
   const menuIsSelfScreen = !screenMenu?.userId || screenMenu.userId === currentUser?.id
   // Chave definitiva de tela cheia para a tela de um usuário: prefere o tile
@@ -501,7 +504,7 @@ export function CallView() {
                 {mosaicFocus ? (
                   <div className="vc-mosaic-focused">
                     <div
-                      className="vc-mosaic-main"
+                      className={`vc-mosaic-main${mutedIds.has(mosaicFocus) ? ' muted' : ''}`}
                       id={`call-fs-mosaic-${mosaicFocus}`}
                       key={mosaicFocus}
                       onClick={() => setMosaicFocus(null)}
@@ -521,7 +524,7 @@ export function CallView() {
                     <div className="vc-mosaic-thumbs">
                       {allRemoteScreenIds.filter(u => u !== mosaicFocus).map(userId => (
                         <div
-                          className="vc-mosaic-tile vc-mosaic-tile-thumb"
+                          className={`vc-mosaic-tile vc-mosaic-tile-thumb${mutedIds.has(userId) ? ' muted' : ''}`}
                           id={`call-fs-mosaic-${userId}`}
                           key={userId}
                           onClick={() => selectScreen(userId)}
@@ -545,7 +548,7 @@ export function CallView() {
                   <div className="vc-mosaic-grid">
                     {allRemoteScreenIds.map(userId => (
                       <div
-                        className="vc-mosaic-tile"
+                        className={`vc-mosaic-tile${mutedIds.has(userId) ? ' muted' : ''}`}
                         id={`call-fs-mosaic-${userId}`}
                         key={userId}
                         onClick={() => selectScreen(userId)}
@@ -603,7 +606,7 @@ export function CallView() {
                   {tiles.map(t => {
                     const speaking = Boolean(speakingUsers[t.userId]) && !t.muted
                     return (
-                      <div key={t.userId} className={`vc-tile${speaking ? ' speaking' : ''}`}>
+                      <div key={t.userId} className={`vc-tile${speaking ? ' speaking' : ''}${t.muted || (t as { deafened?: boolean }).deafened ? ' muted-ring' : ''}`}>
                         <div className="vc-tile-ring">
                           <Avatar src={t.userPhoto} name={t.userName} size={84} />
                         </div>

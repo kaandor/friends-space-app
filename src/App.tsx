@@ -321,6 +321,29 @@ function App() {
   const [theme, setTheme] = useState<'dark' | 'light'>(getInitialTheme)
   const isMobile = useIsMobile(768)
   const isElectron = typeof window !== 'undefined' && Boolean((window as unknown as { electronAPI?: { isElectron?: boolean } }).electronAPI?.isElectron)
+  // Build velho bloqueado: o site compara /version.json com a primeira leitura;
+  // se o deploy mudou no meio da sessão, TRAVA a tela pedindo atualização.
+  // Call com client velho quebra (protocolo de sinal mudou) e o usuário acha
+  // que é "problema de conexão". No Electron o auto-update cuida disso.
+  const [staleBuild, setStaleBuild] = useState(false)
+  useEffect(() => {
+    if (isElectron) return
+    let cancelled = false
+    let baseline: string | null = null
+    const check = async () => {
+      try {
+        const r = await fetch('/version.json', { cache: 'no-store' })
+        const j = await r.json().catch(() => null)
+        const cur = j ? String(j.v ?? j.id ?? '') : ''
+        if (!cur) return
+        if (baseline === null) { baseline = cur; return }
+        if (!cancelled && baseline !== cur) setStaleBuild(true)
+      } catch { /* silencioso */ }
+    }
+    const t1 = window.setTimeout(check, 30000)
+    const t2 = window.setInterval(check, 120000)
+    return () => { cancelled = true; window.clearTimeout(t1); window.clearInterval(t2) }
+  }, [isElectron])
   // Aba ativa da navegacao inferior estilo Discord mobile (Amigos/Explorar/Voce)
   const [mobileTab, setMobileTab] = useState<'friends' | 'explore' | 'me'>('friends')
   // Esquema de interface por scroll (mobile): rolar para BAIXO esconde a barra
@@ -1209,6 +1232,23 @@ function App() {
           Atualizar app
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }} />
         </button>
+      )}
+      {staleBuild && !isElectron && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, maxWidth: 420, textAlign: 'center' }}>
+            <div style={{ width: 72, height: 72, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-tertiary)', border: '3px solid var(--accent)' }}>
+              <i className="fa-solid fa-rotate" style={{ fontSize: 28, color: 'var(--accent)' }} />
+            </div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Nova versão disponível</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: 0 }}>
+              O site foi atualizado e esta aba ficou velha — a call pode falhar. Atualize para continuar.
+            </p>
+            <Button onClick={() => window.location.reload()}>
+              <i className="fa-solid fa-rotate" style={{ marginRight: 8 }} /> Atualizar agora
+            </Button>
+            <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Se não atualizar, pressione Ctrl+F5.</span>
+          </div>
+        </div>
       )}
       {updateAvailable && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)' }}>

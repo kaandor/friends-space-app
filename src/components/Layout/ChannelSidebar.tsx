@@ -228,7 +228,7 @@ export function ChannelSidebar({ server, onOpenSettings, onChannelSelect }: Chan
           <div style={{ paddingLeft: 12, paddingBottom: 4 }}>
             {isCallHere ? callParticipants.map(p => (
               <div key={p.userId} onClick={() => handleVoiceClick(channel)} onContextMenu={(e) => { e.preventDefault(); const full = useUserStore.getState().users.find(u => u.id === p.userId); if (full) openUserMenu(full, e.clientX, e.clientY) }} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 8px', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: 'var(--text-secondary)' }}>
-                <div className={`vc-participant-ring ${speakingUsers[p.userId] && !p.muted ? 'speaking' : ''}`} style={{ width: 22, height: 22 }}>
+                <div className={`vc-participant-ring ${speakingUsers[p.userId] && !p.muted ? 'speaking' : ''} ${p.muted ? 'muted' : ''}`} style={{ width: 22, height: 22 }}>
                   <Avatar src={p.userPhoto} name={p.userName} size={18} />
                 </div>
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, color: 'var(--text-primary)' }}>
