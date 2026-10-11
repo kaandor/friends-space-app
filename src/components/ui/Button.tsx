@@ -17,23 +17,26 @@ export function Button({ onClick, children, variant = 'primary', size = 'md', st
     ghost: { background: 'transparent', color: 'var(--text-secondary)' },
   }
   const sizes: Record<string, React.CSSProperties> = {
-    sm: { padding: '6px 12px', fontSize: 12 },
-    md: { padding: '8px 16px', fontSize: 14 },
-    lg: { padding: '10px 20px', fontSize: 16 },
-  }
+    sm: { height: 30, minHeight: 30, padding: '0 12px', fontSize: 12, borderRadius: 8 },
+    md: { height: 36, minHeight: 36, padding: '0 16px', fontSize: 14, borderRadius: 8 },
+    lg: { height: 44, minHeight: 44, padding: '0 20px', fontSize: 15, borderRadius: 10 },
+  };
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       style={{
-        borderRadius: 'var(--radius-sm)',
         fontWeight: 600,
         transition: 'all 0.15s',
         display: 'inline-flex',
         alignItems: 'center',
+        justifyContent: 'center',
         gap: 6,
+        whiteSpace: 'nowrap',
+        lineHeight: 1,
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.6 : 1,
+        border: 'none',
         ...styles[variant],
         ...sizes[size],
         ...style,

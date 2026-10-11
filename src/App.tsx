@@ -450,9 +450,21 @@ function App() {
   }, [])
 
   useEffect(() => {
+    const lastByMessage = new Map<string, number>()
     const onToast = (e: Event) => {
       const message = (e as CustomEvent<string>).detail
-      if (typeof message === 'string' && message) setToast(message)
+      if (typeof message !== 'string' || !message) return
+      // Dedupe: mesma mensagem em <3s é ignorada (callStore dispara em loop por peer)
+      const now = Date.now()
+      const last = lastByMessage.get(message) || 0
+      if (now - last < 3000) return
+      lastByMessage.set(message, now)
+      if (lastByMessage.size > 50) {
+        for (const [k, t] of lastByMessage) {
+          if (now - t > 10000) lastByMessage.delete(k)
+        }
+      }
+      setToast(message)
     }
     window.addEventListener('friends-space:toast', onToast)
     return () => window.removeEventListener('friends-space:toast', onToast)
@@ -1120,7 +1132,7 @@ function App() {
       {(incomingCall && !useCallStore.getState().activeCall) && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
-            <div style={{ width: 100, height: 100, borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--accent)', boxShadow: '0 0 40px color-mix(in srgb, var(--accent) 30%, transparent)' }}>
+            <div style={{ width: 100, height: 100, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--accent)', boxShadow: '0 0 24px color-mix(in srgb, var(--accent) 22%, transparent)' }}>
               <Avatar src={incomingCall.fromPhoto} name={incomingCall.fromName} size={100} />
             </div>
             <div style={{ textAlign: 'center' }}>
@@ -1146,7 +1158,7 @@ function App() {
       {callingUser && !incomingCall && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
-            <div style={{ width: 100, height: 100, borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--border)', boxShadow: '0 0 40px rgba(0,0,0,0.3)' }}>
+            <div style={{ width: 100, height: 100, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--border)', boxShadow: '0 0 24px rgba(0,0,0,0.25)' }}>
               <Avatar src={callingUser.userPhoto} name={callingUser.userName} size={100} />
             </div>
             <div style={{ textAlign: 'center' }}>
@@ -1172,7 +1184,7 @@ function App() {
       {callRejectedBy && !useCallStore.getState().activeCall && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
-            <div style={{ width: 76, height: 76, borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--warning)', boxShadow: '0 0 40px rgba(250,168,26,0.35)' }}>
+            <div style={{ width: 76, height: 76, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--warning)', boxShadow: '0 0 24px rgba(250,168,26,0.28)' }}>
               <Avatar src={callRejectedBy.userPhoto} name={callRejectedBy.userName} size={76} />
             </div>
             <div style={{ textAlign: 'center' }}>

@@ -492,17 +492,33 @@ ipcMain.handle('rnnoise:load', () => {
   } catch { return null }
 })
 
+function trayIconPath() {
+  // .ico quebra o Tray no Linux (startup crash) — usa png por plataforma.
+  const candidates = process.platform === 'linux'
+    ? ['icon.png', 'icon.ico']
+    : process.platform === 'darwin'
+      ? ['icon.icns', 'icon.png', 'icon.ico']
+      : ['icon.ico', 'icon.png']
+  for (const name of candidates) {
+    try {
+      const p = path.join(__dirname, '..', 'build', name)
+      if (fs.existsSync(p)) return p
+    } catch { }
+  }
+  return undefined
+}
+
 function buildTray() {
-  const icon = path.join(__dirname, '..', 'build', 'icon.ico')
-  const trayIcon = fs.existsSync(icon) ? icon : undefined
-  tray = new Tray(trayIcon || nativeImage.createEmpty())
+  const trayIcon = trayIconPath()
+  try {
+    tray = new Tray(trayIcon || nativeImage.createEmpty())
   tray.setToolTip('Friends Space')
   const loginItem = (() => { try { return app.getLoginItemSettings().openAtLogin } catch { return false } })()
   const menu = Menu.buildFromTemplate([
     { label: 'Abrir Friends Space', click: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus() } } },
     { type: 'separator' },
     {
-      label: 'Iniciar com o Windows',
+      label: process.platform === 'linux' ? 'Iniciar com o sistema' : 'Iniciar com o Windows',
       type: 'checkbox',
       checked: loginItem,
       click: (item) => {
@@ -523,6 +539,10 @@ function buildTray() {
       else { mainWindow.show(); mainWindow.focus() }
     }
   })
+  } catch {
+    // Sem tray (ex.: Linux sem libappindicator) o app segue sem icone.
+    tray = null
+  }
 }
 
 function createWindow() {
@@ -616,7 +636,11 @@ function createOverlay() {
     },
   })
   overlayWindow.setAlwaysOnTop(true, 'screen-saver')
-  overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+  // setVisibleOnAllWorkspaces com opcoes so existe no macOS — no Linux lanca excecao.
+  try {
+    if (process.platform === 'darwin') overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+    else if (typeof overlayWindow.setVisibleOnAllWorkspaces === 'function') overlayWindow.setVisibleOnAllWorkspaces(true)
+  } catch { }
   overlayWindow.setIgnoreMouseEvents(true, { forward: true })
   overlayWindow.setPosition(12, 12, false)
   if (fs.existsSync(OVERLAY_HTML)) overlayWindow.loadFile(OVERLAY_HTML)

@@ -1,29 +1,29 @@
 import React from 'react'
 
 const s = (v: string, c: React.ReactNode, p?: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox={v} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" {...p}>{c}</svg>
+  <svg viewBox={v} fill="none" stroke="currentColor" strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round" shapeRendering="geometricPrecision" width={20} height={20} xmlns="http://www.w3.org/2000/svg" {...p}>{c}</svg>
 )
-export const IconHome = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></>, p2)
+export const IconHome = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M15 21v-8a1 1 0 00-1-1h-4a1 1 0 00-1 1v8" /><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21a1 1 0 001 1h12a1 1 0 001-1V9.5" /></>, p2)
 
 export const IconAdd = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>, p2)
 
 export const IconPlus = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>, p2)
 
-export const IconServer = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><circle cx="12" cy="12" r="10" /><circle cx="12" cy="10" r="3" /><path d="M7 20.662V19a2 2 0 012-2h6a2 2 0 012 2v1.662" /></>, p2)
+export const IconServer = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><rect x="2" y="3" width="20" height="7" rx="2" /><rect x="2" y="14" width="20" height="7" rx="2" /><line x1="6" y1="6.5" x2="6.01" y2="6.5" /><line x1="6" y1="17.5" x2="6.01" y2="17.5" /></>, p2)
 
-export const IconHash = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><line x1="4" y1="9" x2="20" y2="9" /><line x1="4" y1="15" x2="20" y2="15" /><line x1="10" y1="3" x2="8" y2="21" /><line x1="16" y1="3" x2="14" y2="21" /></>, p2)
+export const IconHash = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M9 3 7 21" /><path d="M17 3l-2 18" /><path d="M4 8h17" /><path d="M3 16h17" /></>, p2)
 
-export const IconVoice = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" /><path d="M19 10v2a7 7 0 01-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></>, p2)
+export const IconVoice = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10v1a7 7 0 0014 0v-1" /><line x1="12" y1="18" x2="12" y2="22" /></>, p2)
 
-export const IconMute = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><line x1="1" y1="1" x2="23" y2="23" /><path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6" /><path d="M17 16.95A7 7 0 015 12v-2m14 0v2a7 7 0 01-.11 1.23" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></>, p2)
+export const IconMute = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10v1a7 7 0 0014 0v-1" /><line x1="12" y1="18" x2="12" y2="22" /><line x1="2" y1="2" x2="22" y2="22" /></>, p2)
 
-export const IconDeafen = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" /><path d="M19 10v2a7 7 0 01-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></>, p2)
+export const IconDeafen = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M3 18v-6a9 9 0 0118 0v6" /><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z" /><line x1="2" y1="2" x2="22" y2="22" /></>, p2)
 
 export const IconScreenShare = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></>, p2)
 
-export const IconCall = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" /></>, p2)
+export const IconCall = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.13.96.36 1.9.7 2.8a2 2 0 01-.45 2.1L8.1 9.9a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.45c.9.34 1.84.57 2.8.7A2 2 0 0122 16.9z" /></>, p2)
 
-export const IconEndCall = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M10.68 13.31a16 16 0 003.41 2.6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91" /><line x1="23" y1="1" x2="1" y2="23" /></>, p2)
+export const IconEndCall = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M10.7 13.3a16 16 0 003.4 2.6l1.3-1.3a2 2 0 012.1-.45c.9.34 1.84.57 2.8.7a2 2 0 011.7 2v1.2" /><path d="M2.1 4.2A19.8 19.8 0 015.2 12.8a19.5 19.5 0 006 6 19.8 19.8 0 008.6 3.1" opacity="0.45" /><line x1="23" y1="1" x2="1" y2="23" /></>, p2)
 
 export const IconFriend = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></>, p2)
 
@@ -33,13 +33,13 @@ export const IconEdit = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <
 
 export const IconDelete = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></>, p2)
 
-export const IconSend = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></>, p2)
+export const IconSend = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M22 2 11 13" /><path d="M22 2l-7 20-4-9-9-4z" /></>, p2)
 
 export const IconAttach = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" /></>, p2)
 
-export const IconMic = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" /><path d="M19 10v2a7 7 0 01-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></>, p2)
+export const IconMic = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10v1a7 7 0 0014 0v-1" /><line x1="12" y1="18" x2="12" y2="22" /></>, p2)
 
-export const IconHeadphone = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M3 18v-6a9 9 0 0118 0v6" /><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z" /></>, p2)
+export const IconHeadphone = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M4 14v-2a8 8 0 0116 0v2" /><rect x="3" y="14" width="4" height="7" rx="2" /><rect x="17" y="14" width="4" height="7" rx="2" /></>, p2)
 
 export const IconUser = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></>, p2)
 
@@ -73,7 +73,7 @@ export const IconCrown = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', 
 
 export const IconAudioFile = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></>, p2)
 
-export const IconNotification = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></>, p2)
+export const IconNotification = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 01-3.4 0" /><circle cx="18.5" cy="5.5" r="2.2" fill="currentColor" stroke="none" opacity="0.9" /></>, p2)
 
 export const IconSun = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></>, p2)
 

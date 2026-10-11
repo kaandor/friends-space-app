@@ -24,6 +24,31 @@ interface NotificationState {
 let pollingTimer: number | null = null
 let lastSeenIds = new Set<string>()
 let initialLoadDone = false
+// Dedupe por conteúdo: mesmo (type|title|body|from) em <30s não gera novo toast.
+// Corrige backend que recria notificação com id novo mas conteúdo igual.
+const recentToastKeys = new Map<string, number>()
+const TOAST_DEDUPE_MS = 30000
+let lastSoundAt = 0
+const SOUND_THROTTLE_MS = 3000
+
+function toastKey(n: AppNotification): string {
+  return `${n.type}|${n.title || ''}|${n.body || ''}|${n.fromUserId || ''}`
+}
+
+function isDuplicateToast(n: AppNotification): boolean {
+  const key = toastKey(n)
+  const now = Date.now()
+  const last = recentToastKeys.get(key) || 0
+  if (now - last < TOAST_DEDUPE_MS) return true
+  recentToastKeys.set(key, now)
+  // Limpa chaves antigas para não crescer infinito
+  if (recentToastKeys.size > 100) {
+    for (const [k, t] of recentToastKeys) {
+      if (now - t > TOAST_DEDUPE_MS) recentToastKeys.delete(k)
+    }
+  }
+  return false
+}
 
 function allowed(type: string): boolean {
   const me = useUserStore.getState().currentUser
@@ -77,21 +102,38 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
         return
       }
       const prevIds = new Set(get().notifications.map((n) => n.id))
+      const visibleToastKeys = new Set(get().toasts.map((t) => toastKey(t)))
       const fresh: ToastItem[] = []
       for (const n of result) {
         if (prevIds.has(n.id)) continue
         if (lastSeenIds.has(n.id)) continue
         if (n.fromUserId === me.id) continue
         lastSeenIds.add(n.id)
+        // Já tem toast visível com mesmo conteúdo? Ignora.
+        if (visibleToastKeys.has(toastKey(n))) continue
+        // Mesmo conteúdo nos últimos 30s? Ignora (backend duplicou).
+        if (isDuplicateToast(n)) continue
         if (n.type === 'call-invite' || n.type === 'call-invite-response' || n.type === 'call-waiting') {
-          fresh.push({ ...n, toastId: `${n.id}-${Date.now()}` })
+          const item = { ...n, toastId: n.id }
+          fresh.push(item)
+          visibleToastKeys.add(toastKey(n))
           continue
         }
-        if (allowed(n.type)) fresh.push({ ...n, toastId: `${n.id}-${Date.now()}` })
+        if (allowed(n.type)) {
+          const item = { ...n, toastId: n.id }
+          fresh.push(item)
+          visibleToastKeys.add(toastKey(n))
+        }
       }
       if (fresh.length > 0) {
-        for (const toast of fresh) playSoundForType(toast.type)
-        set({ toasts: [...get().toasts.slice(-4), ...fresh] })
+        // Som com throttle: 1x a cada 3s no máximo
+        const now = Date.now()
+        if (now - lastSoundAt > SOUND_THROTTLE_MS) {
+          lastSoundAt = now
+          playSoundForType(fresh[0].type)
+        }
+        // Cap em 3 toasts visíveis (era slice(-4) + sem limite real)
+        set({ toasts: [...get().toasts, ...fresh].slice(-3) })
       }
       set({
         notifications: result,
