@@ -249,6 +249,13 @@ function setupCursorRelay(controlledBy: string | null) {
 // remover (removeTrack) mudava a ordem/count e o remoto falhava com:
 // "The order of m-lines in subsequent offer doesn't match...".
 const screenTransceivers = new Map<string, RTCRtpTransceiver>()
+// Slot de ÁUDIO da tela (separado do vídeo): o áudio do getDisplayMedia NÃO
+// pode reusar o transceiver de vídeo (replaceTrack falha por kind, dava stop
+// + addTransceiver no fim e embaralhava as m-lines a cada compartilhar).
+const screenAudioTransceivers = new Map<string, RTCRtpTransceiver>()
+// Slots canônicos de mic/câmera por peer: ligar a câmera depois ou trocar de
+// mic dá replaceTrack no slot em vez de addTrack (que acrescentava m-line no
+// fim e mudava o layout entre gerações da PC).
 // Instante do último reset local da PC por peer. Ofertas criadas ANTES do
 // reset (da geração antiga da PC remota) têm m-lines incompatíveis com a PC
 // nova e falham com "order of m-lines ... doesn't match". Sem este guarda,
@@ -277,8 +284,12 @@ const peerClient = new Map<string, 'web' | 'electron'>()
 // Boost de controle remoto por peer: enquanto controlamos a tela de alguém
 // (só EXE→EXE), o sharer sobe o bitrate daquele peer ao teto para não travar.
 const controlBoosted = new Set<string>()
+const mediaSlots = new Map<string, { audio?: RTCRtpTransceiver; video?: RTCRtpTransceiver }>()
 async function attachScreenTrack(pc: RTCPeerConnection, peerId: string, track: MediaStreamTrack, stream: MediaStream) {
-  const old = screenTransceivers.get(peerId)
+  // Vídeo e áudio da tela têm slots PRÓPRIOS (criados na construção da PC,
+  // sempre nas mesmas posições). Só cai no addTransceiver se o slot sumiu.
+  const slotMap = track.kind === 'audio' ? screenAudioTransceivers : screenTransceivers
+  const old = slotMap.get(peerId)
   if (old && old.direction !== 'stopped') {
     try {
       await old.sender.replaceTrack(track)
@@ -288,7 +299,7 @@ async function attachScreenTrack(pc: RTCPeerConnection, peerId: string, track: M
     try { old.stop() } catch { }
   }
   const created = pc.addTransceiver(track, { direction: 'sendonly', streams: [stream] })
-  screenTransceivers.set(peerId, created)
+  slotMap.set(peerId, created)
   return created.sender
 }
 function detachScreenTrack(pc: RTCPeerConnection, localStream: MediaStream | null) {
@@ -320,6 +331,8 @@ function closePeer(peerId: string) {
   iceRestartAt.delete(peerId)
   relayFallbackDone.delete(peerId)
   screenTransceivers.delete(peerId)
+  screenAudioTransceivers.delete(peerId)
+  mediaSlots.delete(peerId)
   // Para tracks de midia remota e limpa registros de sinal/candidato
   const streams = { ...useCallStore.getState().remoteStreams }
   const oldStream = streams[peerId]
@@ -1154,16 +1167,31 @@ async function createPeerConnection(peerId: string, initiator: boolean) {
   if (timer !== undefined) { window.clearTimeout(timer); disconnectTimers.delete(peerId) }
   const localStream = state.localStream
   const screenStream = state.screenStream
-  const trackPairs: Array<{ track: MediaStreamTrack; stream: MediaStream }> = []
-  if (localStream) for (const track of localStream.getTracks()) trackPairs.push({ track, stream: localStream })
-  if (screenStream) for (const track of screenStream.getTracks()) trackPairs.push({ track, stream: screenStream })
-  // Ordem determinística (áudio antes de vídeo): addTrack cria uma m-line por
-  // chamada na ordem de inserção — se um lado adiciona vídeo antes do áudio e
-  // o outro faz o inverso, a renegociação falha com "order of m-lines".
-  trackPairs.sort((a, b) => (a.track.kind === 'audio' ? 0 : 1) - (b.track.kind === 'audio' ? 0 : 1))
-  for (const { track, stream } of trackPairs) {
-    if (stream) pc.addTrack(track, stream)
+  // Layout CANÔNICO de m-lines — SEMPRE igual, em toda geração da PC e em
+  // todo peer: [0] áudio do mic · [1] vídeo da câmera · [2] vídeo da tela ·
+  // [3] áudio da tela. Ofertas com ordem/count idênticos nunca dão "order of
+  // m-lines" no remoto. ANTES, as tracks eram adicionadas dinamicamente
+  // (mic/câmera/tela conforme existiam no momento, com sort áudio-primeiro),
+  // então cada reset gerava uma ordem diferente e os dois lados ficavam se
+  // resetando em ping-pong sem convergir. Liga/desliga só troca track e
+  // direction dentro do slot — nunca add/remove.
+  const micTrack = localStream?.getAudioTracks()[0]
+  const camTrack = localStream?.getVideoTracks()[0]
+  const scrVTrack = screenStream?.getVideoTracks()[0]
+  const scrATrack = screenStream?.getAudioTracks()[0]
+  const addSlot = (kind: 'audio' | 'video', track: MediaStreamTrack | undefined, stream: MediaStream | null | undefined) => {
+    try {
+      if (track && stream) return pc.addTransceiver(track, { direction: 'sendonly', streams: [stream] })
+      return pc.addTransceiver(kind, { direction: 'inactive' })
+    } catch { return null }
   }
+  const micSlot = addSlot('audio', micTrack, localStream)
+  const camSlot = addSlot('video', camTrack, localStream)
+  const scrVSlot = addSlot('video', scrVTrack, screenStream)
+  const scrASlot = addSlot('audio', scrATrack, screenStream)
+  if (micSlot || camSlot) mediaSlots.set(peerId, { audio: micSlot ?? undefined, video: camSlot ?? undefined })
+  if (scrVSlot) screenTransceivers.set(peerId, scrVSlot)
+  if (scrASlot) screenAudioTransceivers.set(peerId, scrASlot)
   // Preferir VP8 no video: evita a TELA VERDE de decodificacao H.264 por
   // hardware (bug conhecido de Chromium/GPU, comum em tela compartilhada e
   // controle remoto). VP8 e o codec mais compativel; H.264 continua como
@@ -1270,10 +1298,7 @@ async function createPeerConnection(peerId: string, initiator: boolean) {
     const calling = useCallStore.getState().callingUser
     if (calling && peerId === calling.userId) clearRingState()
   }
-  try {
-    const preScreen = pc.addTransceiver('video', { direction: 'inactive' })
-    screenTransceivers.set(peerId, preScreen)
-  } catch { }
+  // Slots de tela criados acima no layout canônico — nada a reservar aqui.
   pc.onconnectionstatechange = () => {
     const connectionState = pc.connectionState
     watchStuckDtls(peerId, pc)
@@ -2773,21 +2798,34 @@ export const useCallStore = create<CallState>((set, get) => ({
     void (async () => {
       for (const [peerId, pc] of peerConnections) {
         let added = false
+        // Slots canônicos primeiro (valem mesmo inativos/sem track):
+        // replaceTrack no slot preserva a ordem das m-lines; addTrack só em
+        // último caso.
+        const slots = mediaSlots.get(peerId)
         for (const track of stream.getTracks()) {
           const has = pc.getSenders().some(s => s.track && s.track.id === track.id)
           if (has) continue
-          const audioSender = track.kind === 'audio' ? pc.getSenders().find(s => s.track && s.track.kind === 'audio') : null
+          const slotAudio = slots?.audio && slots.audio.direction !== 'stopped' ? slots.audio : null
+          const audioSender = track.kind === 'audio'
+            ? (slotAudio?.sender ?? pc.getSenders().find(s => s.track && s.track.kind === 'audio'))
+            : null
           // Câmera: prefere replaceTrack no sender de vídeo existente em vez de
           // addTrack — addTrack pode reutilizar o transceiver inativo da TELA
-          // (preScreen) e embaralhar a ordem das m-lines no remoto. Exclui o
-          // sender da tela para não trocar câmera por tela.
+          // e embaralhar a ordem das m-lines no remoto. Exclui os senders da
+          // tela para não trocar câmera por tela.
           const screenTr = track.kind === 'video' ? screenTransceivers.get(peerId) : undefined
+          const slotVideo = slots?.video && slots.video.direction !== 'stopped' && (!screenTr || slots.video !== screenTr) ? slots.video : null
           const videoSender = track.kind === 'video'
-            ? pc.getSenders().find(s => s.track && s.track.kind === 'video' && (!screenTr || s !== screenTr.sender))
+            ? (slotVideo?.sender ?? pc.getSenders().find(s => s.track && s.track.kind === 'video' && (!screenTr || s !== screenTr.sender)))
             : null
           try {
-            if (audioSender && track.kind === 'audio' && !hadTracks) { await audioSender.replaceTrack(track) }
-            else if (videoSender) { await videoSender.replaceTrack(track) }
+            if (audioSender && track.kind === 'audio' && !hadTracks) {
+              await audioSender.replaceTrack(track)
+              if (slotAudio && audioSender === slotAudio.sender) { try { slotAudio.direction = 'sendonly' } catch { } }
+            } else if (videoSender) {
+              await videoSender.replaceTrack(track)
+              if (slotVideo && videoSender === slotVideo.sender) { try { slotVideo.direction = 'sendonly' } catch { } }
+            }
             else { pc.addTrack(track, stream); added = true }
           } catch { }
         }

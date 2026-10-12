@@ -9,7 +9,10 @@ const TW_BASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72
 
 export function twemojiUrl(char: string): string {
   try {
-    return `${TW_BASE}/${twemoji.convert.toCodePoint(char)}.png`
+    // O seletor de variação (U+FE0F) não faz parte do nome do arquivo no CDN:
+    // "❤\uFE0F" (2764+FE0F) tem que virar 2764.png, senão dá 404 e o ícone quebra.
+    const base = char.replace(/[\uFE0E\uFE0F]/g, '')
+    return `${TW_BASE}/${twemoji.convert.toCodePoint(base)}.png`
   } catch {
     return ''
   }
