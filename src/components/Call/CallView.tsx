@@ -152,8 +152,8 @@ export function CallView() {
   const isLocalScreen = Boolean(screenStream)
   const hasActiveScreen = isLocalScreen || Boolean(screenUserId)
   const screenLabel = screenUserId
-    ? (participants.find(p => p.userId === screenUserId)?.userName || 'Usu�rio')
-    : isLocalScreen ? 'Voc�' : ''
+    ? (participants.find(p => p.userId === screenUserId)?.userName || 'Usuário')
+    : isLocalScreen ? 'Você' : ''
   const stageVideoId = screenUserId ? `call-video-screen-${screenUserId}` : 'call-video-screen-mini'
   const popoutVideoId = screenUserId ? 'call-video-screen-remote-focus' : 'call-video-screen-focus'
   const hasCamera = Boolean(localStream?.getVideoTracks().length)
@@ -246,7 +246,7 @@ export function CallView() {
     playRemoteAudio(remoteStreams, remoteScreenStreams)
   }, [remoteStreams, remoteScreenStreams])
 
-  // Audio estilo TV: 'all' = todas as telas, 'spotlight' = s� a destacada,
+  // Audio estilo TV: 'all' = todas as telas, 'spotlight' = só a destacada,
   // 'muted' = todas silenciadas. mutedScreens = silenciadas individualmente.
   const [audioMode, setAudioMode] = useState<'all' | 'spotlight' | 'muted'>('all')
   const [mutedScreens, setMutedScreens] = useState<string[]>([])
@@ -281,7 +281,7 @@ export function CallView() {
       else if (audioMode === 'spotlight' && effectiveFocus) target = id === effectiveFocus ? base : 0
       const cur = volumes[key]
       if ((cur === undefined ? 1 : cur) !== target) setVolume(key, target)
-      // Aplica direto no elemento tamb�m (cobre remount entre renders)
+      // Aplica direto no elemento também (cobre remount entre renders)
       applyScreenMute(id, target)
     })
   }, [mosaicFocus, screenUserId, audioMode, mutedScreens, allRemoteScreenIds, volumes, setVolume])
@@ -467,13 +467,13 @@ export function CallView() {
             <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 300, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,.72)', border: '1px solid #ef4444', borderRadius: 999, padding: '7px 16px', fontSize: 12, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' }}>
               <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', animation: 'fs-rec-blink 1.2s infinite' }} />
               <style>{`@keyframes fs-rec-blink { 0%,100% { opacity: 1 } 50% { opacity: .25 } }`}</style>
-              {isOwnRecording ? 'Voc� est� gravando � todos foram avisados' : `${recordingBy?.name || 'Algu�m'} est� gravando esta call`}
+              {isOwnRecording ? 'Você está gravando · todos foram avisados' : `${recordingBy?.name || 'Alguém'} está gravando esta call`}
             </div>
           )}
           {pendingScreens.map(id => (
             <div key={id} style={{ position: 'absolute', top: recordingActive ? 52 : 12, left: '50%', transform: 'translateX(-50%)', zIndex: 299, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,.72)', border: '1px solid var(--border)', borderRadius: 999, padding: '7px 16px', fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
               <Fa name="circle-notch" size={12} className="fa-spin" style={{ color: 'var(--accent)' }} />
-              {participants.find(p => p.userId === id)?.userName || 'Usu�rio'} est� transmitindo � conectando...
+              {participants.find(p => p.userId === id)?.userName || 'Usuário'} está transmitindo · conectando...
             </div>
           ))}
           <div className={`vc-bg ${hasActiveScreen ? 'has-screenshare' : ''}`}>
@@ -492,7 +492,7 @@ export function CallView() {
               <div className="vc-mosaic">
                 <div className="vc-mosaic-header">
                   <Fa name="grid-2" size={13} />
-                  <span>Modo mosaico � todas as telas</span>
+                  <span>Modo mosaico · todas as telas</span>
                   <div className="vc-mosaic-header-actions">
                     {mosaicFocus && (
                       <button onClick={() => setMosaicFocus(null)} title="Desfazer destaque (voltar a grade normal)">
@@ -513,7 +513,7 @@ export function CallView() {
                       title="Clique para desfazer o destaque; botao direito: volume"
                     >
                       <video id={`call-video-screen-${mosaicFocus}`} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
-                      <span className="vc-mosaic-label">{participants.find(p => p.userId === mosaicFocus)?.userName || 'Usu�rio'} <b style={{ color: 'var(--accent)' }}>� EM DESTAQUE</b></span>
+                      <span className="vc-mosaic-label">{participants.find(p => p.userId === mosaicFocus)?.userName || 'Usuário'} <b style={{ color: 'var(--accent)' }}>· EM DESTAQUE</b></span>
                       {isFullscreen && typeof document !== 'undefined' && document.fullscreenElement?.id === `call-fs-mosaic-${mosaicFocus}` && (
                         <button
                           className="vc-fs-exit"
@@ -533,7 +533,7 @@ export function CallView() {
                           title="Clique para destacar esta tela; botao direito: volume"
                         >
                           <video id={`call-video-screen-${userId}`} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
-                          <span className="vc-mosaic-label">{participants.find(p => p.userId === userId)?.userName || 'Usu�rio'}</span>
+                          <span className="vc-mosaic-label">{participants.find(p => p.userId === userId)?.userName || 'Usuário'}</span>
                           {isFullscreen && typeof document !== 'undefined' && document.fullscreenElement?.id === `call-fs-mosaic-${userId}` && (
                             <button
                               className="vc-fs-exit"
@@ -557,7 +557,7 @@ export function CallView() {
                         title="Clique para destacar a tela no centro; botao direito: volume"
                       >
                         <video id={`call-video-screen-${userId}`} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
-                        <span className="vc-mosaic-label">{participants.find(p => p.userId === userId)?.userName || 'Usu�rio'}</span>
+                        <span className="vc-mosaic-label">{participants.find(p => p.userId === userId)?.userName || 'Usuário'}</span>
                         {isFullscreen && typeof document !== 'undefined' && document.fullscreenElement?.id === `call-fs-mosaic-${userId}` && (
                           <button
                             className="vc-fs-exit"
@@ -632,7 +632,7 @@ export function CallView() {
                     className="vc-ctrl"
                     onClick={toggleMute}
                     onContextMenu={e => { e.preventDefault(); setMicMenu(micMenu ? null : { x: e.clientX, y: e.clientY }) }}
-                    title={muted ? 'Ativar microfone (bot�o direito: trocar microfone)' : 'Desativar microfone (bot�o direito: trocar microfone)'}
+                    title={muted ? 'Ativar microfone (botão direito: trocar microfone)' : 'Desativar microfone (botão direito: trocar microfone)'}
                   >
                     <span className={`vc-btn ${muted ? 'muted' : ''}`}>
                       {muted ? <MicOff size={20} /> : <Mic size={20} />}
@@ -654,12 +654,12 @@ export function CallView() {
                       className="vc-ctrl"
                       onClick={toggleCamera}
                       onContextMenu={e => { e.preventDefault(); setCamMenu(camMenu ? null : { x: e.clientX, y: e.clientY }) }}
-                      title={cameraOn ? 'Desligar c�mera (bot�o direito: op��es)' : 'Ligar c�mera (bot�o direito: op��es)'}
+                      title={cameraOn ? 'Desligar câmera (botão direito: opções)' : 'Ligar câmera (botão direito: opções)'}
                     >
                       <span className={`vc-btn ${cameraOn ? 'active' : ''}`}>
                         {cameraOn ? <Video size={20} /> : <VideoOff size={20} />}
                       </span>
-                      <span className="vc-ctrl-label">C�mera</span>
+                      <span className="vc-ctrl-label">Câmera</span>
                     </button>
                   )}
                   <button
@@ -675,7 +675,7 @@ export function CallView() {
                   <button
                     className="vc-ctrl"
                     onClick={() => { if (isOwnRecording) toggleRecording(); else if (!recordingActive) setShowRecConfirm(true) }}
-                    title={isOwnRecording ? 'Parar grava��o' : recordingActive ? `Gravando por ${recordingBy?.name || 'outro participante'}` : 'Gravar call (avisa a todos)'}
+                    title={isOwnRecording ? 'Parar gravação' : recordingActive ? `Gravando por ${recordingBy?.name || 'outro participante'}` : 'Gravar call (avisa a todos)'}
                   >
                     <span className={`vc-btn ${isOwnRecording ? 'active' : ''}`} style={isOwnRecording ? { background: '#ef4444', color: '#fff' } : undefined}>
                       <Fa name="circle-dot" size={19} />
@@ -691,7 +691,7 @@ export function CallView() {
                     </span>
                     <span className="vc-ctrl-label">Chamar</span>
                   </button>
-                  <button className="vc-ctrl" onClick={() => setMoreMenu(m => !m)} title="Mais op��es">
+                  <button className="vc-ctrl" onClick={() => setMoreMenu(m => !m)} title="Mais opções">
                     <span className={`vc-btn ${moreMenu ? 'active' : ''}`}>
                       <Ellipsis size={20} />
                     </span>
@@ -717,10 +717,10 @@ export function CallView() {
               <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 14, width: '100%', maxWidth: 420, padding: 20 }} onClick={e => e.stopPropagation()}>
                 <h4 style={{ margin: '0 0 10px', fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>Gravar esta call?</h4>
                 <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  Todos os participantes ser�o avisados na hora (banner + som). A grava��o captura tela compartilhada + �udio de todos, em trechos de 1 min salvos s� no <b>seu</b> Google Drive (pasta Minhas Transmiss�es) � nada passa pelo servidor.
+                  Todos os participantes serão avisados na hora (banner + som). A gravação captura tela compartilhada + áudio de todos, em trechos de 1 min salvos só no <b>seu</b> Google Drive (pasta Minhas Transmissões) · nada passa pelo servidor.
                 </p>
                 <p style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                  S� grave com o consentimento de todos (LGPD). Voc� pode parar a qualquer momento.
+                  Só grave com o consentimento de todos (LGPD). Você pode parar a qualquer momento.
                 </p>
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                   <button onClick={() => setShowRecConfirm(false)} style={{ padding: '9px 16px', borderRadius: 8, background: 'var(--bg-tertiary)', border: 'none', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
@@ -733,7 +733,7 @@ export function CallView() {
               </div>
             </div>
           )}
-          <button className="vc-debug-toggle" onClick={() => setShowDebugWindow(true)} title="Diagn�stico de conex�o" style={controlling === screenUserId ? { display: 'none' } : undefined}>
+          <button className="vc-debug-toggle" onClick={() => setShowDebugWindow(true)} title="Diagnóstico de conexão" style={controlling === screenUserId ? { display: 'none' } : undefined}>
             <Fa name="bug" size={14} />
           </button>
           {showDebugWindow && <DebugWindow onClose={() => setShowDebugWindow(false)} />}
@@ -742,9 +742,9 @@ export function CallView() {
             <button
               onClick={() => setQualityMenu(q => !q)}
               title="Qualidade de transmissao"
-              style={{ fontSize: 11, fontWeight: 700, color: qualityMenu ? 'var(--accent)' : 'var(--text-secondary)', background: 'rgba(0,0,0,0.4)', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
+              style={{ fontSize: 11, fontWeight: 700, color: qualityMenu ? 'var(--accent)' : 'var(--text-secondary)', background: 'rgba(0,0,0,0.4)', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 6, display: 'inline-flex', alignItems: 'center', gap: 5 }}
             >
-              {preferredQuality} {preferredFps} � {preferredBitrate >= 1000 ? `${(preferredBitrate / 1000).toFixed(preferredBitrate % 1000 === 0 ? 0 : 1)} Mbps` : `${preferredBitrate} kbps`} ?
+              {preferredQuality} {preferredFps} · {preferredBitrate >= 1000 ? `${(preferredBitrate / 1000).toFixed(preferredBitrate % 1000 === 0 ? 0 : 1)} Mbps` : `${preferredBitrate} kbps`} <Fa name="gauge-high" size={10} />
             </button>
           </div>
         </div>
@@ -799,7 +799,7 @@ export function CallView() {
                   <>
                     <div style={{ padding: '7px 10px 3px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
                       <Fa name="microphone" size={11} />
-                      Volume da voz de {participants.find(p => p.userId === screenMenu.userId)?.userName || 'Usu�rio'}
+                      Volume da voz de {participants.find(p => p.userId === screenMenu.userId)?.userName || 'Usuário'}
                     </div>
                     <div style={{ padding: '4px 10px 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
                       <VolumeSlider value={clampVolume(volumes[screenMenu.userId])} onChange={v => { if (screenMenu.userId) setVolume(screenMenu.userId, v) }} />
@@ -809,7 +809,7 @@ export function CallView() {
                 )}
                 <div style={{ padding: '7px 10px 3px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Fa name="volume-high" size={11} />
-                  Volume da tela de {screenMenu.userId ? (participants.find(p => p.userId === screenMenu.userId)?.userName || 'Usu�rio') : 'Voc�'}
+                  Volume da tela de {screenMenu.userId ? (participants.find(p => p.userId === screenMenu.userId)?.userName || 'Usuário') : 'Você'}
                 </div>
                 <div style={{ padding: '4px 10px 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <VolumeSlider value={clampVolume(volumes[screenMenu.userId ? `screen:${screenMenu.userId}` : 'screen:local'])} onChange={v => { if (screenMenu.userId) setScreenVolume(screenMenu.userId, v); else setVolume('screen:local', v) }} />
@@ -825,22 +825,26 @@ export function CallView() {
               <>
                 <div style={{ borderTop: '1px solid #1e1f22', margin: '4px 0' }} />
                 <div style={{ padding: '7px 10px 3px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>
-                  �udio: {audioMode === 'spotlight' ? 's� a destacada' : audioMode === 'muted' ? 'todas silenciadas' : 'todas as telas'}
+                  Áudio: {audioMode === 'spotlight' ? 'só a destacada' : audioMode === 'muted' ? 'todas silenciadas' : 'todas as telas'}
                 </div>
                 <button onClick={() => { const id = screenMenu.userId as string; selectScreen(id); setScreenMenu(null) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: 'var(--text-primary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
-                  ?? Ouvir s� esta tela
+                  <Fa name="headphones" size={12} />
+                  Ouvir só esta tela
                 </button>
                 <button onClick={() => { const id = screenMenu.userId as string; setMosaicFocus(id); setScreenMenu(null) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: 'var(--text-primary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
-                  ? Destacar esta tela
+                  <Fa name="star" size={12} />
+                  Destacar esta tela
                 </button>
                 <button onClick={() => { const id = screenMenu.userId as string; setMutedScreens(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]); setScreenMenu(null) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: 'var(--text-primary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
-                  {screenMenu.userId && mutedScreens.includes(screenMenu.userId) ? '?? Reativar esta tela' : '?? Silenciar esta tela'}
+                  {screenMenu.userId && mutedScreens.includes(screenMenu.userId) ? (<><Fa name="volume-high" size={12} /> Reativar esta tela</>) : (<><Fa name="volume-xmark" size={12} /> Silenciar esta tela</>)}
                 </button>
                 <button onClick={() => { setMutedScreens([]); setAudioMode('all'); setScreenMenu(null) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: 'var(--text-primary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
-                  ?? Ouvir todas as telas
+                  <Fa name="volume-high" size={12} />
+                  Ouvir todas as telas
                 </button>
                 <button onClick={() => { setAudioMode('muted'); setScreenMenu(null) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: 'var(--text-primary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
-                  ?? Silenciar todas as telas
+                  <Fa name="volume-xmark" size={12} />
+                  Silenciar todas as telas
                 </button>
                 <button onClick={() => { const id = screenMenu.userId as string; setScreenMenu(null); void toggleFullscreen(fullscreenKeyFor(id), 'normal') }} style={{ width: '100%', display: screenMenu.userId && screenMenu.userId !== currentUser?.id ? 'flex' : 'none', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: 'var(--text-primary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
                   <Fa name="expand" size={12} />
@@ -851,18 +855,18 @@ export function CallView() {
             {menuIsSelfScreen && isLocalScreen && (
               <button onClick={() => { const on = localStorage.getItem('friends-space:screen-audio') !== '0'; try { useCallStore.getState().setScreenAudioEnabled(!on) } catch { }; setScreenMenu(null) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: 'var(--text-primary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
                 <Fa name="music" size={12} />
-                {localStorage.getItem('friends-space:screen-audio') !== '0' ? 'Parar de compartilhar �udio da tela' : 'Compartilhar �udio da tela'}
+                {localStorage.getItem('friends-space:screen-audio') !== '0' ? 'Parar de compartilhar áudio da tela' : 'Compartilhar áudio da tela'}
               </button>
             )}
             <div style={{ borderTop: '1px solid #1e1f22', margin: '4px 0' }} />
-            <div style={{ padding: '7px 10px 3px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>Qualidade instant�nea � {getStreamPlanLabel(currentUser).label}</div>
+            <div style={{ padding: '7px 10px 3px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>Qualidade instantânea · {getStreamPlanLabel(currentUser).label}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '4px 10px 8px' }}>
               {(['480p', '720p', '1080p', '2k', '4k'] as const).map(q => {
                 const blocked = isQualityBlocked(currentUser, q)
                 const active = preferredQuality === q
                 return (
-                  <button key={q} disabled={blocked} onClick={() => { void setPreferredQuality(q) }} title={blocked ? 'Bloqueado no seu plano' : 'Troca instant�nea'} style={{ padding: '6px 10px', borderRadius: 6, background: active ? 'var(--accent)' : 'var(--bg-secondary)', color: active ? '#04120a' : 'var(--text-primary)', border: 'none', fontWeight: 700, fontSize: 12, cursor: blocked ? 'not-allowed' : 'pointer', opacity: blocked ? 0.55 : 1 }}>
-                    {blocked ? `??${q}` : q}
+                  <button key={q} disabled={blocked} onClick={() => { void setPreferredQuality(q) }} title={blocked ? 'Bloqueado no seu plano' : 'Troca instantânea'} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 10px', borderRadius: 6, background: active ? 'var(--accent)' : 'var(--bg-secondary)', color: active ? '#04120a' : 'var(--text-primary)', border: 'none', fontWeight: 700, fontSize: 12, cursor: blocked ? 'not-allowed' : 'pointer', opacity: blocked ? 0.55 : 1 }}>
+                    {blocked && <Fa name="lock" size={11} />}{q}
                   </button>
                 )
               })}
@@ -877,7 +881,7 @@ export function CallView() {
             </div>
             <div style={{ borderTop: '1px solid #1e1f22', margin: '4px 0', }} />
             <button onClick={() => { setPopout(!popout); setScreenMenu(null) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: 'var(--text-primary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
-              {popout ? '?? Fechar pop-out' : '?? Abrir pop-out'}
+              {popout ? (<><Fa name="minimize" size={12} /> Fechar pop-out</>) : (<><Fa name="window-restore" size={12} /> Abrir pop-out</>)}
             </button>
             {mosaic && (
               <button onClick={() => { setMosaic(false); setScreenMenu(null) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: 'var(--text-primary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
@@ -911,7 +915,7 @@ export function CallView() {
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: isCleanAudioEnabledPref() ? 'var(--accent)' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}
               >
                 <Fa name="wand-magic-sparkles" size={12} style={{  opacity: isCleanAudioEnabledPref() ? 1 : 0.3 }} />
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{isCleanAudioEnabledPref() ? '? �udio limpo ativado' : '�udio limpo (BETA)'}</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{isCleanAudioEnabledPref() ? 'Áudio limpo ativado' : 'Áudio limpo (BETA)'}</span>
               </button>
             )}
           </div>
@@ -958,11 +962,11 @@ export function CallView() {
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 119 }} onClick={() => setMoreMenu(false)} />
           <div style={{ position: 'fixed', bottom: 118, left: '50%', transform: 'translateX(-50%)', zIndex: 120, width: 270, background: 'rgba(13,16,20,0.95)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 16, padding: 6, boxShadow: '0 18px 50px rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)' }}>
-            <div style={{ padding: '8px 12px 4px', color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Mais op��es</div>
+            <div style={{ padding: '8px 12px 4px', color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Mais opções</div>
             {([
               { icon: <Volume2 size={16} />, label: 'Volume dos participantes', desc: 'Ajustar voz de cada um', active: showVolumePanel, onClick: () => { setShowVolumePanel(s => !s); setMoreMenu(false) } },
-              { icon: <Gauge size={16} />, label: 'Qualidade de transmiss�o', desc: `${preferredQuality} � ${preferredFps} fps`, active: qualityMenu, onClick: () => { setQualityMenu(q => !q); setMoreMenu(false) } },
-              { icon: <Settings size={16} />, label: 'Configura��es', desc: 'Abrir ajustes do app', active: false, onClick: () => { useSettingsStore.getState().openSettings(); setMoreMenu(false) } },
+              { icon: <Gauge size={16} />, label: 'Qualidade de transmissão', desc: `${preferredQuality} · ${preferredFps} fps`, active: qualityMenu, onClick: () => { setQualityMenu(q => !q); setMoreMenu(false) } },
+              { icon: <Settings size={16} />, label: 'Configurações', desc: 'Abrir ajustes do app', active: false, onClick: () => { useSettingsStore.getState().openSettings(); setMoreMenu(false) } },
               { icon: <Minus size={16} />, label: 'Minimizar chamada', desc: 'Continuar em segundo plano', active: false, onClick: () => { setMinimized(true); setMoreMenu(false) } },
             ] as const).map(item => (
               <button
@@ -1018,7 +1022,7 @@ export function CallView() {
             </div>
             <div style={{ padding: '2px 10px 6px', fontSize: 10.5, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
               <Fa name="video" size={10} />
-              Atual: <b style={{ color: 'var(--text-secondary)' }}>{preferredQuality} � {preferredFps} fps � {preferredBitrate >= 1000 ? `${(preferredBitrate / 1000).toFixed(preferredBitrate % 1000 === 0 ? 0 : 1)} Mbps` : `${preferredBitrate} kbps`}</b>
+              Atual: <b style={{ color: 'var(--text-secondary)' }}>{preferredQuality} · {preferredFps} fps · {preferredBitrate >= 1000 ? `${(preferredBitrate / 1000).toFixed(preferredBitrate % 1000 === 0 ? 0 : 1)} Mbps` : `${preferredBitrate} kbps`}</b>
             </div>
             {(['480p', '720p', '1080p', '2k', '4k'] as const).map(quality => {
               const blocked = isQualityBlocked(currentUser, quality)
@@ -1070,7 +1074,7 @@ export function CallView() {
             Volumes
           </div>
           {participants.filter(p => p.userId !== currentUser?.id).length === 0 && Object.keys(remoteScreenStreams).length === 0 && (
-            <div style={{ color: 'var(--text-muted)', fontSize: 11, padding: '4px 0' }}>Ningu�m mais na chamada.</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 11, padding: '4px 0' }}>Ninguém mais na chamada.</div>
           )}
           {participants.filter(p => p.userId !== currentUser?.id).map(p => (
             <div key={`vol-${p.userId}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0' }}>
@@ -1083,7 +1087,7 @@ export function CallView() {
           {Object.keys(remoteScreenStreams).map(userId => (
             <div key={`vol-screen-${userId}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0' }}>
               <Fa name="display" size={12} style={{  color: 'var(--accent)', width: 20, textAlign: 'center' }} />
-              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, color: 'var(--text-secondary)' }}>Tela de {participants.find(p => p.userId === userId)?.userName || 'Algu�m'}</span>
+              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, color: 'var(--text-secondary)' }}>Tela de {participants.find(p => p.userId === userId)?.userName || 'Alguém'}</span>
               <VolumeSlider value={clampVolume(volumes[`screen:${userId}`])} onChange={v => setScreenVolume(userId, v)} />
               <span style={{ fontSize: 10, color: 'var(--text-secondary)', width: 30, textAlign: 'right' }}>{Math.round(clampVolume(volumes[`screen:${userId}`]) * 100)}%</span>
             </div>

@@ -1071,16 +1071,17 @@ function App() {
 
   if (!authReady) {
     return (
-      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 55%), var(--bg-primary)' }}>
-        <div style={{ width: 400, maxWidth: 'calc(100vw - 32px)', padding: '40px 36px 34px', borderRadius: 24, border: '1px solid color-mix(in srgb, var(--accent) 25%, var(--border))', background: 'var(--bg-secondary)', boxShadow: '0 24px 70px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
-          <img src={assetUrl('friends-space-logo.png')} alt="Friends Space Beta" style={{ height: 76, width: 'auto', maxWidth: '100%', objectFit: 'contain', background: '#050807', border: '1px solid rgba(0, 255, 136, .22)', borderRadius: 14, padding: '6px 14px 6px 8px' }} />
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(90% 70% at 50% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%), radial-gradient(70% 60% at 50% 110%, color-mix(in srgb, #5865f2 10%, transparent), transparent 60%), var(--bg-primary)' }}>
+        <div style={{ width: 400, maxWidth: 'calc(100vw - 32px)', padding: '40px 36px 32px', borderRadius: 24, border: '1px solid color-mix(in srgb, var(--accent) 25%, var(--border))', background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 92%, var(--accent) 8%), var(--bg-secondary))', boxShadow: '0 24px 70px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+          <img src={assetUrl('friends-space-logo.png')} alt="Friends Space Beta" style={{ height: 72, width: 'auto', maxWidth: '100%', objectFit: 'contain', background: '#050807', border: '1px solid rgba(0, 255, 136, .25)', borderRadius: 14, padding: '6px 14px 6px 8px', boxShadow: '0 8px 28px rgba(0,0,0,0.45)' }} />
           <div style={{ textAlign: 'center' }}>
-            <h1 style={{ fontSize: 22, margin: 0, fontFamily: '"Space Grotesk", sans-serif', fontWeight: 800, letterSpacing: '-0.02em' }}>Friends Space Beta</h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: '6px 0 0' }}>Carregando...</p>
+            <h1 style={{ fontSize: 22, margin: 0, fontFamily: '"Space Grotesk", "Inter", sans-serif', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>Friends Space Beta</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', margin: '8px 0 0', fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>Carregando sua sessão</p>
           </div>
-          <div style={{ width: '100%', height: 4, borderRadius: 999, background: 'var(--bg-tertiary)', overflow: 'hidden' }}>
-            <div className="fs-loadbar" style={{ height: '100%', width: '40%', borderRadius: 999, background: 'linear-gradient(90deg, var(--accent-hover), var(--accent))' }} />
+          <div style={{ width: '100%', height: 5, borderRadius: 999, background: 'var(--bg-tertiary)', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="fs-loadbar" style={{ height: '100%', width: '40%', borderRadius: 999, background: 'linear-gradient(90deg, var(--accent-hover), var(--accent))', boxShadow: '0 0 12px color-mix(in srgb, var(--accent) 70%, transparent)' }} />
           </div>
+          <p style={{ color: 'var(--text-muted)', fontSize: 11, margin: 0, opacity: 0.75 }}>Se travar aqui, recarregue com Ctrl+F5</p>
         </div>
         <style>{`@keyframes fsLoadSlide{0%{transform:translateX(-110%)}100%{transform:translateX(280%)}}.fs-loadbar{animation:fsLoadSlide 1.2s ease-in-out infinite}`}</style>
       </div>

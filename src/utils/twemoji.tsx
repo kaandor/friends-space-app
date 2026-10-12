@@ -1,4 +1,4 @@
-import { createElement } from 'react'
+import { createElement, useState } from 'react'
 import twemoji from '@twemoji/api'
 import emojiRegex from 'emoji-regex'
 import type { ReactNode } from 'react'
@@ -16,14 +16,21 @@ export function twemojiUrl(char: string): string {
 }
 
 export function Tw({ char, size = 20 }: { char: string; size?: number }) {
+  const [failed, setFailed] = useState(false)
   const url = twemojiUrl(char)
-  if (!url) return char
+  // Se o CDN falhar/offline, renderiza o unicode nativo — nunca fica em branco.
+  if (!url || failed) {
+    return createElement('span', {
+      style: { fontSize: size, lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: size, height: size },
+    }, char)
+  }
   return createElement('img', {
     src: url,
     alt: char,
     draggable: false,
     className: 'fs-twemoji',
     style: { width: size, height: size },
+    onError: () => setFailed(true),
   })
 }
 
