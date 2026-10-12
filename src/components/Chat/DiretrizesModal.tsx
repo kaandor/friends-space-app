@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useState } from 'react'
 
 const GREEN = '#4ade80'
@@ -13,7 +14,7 @@ function Section({ icon, title, children }: { icon: string; title: string; child
   return (
     <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 16, display: 'flex', gap: 12 }}>
       <div style={{ flexShrink: 0, marginTop: 2 }}>
-        <i className={`fa-solid ${icon}`} style={{ color: GREEN, fontSize: 16 }} />
+        <Fa name={icon} size={16} style={{ color: GREEN }} />
       </div>
       <div style={{ minWidth: 0 }}>
         <h3 style={{ color: 'var(--text-primary)', fontSize: 15, fontWeight: 700, margin: '0 0 8px 0' }}>{title}</h3>
@@ -26,7 +27,7 @@ function Section({ icon, title, children }: { icon: string; title: string; child
 function Rule({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', color: '#d1d5db', fontSize: 13.5, lineHeight: 1.5 }}>
-      <i className="fa-solid fa-circle-check" style={{ color: GREEN, fontSize: 12, marginTop: 3, flexShrink: 0 }} />
+      <Fa name="circle-check" size={12} style={{ color: GREEN, marginTop: 3, flexShrink: 0 }} />
       <span>{children}</span>
     </div>
   )
@@ -47,13 +48,13 @@ export function DiretrizesModal({ open, onClose }: DiretrizesModalProps) {
         onClick={e => e.stopPropagation()}
       >
         <button onClick={onClose} aria-label="Fechar" style={{ position: 'absolute', top: 16, right: 16, color: '#9ca3af', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 20, zIndex: 10 }}>
-          <i className="fa-solid fa-xmark" />
+          <Fa name="xmark" size={14} />
         </button>
 
         <div style={{ padding: '24px 28px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
             <div style={{ width: 40, height: 40, background: '#1e2e1e', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <i className="fa-solid fa-scale-balanced" style={{ color: GREEN, fontSize: 18 }} />
+              <Fa name="scale-balanced" size={18} style={{ color: GREEN }} />
             </div>
             <h1 style={{ color: 'var(--text-primary)', fontSize: 22, fontWeight: 700, margin: 0 }}>Diretrizes e Obrigações</h1>
           </div>

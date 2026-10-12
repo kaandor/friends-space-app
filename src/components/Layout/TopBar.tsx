@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useState } from 'react'
 import { ArrowLeft, Menu, ChevronDown, House, Settings, ShieldHalf, Languages, HardDrive, Check, Pen, History, Info as InfoIcon, Rocket } from 'lucide-react'
 import { Avatar } from '../ui/Avatar'
@@ -109,8 +110,7 @@ export function TopBar({ activeUser, onShowPrivacy, onShowEditProfile, onShowAst
             {menuIcon === 'back' ? <ArrowLeft size={17} strokeWidth={2} /> : <Menu size={17} strokeWidth={2} />}
           </button>
         )}
-        <img src={assetUrl('Logo.png')} alt="Friends Space" className="fs-topbar-logo" title="Recarregar (F5)" onClick={() => window.location.reload()} />
-        <h1 className="fs-topbar-title" onClick={() => window.location.reload()}>Friends space</h1>
+        <img src={assetUrl('friends-space-logo.png')} alt="Friends Space" className="fs-topbar-logo-full" title="Recarregar (F5)" onClick={() => window.location.reload()} />
 
         {currentServer && (
           <>
@@ -261,7 +261,7 @@ export function TopBar({ activeUser, onShowPrivacy, onShowEditProfile, onShowAst
               <button className="fs-dropdown-item" onClick={() => void toggleStorage()}>
                 <HardDrive size={15} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
                 <span>Armazenamento</span>
-                <i className={`fa-solid ${showStorage ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text-muted)' }} />
+                <Fa name={showStorage ? 'chevron-up' : 'chevron-down'} size={10} style={{ marginLeft: 'auto', color: 'var(--text-muted)' }} />
               </button>
               {showStorage && (
                 <div style={{ padding: '4px 12px 10px' }}>
@@ -347,18 +347,18 @@ export function TopBar({ activeUser, onShowPrivacy, onShowEditProfile, onShowAst
               )}
               {canOpenAdminPanel(me) && (
                 <button className="fs-dropdown-item" onClick={() => { closeMenus(); setShowAdminPanel(true) }}>
-                  <i className="fa-solid fa-shield-halved" /> Painel {me?.flags?.dev ? 'Dev' : me?.flags?.support ? 'Suporte' : 'Conta'}
+                  <Fa name="shield-halved" size={14} /> Painel {me?.flags?.dev ? 'Dev' : me?.flags?.support ? 'Suporte' : 'Conta'}
                 </button>
               )}
               <button className="fs-dropdown-item" onClick={() => { closeMenus(); onShowAbout() }}>
                 <InfoIcon size={15} strokeWidth={2} /> Sobre
               </button>
               <button className="fs-dropdown-item" onClick={() => { closeMenus(); onShowHelp() }}>
-                <i className="fa-solid fa-circle-question" /> Ajuda
+                <Fa name="circle-question" size={14} /> Ajuda
               </button>
               <div className="fs-dropdown-divider" />
               <button className="fs-dropdown-item fs-dropdown-danger" onClick={() => { closeMenus(); onSignOut() }}>
-                <i className="fa-solid fa-right-from-bracket" /> {t('topbar.signOut')}
+                <Fa name="right-from-bracket" size={14} /> {t('topbar.signOut')}
               </button>
             </div>
           </>

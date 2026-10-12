@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useEffect, useRef, useCallback, useState } from 'react'
 import type { Channel } from '../../types'
 import { Avatar } from '../ui/Avatar'
@@ -7,6 +8,7 @@ import DebugWindow from '../Debug/DebugWindow'
 import { useUserMenuStore } from '../../stores/userMenuStore'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { Mic, MicOff, HeadphoneOff } from 'lucide-react'
+import { IconMic, IconMicOff, IconHeadphone, IconHeadphonesOff, IconGear, IconEndCall, IconDisplay, IconStop, IconChat } from '../../utils/icons'
 import { RemoteControlOverlay } from './RemoteControlOverlay'
 import { isElectronDevice, isElectronFs, fullscreenTileById, useCallFullscreen } from './callFullscreen'
 import { acquireCallMedia, getAudioInputDevices, getAudioOutputDevices } from '../../services/antiloud'
@@ -410,7 +412,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
                 setScreenMenu({ x: e.clientX, y: e.clientY, userId: uid })
               }}>
               {isFullscreen && fullscreenMode === 'normal' && (
-                <button className="vc-fs-exit" onClick={() => exitCallFullscreen()} title="Minimizar (sair da tela cheia)"><i className="fa-solid fa-minimize" style={{ fontSize: 14 }} /></button>
+                <button className="vc-fs-exit" onClick={() => exitCallFullscreen()} title="Minimizar (sair da tela cheia)"><Fa name="minimize" size={14} /></button>
               )}
               <ScreenMosaicView
                 currentUser={currentUser}
@@ -427,7 +429,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
               />
               {!controlling && (
               <div className="vc-topbar">
-                <i className="fa-solid fa-display" style={{ fontSize: 14 }} />
+                <Fa name="display" size={14} />
                 <span style={{ fontWeight: 600, fontSize: 14 }}>
                   Tela de {allParticipants.find(p => {
                     if (focusedScreen) return p.userId === focusedScreen
@@ -443,7 +445,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
                         onClick={stopControlling}
                         style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                       >
-                        <i className="fa-solid fa-hand-pointer" style={{ fontSize: 11 }} /> Parar controle
+                        <Fa name="hand-pointer" size={11} /> Parar controle
                       </button>
                     ) : !controlling ? (
                       <button
@@ -451,7 +453,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
                         disabled={Boolean(controlPending)}
                         style={{ display: 'flex', alignItems: 'center', gap: 6, background: controlPending ? 'rgba(255,255,255,0.2)' : 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                       >
-                        <i className="fa-solid fa-mouse-pointer" style={{ fontSize: 11 }} />
+                        <Fa name="mouse-pointer" size={11} />
                         {controlPending === focusedScreen ? 'Aguardando...' : 'Controlar'}
                       </button>
                     ) : null
@@ -504,7 +506,6 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7, maxWidth: '100%' }}>
                     <span className="vc-tile-name">{isSelf ? 'Você' : p.userName}</span>
-                    {isSelf && <span className="vc-tile-you">VOCÊ</span>}
                   </div>
                   <span className={`vc-tile-status${pMuted || pDeafened ? ' off' : ''}`} title={pDeafened ? 'Com som desativado' : pMuted ? 'Mutado' : 'Na chamada'}>
                     {pDeafened ? <HeadphoneOff size={13} /> : pMuted ? <MicOff size={13} /> : <Mic size={13} />}
@@ -524,7 +525,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
               onContextMenu={e => { e.preventDefault(); setMicMenu(micMenu ? null : { x: e.clientX, y: e.clientY }) }}
               title={muted ? 'Ativar microfone (botao direito: trocar microfono)' : 'Desativar microfone (botao direito: trocar microfono)'}
             >
-              <i className={muted ? 'fa-solid fa-microphone-slash' : 'fa-solid fa-microphone'} />
+              {muted ? <IconMicOff width={22} height={22} /> : <IconMic width={22} height={22} />}
             </button>
             <button
               className={`vc-btn ${deafened ? 'muted' : ''}`}
@@ -532,31 +533,31 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
               onContextMenu={e => { e.preventDefault(); setOutMenu(outMenu ? null : { x: e.clientX, y: e.clientY }) }}
               title={deafened ? 'Ativar som (botao direito: escolher fone)' : 'Desativar som (botao direito: escolher fone)'}
             >
-              <i className={deafened ? 'fa-solid fa-headphones-slash' : 'fa-solid fa-headphones'} />
+              {deafened ? <IconHeadphonesOff width={22} height={22} /> : <IconHeadphone width={22} height={22} />}
             </button>
             <button
               className="vc-btn"
               onClick={() => useSettingsStore.getState().openSettings()}
               title="Configuracoes"
             >
-              <i className="fa-solid fa-gear" />
+              <IconGear width={22} height={22} />
             </button>
             <button className="vc-btn leave" onClick={handleLeave} title="Sair da call">
-              <i className="fa-solid fa-phone-slash" />
+              <IconEndCall width={22} height={22} />
             </button>
             <button
               className={`vc-btn ${screenSharing ? 'active' : ''}`}
               onClick={() => { toggleScreenShare() }}
               title={screenSharing ? 'Parar compartilhar' : 'Compartilhar tela'}
             >
-              <i className={screenSharing ? 'fa-solid fa-stop' : 'fa-solid fa-display'} />
+              {screenSharing ? <IconStop width={20} height={20} /> : <IconDisplay width={22} height={22} />}
             </button>
             <button
               className={`vc-btn ${showChat ? 'active' : ''}`}
               onClick={() => setShowChat(s => !s)}
               title="Mostrar chat"
             >
-              <i className="fa-solid fa-comments" />
+              <IconChat width={22} height={22} />
             </button>
           </div>
         </div>
@@ -576,7 +577,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
             {!menuIsSelfScreen && (
               <>
                 <div style={{ padding: '7px 10px 3px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <i className="fa-solid fa-volume-high" style={{ fontSize: 11 }} />
+                  <Fa name="volume-high" size={11} />
                   Volume da tela de {screenMenu.userId ? (allParticipants.find(p => p.userId === screenMenu.userId)?.userName || 'Usuário') : 'Você'}
                 </div>
                 <div style={{ padding: '4px 10px 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -588,7 +589,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
             {!menuIsSelfScreen && screenMenu.userId && (
               <>
                 <div style={{ padding: '7px 10px 3px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <i className="fa-solid fa-microphone" style={{ fontSize: 11 }} />
+                  <Fa name="microphone" size={11} />
                   Volume da voz de {allParticipants.find(p => p.userId === screenMenu.userId)?.userName || 'Usuário'}
                 </div>
                 <div style={{ padding: '4px 10px 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -600,7 +601,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
             <div style={{ borderTop: '1px solid #1e1f22', margin: '4px 0' }} />
             {screenMenu.userId && screenMenu.userId !== currentUser?.id && screenMenu.userId !== 'local' && (
               <button onClick={() => { const id = screenMenu.userId as string; setScreenMenu(null); openTileFs(id) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: 'var(--text-primary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
-                <i className="fa-solid fa-expand" style={{ fontSize: 12 }} />
+                <Fa name="expand" size={12} />
                 Tela cheia
               </button>
             )}
@@ -610,15 +611,15 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
                 const blocked = isQualityBlocked(currentUser, q)
                 const active = preferredQuality === q
                 return (
-                  <button key={q} disabled={blocked} onClick={() => { void setPreferredQuality(q) }} title={blocked ? 'Bloqueado no seu plano' : 'Troca instantânea'} style={{ padding: '6px 10px', borderRadius: 6, background: active ? 'var(--accent)' : 'var(--bg-secondary)', color: active ? '#04120a' : 'var(--text-primary)', border: 'none', fontWeight: 700, fontSize: 12, cursor: blocked ? 'not-allowed' : 'pointer', opacity: blocked ? 0.55 : 1 }}>
-                    {blocked ? `🔒${q}` : q}
+                  <button key={q} disabled={blocked} onClick={() => { void setPreferredQuality(q) }} title={blocked ? 'Bloqueado no seu plano' : 'Troca instantânea'} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 10px', borderRadius: 6, background: active ? 'var(--accent)' : 'var(--bg-secondary)', color: active ? '#04120a' : 'var(--text-primary)', border: 'none', fontWeight: 700, fontSize: 12, cursor: blocked ? 'not-allowed' : 'pointer', opacity: blocked ? 0.55 : 1 }}>
+                    {blocked && <Fa name="lock" size={11} />}{q}
                   </button>
                 )
               })}
             </div>
             <div style={{ display: 'flex', gap: 8, padding: '0 10px 8px' }}>
               <select value={preferredFps} onChange={e => { void setPreferredFps(Number(e.target.value) as never) }} style={{ flex: 1, background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 6, padding: 6, fontSize: 12 }}>
-                {([30, 60] as const).map(f => <option key={f} value={f} disabled={currentUser ? f > getMaxStreamFps(currentUser) : false}>{f > (currentUser ? getMaxStreamFps(currentUser) : 30) ? `🔒${f}fps` : `${f}fps`}</option>)}
+                {([30, 60] as const).map(f => <option key={f} value={f} disabled={currentUser ? f > getMaxStreamFps(currentUser) : false}>{f > (currentUser ? getMaxStreamFps(currentUser) : 30) ? `${f}fps · bloqueado` : `${f}fps`}</option>)}
               </select>
               <select value={preferredBitrate} onChange={e => { void setPreferredBitrate(Number(e.target.value)) }} style={{ flex: 1, background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 6, padding: 6, fontSize: 12 }}>
                 {[2000, 4000, 6000, 8000, 12000, 16000, 25000, 35000, 45000].map(k => <option key={k} value={k} disabled={currentUser ? k > getMaxBitrateKbps(currentUser) : false}>{k >= 1000 ? `${k / 1000}M` : `${k}k`}</option>)}
@@ -629,14 +630,14 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
               <>
                 {screenSharing && (
                   <button onClick={() => { const on = localStorage.getItem('friends-space:screen-audio') !== '0'; try { useCallStore.getState().setScreenAudioEnabled(!on) } catch { }; setScreenMenu(null) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: 'var(--text-primary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
-                    <i className="fa-solid fa-music" style={{ fontSize: 12 }} />
+                    <Fa name="music" size={12} />
                     {localStorage.getItem('friends-space:screen-audio') !== '0' ? 'Parar de compartilhar áudio da tela' : 'Compartilhar áudio da tela'}
                   </button>
                 )}
               </>
             ) : (
               <button onClick={() => { const v = localStorage.getItem('friends-space:screen-audio') !== '0'; localStorage.setItem('friends-space:screen-audio', v ? '0' : '1'); setScreenMenu(null) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: 'var(--text-primary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
-                <i className="fa-solid fa-music" style={{ fontSize: 12 }} />
+                <Fa name="music" size={12} />
                 {localStorage.getItem('friends-space:screen-audio') !== '0' ? 'Parar de compartilhar áudio da tela' : 'Compartilhar áudio da tela'}
               </button>
             )}
@@ -653,7 +654,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
 
       {controlledBy && (
         <div style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 140, background: '#ed4245', color: '#fff', padding: '10px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <i className="fa-solid fa-mouse-pointer" style={{ fontSize: 12 }} />
+          <Fa name="mouse-pointer" size={12} />
           <span>Alguem esta controlando seu PC</span>
           <button onClick={revokeControl} style={{ background: '#fff', color: '#ed4245', border: 'none', borderRadius: 6, padding: '6px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>Revogar agora</button>
         </div>
@@ -663,7 +664,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'rgba(0,0,0,0.6)' }} />
           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 151, width: 'min(380px, calc(100vw - 32px))', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 12, padding: 24, textAlign: 'center', color: 'var(--text-primary)' }}>
-            <i className="fa-solid fa-mouse-pointer" style={{ fontSize: 26, color: 'var(--accent)', marginBottom: 12 }} />
+            <Fa name="mouse-pointer" size={26} style={{  color: 'var(--accent)', marginBottom: 12 }} />
             <h3 style={{ margin: '0 0 8px', fontSize: 17 }}>{controlRequests[0].userName || 'Alguem'}</h3>
             <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, margin: '0 0 20px' }}>quer controlar seu PC. So aceite se confiar nesta pessoa.</p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
@@ -686,7 +687,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
                 onClick={() => { setSelectedMic(device.deviceId); localStorage.setItem('friends-space:mic', device.deviceId); void switchMicDevice(device.deviceId).catch(() => { }); setMicMenu(null) }}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: selectedMic === device.deviceId ? 'var(--accent)' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}
               >
-                <i className="fa-solid fa-microphone" style={{ fontSize: 12, opacity: selectedMic === device.deviceId ? 1 : 0.3 }} />
+                <Fa name="microphone" size={12} style={{  opacity: selectedMic === device.deviceId ? 1 : 0.3 }} />
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{device.label}</span>
               </button>
             ))}
@@ -711,7 +712,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
                 }}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: selectedOutput === device.deviceId ? 'var(--accent)' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}
               >
-                <i className="fa-solid fa-headphones" style={{ fontSize: 12, opacity: selectedOutput === device.deviceId ? 1 : 0.3 }} />
+                <Fa name="headphones" size={12} style={{  opacity: selectedOutput === device.deviceId ? 1 : 0.3 }} />
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{device.label}</span>
               </button>
             ))}
@@ -724,7 +725,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
         onClick={() => setShowDebugWindow(true)}
         title="Diagnóstico de conexão"
       >
-        <i className="fa-solid fa-bug" />
+        <Fa name="bug" size={14} />
       </button>
 
       {showDebugWindow && <DebugWindow onClose={() => setShowDebugWindow(false)} />}
@@ -772,7 +773,7 @@ function MosaicScreenTile({ tileId, stream, label, focused, speaking, muted, onF
         {focused && <b style={{ color: '#00ff88' }}> · EM DESTAQUE</b>}
       </span>
       {fsActive && (
-        <button className="vc-fs-exit" onClick={e => { e.stopPropagation(); onExitFs() }} title="Minimizar (sair da tela cheia)"><i className="fa-solid fa-minimize" style={{ fontSize: 14 }} /></button>
+        <button className="vc-fs-exit" onClick={e => { e.stopPropagation(); onExitFs() }} title="Minimizar (sair da tela cheia)"><Fa name="minimize" size={14} /></button>
       )}
     </div>
   )

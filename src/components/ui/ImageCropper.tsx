@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useState, useRef, useCallback, useEffect } from 'react'
 
 interface ImageCropperProps {
@@ -170,7 +171,7 @@ export function ImageCropper({ image, shape, aspectRatio, onCrop, onCancel }: Im
               zIndex: 2,
             }}
           >
-            <i className="fa-solid fa-up-right-and-down-left-from-center" style={{ fontSize: 9, color: '#000' }} />
+            <Fa name="up-right-and-down-left-from-center" size={9} style={{  color: '#000' }} />
           </div>
         </div>
 

@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useEffect, useRef, useState } from 'react'
 import { getApiBaseUrl } from '../../services/config'
 
@@ -186,7 +187,7 @@ export function VideoPlayer({ src, maxHeight = 300, autoPlay = false, onError, o
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '6px 10px 8px', background: 'linear-gradient(transparent, rgba(0,0,0,.75))', display: 'flex', alignItems: 'center', gap: 8 }} onClick={e => e.stopPropagation()}>
         <button onClick={toggle} title={playing ? 'Pausar' : 'Reproduzir'}
           style={{ background: 'none', border: 'none', color: '#fff', fontSize: 15, cursor: 'pointer', padding: 2, width: 24 }}>
-          <i className={`fa-solid ${playing ? 'fa-pause' : 'fa-play'}`} />
+          <Fa name={playing ? 'pause' : 'play'} size={14} />
         </button>
         <span style={{ color: '#fff', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>{fmt(time)} / {fmt(dur)}</span>
         <div onClick={seek} title="Buscar"
@@ -195,16 +196,16 @@ export function VideoPlayer({ src, maxHeight = 300, autoPlay = false, onError, o
         </div>
         <button onClick={() => void pip()} title="Miniplayer"
           style={{ background: 'none', border: 'none', color: '#fff', fontSize: 13, cursor: 'pointer', padding: 2 }}>
-          <i className="fa-regular fa-window-restore" />
+          <Fa name="window-restore" size={14} />
         </button>
         <button onClick={toggleMute} title={muted ? 'Ativar som' : 'Silenciar'}
           style={{ background: 'none', border: 'none', color: '#fff', fontSize: 14, cursor: 'pointer', padding: 2, width: 24 }}>
-          <i className={`fa-solid ${muted ? 'fa-volume-xmark' : 'fa-volume-high'}`} />
+          <Fa name={muted ? 'volume-xmark' : 'volume-high'} size={14} />
         </button>
         <span style={{ position: 'relative' }}>
           <button onClick={() => setShowSpeeds(s => !s)} title="Velocidade"
             style={{ background: 'none', border: 'none', color: '#fff', fontSize: 14, cursor: 'pointer', padding: 2 }}>
-            <i className="fa-solid fa-gear" />
+            <Fa name="gear" size={14} />
           </button>
           {showSpeeds && (
             <span style={{ position: 'absolute', bottom: 28, right: 0, background: 'rgba(10,10,14,.95)', border: '1px solid rgba(255,255,255,.15)', borderRadius: 8, overflow: 'hidden', display: 'flex', flexDirection: 'column', zIndex: 5 }}>
@@ -219,12 +220,12 @@ export function VideoPlayer({ src, maxHeight = 300, autoPlay = false, onError, o
         </span>
         <button onClick={full} title="Tela cheia"
           style={{ background: 'none', border: 'none', color: '#fff', fontSize: 14, cursor: 'pointer', padding: 2 }}>
-          <i className="fa-solid fa-expand" />
+          <Fa name="expand" size={14} />
         </button>
         {onExpand && (
           <button onClick={onExpand} title="Ampliar"
             style={{ background: 'none', border: 'none', color: '#fff', fontSize: 13, cursor: 'pointer', padding: 2 }}>
-            <i className="fa-solid fa-up-right-and-down-left-from-center" />
+            <Fa name="up-right-and-down-left-from-center" size={14} />
           </button>
         )}
       </div>

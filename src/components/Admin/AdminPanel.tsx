@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useCallback, useEffect, useState } from 'react'
 import type { Server, User } from '../../types'
 import { useUserStore } from '../../stores/userStore'
@@ -407,7 +408,7 @@ export function AdminPanel({ open, onClose, initialTab }: { open: boolean; onClo
               <span style={{ width: 34, height: 34, borderRadius: 10, background: 'color-mix(in srgb, var(--accent) 16%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {isDevFlag
                   ? <Code2 size={17} strokeWidth={2.5} style={{ color: 'var(--accent)' }} />
-                  : <i className="fa-solid fa-headset" style={{ color: 'var(--accent)', fontSize: 15 }} />}
+                  : <Fa name="headset" size={15} style={{ color: 'var(--accent)' }} />}
               </span>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2 }}>{isDevFlag ? 'Painel Dev' : 'Painel Suporte'}</div>

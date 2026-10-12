@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getCallDiagnostics, testTurnConnectivity, useCallStore } from '../../stores/callStore'
 import type { CallDiagnostics, TurnTestResult } from '../../stores/callStore'
@@ -273,7 +274,7 @@ export default function DebugWindow({ onClose }: { onClose: () => void }) {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '13px 18px', borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
           <span style={{ width: 30, height: 30, borderRadius: 9, background: 'color-mix(in srgb, var(--accent) 16%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <i className="fa-solid fa-bug" style={{ color: 'var(--accent)', fontSize: 14 }} />
+            <Fa name="bug" size={14} style={{ color: 'var(--accent)' }} />
           </span>
           <span style={{ fontWeight: 800, fontSize: 15.5, color: 'var(--text-primary)' }}>Diagnóstico de conexão</span>
           <span style={{ marginLeft: 'auto', fontSize: 11.5, color: 'var(--text-muted)', fontFamily: 'monospace' }}>

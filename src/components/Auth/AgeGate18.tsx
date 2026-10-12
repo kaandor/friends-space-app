@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useState } from 'react'
 import {
   acceptAgeGate,
@@ -14,7 +15,7 @@ const GREEN = '#4ade80'
 function LawItem({ icon, title, children }: { icon: string; title: string; children: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-      <i className={`fa-solid ${icon}`} style={{ color: GREEN, fontSize: 13, marginTop: 3, flexShrink: 0 }} />
+      <Fa name={icon} size={13} style={{ color: GREEN, marginTop: 3, flexShrink: 0 }} />
       <div>
         <b style={{ color: '#e5e7eb', fontSize: 13, display: 'block', marginBottom: 2 }}>{title}</b>
         <span style={{ color: '#9ca3af', fontSize: 12, lineHeight: 1.5 }}>{children}</span>
@@ -121,7 +122,7 @@ export function AgeGate18() {
         {step === 'gate' && (
           <>
             <div style={{ background: '#1e2e1e', border: '1px solid #2c4a2c', borderRadius: 12, padding: '12px 14px', marginBottom: 14, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <i className="fa-solid fa-shield-halved" style={{ color: '#fbbf24', fontSize: 15, marginTop: 2, flexShrink: 0 }} />
+              <Fa name="shield-halved" size={15} style={{ color: '#fbbf24', marginTop: 2, flexShrink: 0 }} />
               <p style={{ margin: 0, color: '#d1d5db', fontSize: 13, lineHeight: 1.5 }}>
                 O Friends Space e um ambiente <b>+18</b> com controle parental para <b>adolescentes de 13 a 17 anos</b>. Menores de idade so entram com o <b>consentimento do pai, mae ou responsavel</b>, e recebem filtros de seguranca ainda mais rigorosos.
               </p>
@@ -155,7 +156,7 @@ export function AgeGate18() {
 
             {error && (
               <div style={{ background: '#3b1f1f', border: '1px solid #5a2c2c', borderRadius: 10, padding: '10px 12px', color: '#fca5a5', fontSize: 12.5, lineHeight: 1.5, marginBottom: 12 }}>
-                <i className="fa-solid fa-circle-xmark" style={{ marginRight: 6 }} />
+                <Fa name="circle-xmark" size={14} style={{ marginRight: 6 }} />
                 {error}
               </div>
             )}
@@ -165,7 +166,7 @@ export function AgeGate18() {
             </button>
 
             <button onClick={() => setStep('terms')} style={{ width: '100%', marginTop: 8, padding: '10px 0', background: 'transparent', border: '1px solid #3a3d42', color: '#d1d5db', borderRadius: 10, cursor: 'pointer', fontSize: 12.5, fontWeight: 600 }}>
-              <i className="fa-solid fa-book-open" style={{ marginRight: 6, color: GREEN }} />
+              <Fa name="book-open" size={14} style={{ marginRight: 6, color: GREEN }} />
               Ler lei brasileira e termos de protecao
             </button>
           </>
@@ -174,7 +175,7 @@ export function AgeGate18() {
         {step === 'minor' && (
           <>
             <div style={{ background: '#1e2e1e', border: '1px solid #2c4a2c', borderRadius: 12, padding: '12px 14px', marginBottom: 14, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <i className="fa-solid fa-user-shield" style={{ color: '#fbbf24', fontSize: 16, marginTop: 2, flexShrink: 0 }} />
+              <Fa name="user-shield" size={16} style={{ color: '#fbbf24', marginTop: 2, flexShrink: 0 }} />
               <p style={{ margin: 0, color: '#d1d5db', fontSize: 13, lineHeight: 1.5 }}>
                 <b>Passo {minorSubStep === 'guardian' ? '1 de 3' : minorSubStep === 'child' ? '2 de 3' : '3 de 3'}.</b>{' '}
                 {minorSubStep === 'guardian' && 'Informe os dados do pai, mae ou responsavel legal.'}
@@ -224,7 +225,7 @@ export function AgeGate18() {
               <div style={{ marginBottom: 14 }}>
                 <div style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', marginBottom: 12 }}>
                   <h3 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <i className="fa-solid fa-file-signature" style={{ color: GREEN }} />
+                    <Fa name="file-signature" size={14} style={{ color: GREEN }} />
                     Autorizacao do responsavel
                   </h3>
                   <p style={{ margin: 0, color: '#d1d5db', fontSize: 12.5, lineHeight: 1.6 }}>
@@ -242,7 +243,7 @@ export function AgeGate18() {
 
             {error && (
               <div style={{ background: '#3b1f1f', border: '1px solid #5a2c2c', borderRadius: 10, padding: '10px 12px', color: '#fca5a5', fontSize: 12.5, lineHeight: 1.5, marginBottom: 12 }}>
-                <i className="fa-solid fa-circle-xmark" style={{ marginRight: 6 }} />
+                <Fa name="circle-xmark" size={14} style={{ marginRight: 6 }} />
                 {error}
               </div>
             )}
@@ -261,7 +262,7 @@ export function AgeGate18() {
           <>
             <div style={{ background: '#1a1d20', border: '1px solid #2a2c30', borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
               <h2 style={{ margin: '0 0 10px', fontSize: 16, fontWeight: 700, color: '#fff' }}>
-                <i className="fa-solid fa-scale-balanced" style={{ color: GREEN, marginRight: 8, fontSize: 14 }} />
+                <Fa name="scale-balanced" size={14} style={{ color: GREEN, marginRight: 8 }} />
                 Termos, Lei Brasileira e Protecao
               </h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

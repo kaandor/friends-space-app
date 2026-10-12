@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { assetUrl } from '../../utils/assets'
 import { useUserStore } from '../../stores/userStore'
 import { getAstroTier } from '../../utils/astro'
@@ -14,7 +15,7 @@ export function AstroPromo({ onPlans }: { onPlans?: () => void }) {
         </div>
         <p>Desbloqueie recursos exclusivos e leve sua experiencia ao maximo.</p>
         <button className="fs-astro-btn" onClick={onPlans}>
-          Conhecer planos <i className="fa-solid fa-arrow-right" />
+          Conhecer planos <Fa name="arrow-right" size={14} />
         </button>
       </div>
     </div>

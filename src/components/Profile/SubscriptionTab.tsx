@@ -1,14 +1,15 @@
 import { useState } from 'react'
+import { Fa } from '../../utils/fa'
 import { useUserStore } from '../../stores/userStore'
 import { useServerStore } from '../../stores/serverStore'
 import { ASTRO_PLANS, getAstroTier } from '../../utils/astro'
 
 const METHODS = [
-  { key: 'pix', label: 'Pix', icon: 'fa-solid fa-qrcode' },
-  { key: 'googlepay', label: 'Google Pay', icon: 'fa-brands fa-google-pay' },
-  { key: 'paypal', label: 'PayPal', icon: 'fa-brands fa-paypal' },
-  { key: 'bitpay', label: 'BitPay', icon: 'fa-brands fa-bitcoin' },
-  { key: 'mercadopago', label: 'Mercado Pago', icon: 'fa-solid fa-wallet' },
+  { key: 'pix', label: 'Pix', icon: 'qrcode' },
+  { key: 'googlepay', label: 'Google Pay', icon: 'google-pay' },
+  { key: 'paypal', label: 'PayPal', icon: 'paypal' },
+  { key: 'bitpay', label: 'BitPay', icon: 'bitcoin' },
+  { key: 'mercadopago', label: 'Mercado Pago', icon: 'wallet' },
 ]
 
 const MONTHS = [1, 3, 6, 12]
@@ -126,7 +127,7 @@ export function SubscriptionTab() {
           {METHODS.map(m => (
             <button key={m.key} title={m.label} onClick={() => void run('method', async () => { await setAstroPayMethod(m.key) })}
               style={{ padding: '7px 10px', borderRadius: 8, border: payMethod === m.key ? '1px solid var(--accent)' : '1px solid var(--border)', background: payMethod === m.key ? 'var(--bg-hover)' : 'transparent', color: 'var(--text-primary)', cursor: 'pointer', fontSize: 14 }}>
-              <i className={m.icon} />
+              <Fa name={m.icon} size={16} />
             </button>
           ))}
         </div>

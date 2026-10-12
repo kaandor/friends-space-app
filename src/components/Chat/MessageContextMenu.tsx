@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useEffect } from 'react'
 import type { Message } from '../../types'
 
@@ -88,57 +89,57 @@ export function MessageContextMenu({ menu, onClose, onReply, onReact, onForward,
     <div id="message-context-menu" style={style}>
       {isMedia && (
         <MenuItem
-          icon={<i className="fa-solid fa-flag" style={{ fontSize: 12, color: '#f23f43' }} />}
+          icon={<Fa name="flag" size={12} style={{  color: '#f23f43' }} />}
           label="Denunciar midia"
           danger
           onClick={() => { onClose(); onReport(message, true) }}
         />
       )}
       <MenuItem
-        icon={<i className="fa-regular fa-face-smile" style={{ fontSize: 13 }} />}
+        icon={<Fa name="face-smile" size={13} />}
         label="Adicionar reacao"
         onClick={() => { onClose(); onReact(message) }}
       />
       <MenuItem
-        icon={<i className="fa-solid fa-reply" style={{ fontSize: 13 }} />}
+        icon={<Fa name="reply" size={13} />}
         label="Responder"
         onClick={() => { onClose(); onReply(message) }}
       />
       <MenuItem
-        icon={<i className="fa-solid fa-share" style={{ fontSize: 13 }} />}
+        icon={<Fa name="share" size={13} />}
         label="Encaminhar"
         onClick={() => { onClose(); onForward(message) }}
       />
       {editable && (
         <MenuItem
-          icon={<i className="fa-solid fa-pen" style={{ fontSize: 13 }} />}
+          icon={<Fa name="pen" size={13} />}
           label="Editar mensagem"
           onClick={() => { onClose(); onEdit(message) }}
         />
       )}
       <MenuItem
-        icon={<i className="fa-regular fa-copy" style={{ fontSize: 13 }} />}
+        icon={<Fa name="copy" size={13} />}
         label="Copiar texto"
         onClick={() => { onClose(); onCopyText(message) }}
       />
       <MenuItem
-        icon={<i className="fa-solid fa-envelope-open-text" style={{ fontSize: 13 }} />}
+        icon={<Fa name="envelope-open-text" size={13} />}
         label="Marcar como nao lido"
         onClick={() => { onClose(); onMarkUnread() }}
       />
       <MenuItem
-        icon={<i className="fa-solid fa-link" style={{ fontSize: 13 }} />}
+        icon={<Fa name="link" size={13} />}
         label="Copiar link da mensagem"
         onClick={() => { onClose(); onCopyLink(message) }}
       />
       <MenuItem
-        icon={<i className="fa-solid fa-volume-high" style={{ fontSize: 13 }} />}
+        icon={<Fa name="volume-high" size={13} />}
         label="Falar mensagem"
         onClick={() => { onClose(); onSpeak(message) }}
       />
       {!isMedia && (
         <MenuItem
-          icon={<i className="fa-solid fa-flag" style={{ fontSize: 12, color: '#f23f43' }} />}
+          icon={<Fa name="flag" size={12} style={{  color: '#f23f43' }} />}
           label="Denunciar mensagem"
           danger
           onClick={() => { onClose(); onReport(message, false) }}
@@ -146,14 +147,14 @@ export function MessageContextMenu({ menu, onClose, onReply, onReact, onForward,
       )}
       {canDelete(message) && (
         <MenuItem
-          icon={<i className="fa-solid fa-trash" style={{ fontSize: 13 }} />}
+          icon={<Fa name="trash" size={13} />}
           label="Excluir"
           danger
           onClick={() => { onClose(); onDelete(message) }}
         />
       )}
       <MenuItem
-        icon={<i className="fa-solid fa-hashtag" style={{ fontSize: 13 }} />}
+        icon={<Fa name="hashtag" size={13} />}
         label="Copiar ID da mensagem"
         onClick={() => { onClose(); onCopyId(message) }}
       />

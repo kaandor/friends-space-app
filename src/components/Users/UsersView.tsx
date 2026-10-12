@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useUserStore, isUserOnline } from '../../stores/userStore'
 import { Avatar } from '../ui/Avatar'
 import { useUserMenuStore } from '../../stores/userMenuStore'
@@ -17,7 +18,7 @@ export function UsersView() {
       <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--accent-dim)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
-            <i className="fa-solid fa-users" />
+            <Fa name="users" size={14} />
           </span>
           <h2 style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
             Usuarios Online

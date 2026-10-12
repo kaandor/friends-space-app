@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useState, useMemo, useEffect, useRef } from 'react'
 import type { Server } from '../../types'
 
@@ -196,7 +197,7 @@ function SelectField({ value, options, onChange }: { value: string; options: str
       <select value={value} onChange={e => onChange(e.target.value)}>
         {options.map(o => <option key={o}>{o}</option>)}
       </select>
-      <i className="fa-solid fa-chevron-down" />
+      <Fa name="chevron-down" size={14} />
     </div>
   )
 }
@@ -204,7 +205,7 @@ function SelectField({ value, options, onChange }: { value: string; options: str
 function SettingRow({ icon, title, desc, checked, onChange }: { icon: string; title: string; desc: string; checked: boolean; onChange: () => void }) {
   return (
     <div className="ssw-setting-row">
-      <span className="ssw-setting-icon"><i className={`fa-solid ${icon}`} /></span>
+      <span className="ssw-setting-icon"><Fa name={icon} size={14} /></span>
       <div className="ssw-setting-copy"><strong>{title}</strong><span>{desc}</span></div>
       <Toggle checked={checked} onChange={onChange} />
     </div>
@@ -238,7 +239,7 @@ function ResourceModal({ kind, onClose, onSave }: {
             <p className="ssw-eyebrow">CONFIGURAÇÃO RÁPIDA</p>
             <h3>{title}</h3>
           </div>
-          <button className="ssw-modal-close" onClick={onClose} aria-label="Fechar"><i className="fa-solid fa-xmark" /></button>
+          <button className="ssw-modal-close" onClick={onClose} aria-label="Fechar"><Fa name="xmark" size={14} /></button>
         </div>
         <label className="ssw-field"><span>{kind === 'evento' ? 'Nome do evento' : kind === 'canal' ? 'Nome da sala' : 'Nome da categoria'}</span>
           <input autoFocus value={name} onChange={e => setName(e.target.value)} placeholder={kind === 'evento' ? 'Ex.: Torneio de Valorant' : kind === 'canal' ? 'Ex.: novidades' : 'Ex.: Comunidade'} />
@@ -247,8 +248,8 @@ function ResourceModal({ kind, onClose, onSave }: {
           <div className="ssw-modal-choice">
             <span>Tipo de sala</span>
             <div>
-              <button className={channelKind === 'text' ? 'selected' : ''} onClick={() => setChannelKind('text')}><i className="fa-solid fa-hashtag" /> Texto</button>
-              <button className={channelKind === 'voice' ? 'selected' : ''} onClick={() => setChannelKind('voice')}><i className="fa-solid fa-microphone" /> Voz</button>
+              <button className={channelKind === 'text' ? 'selected' : ''} onClick={() => setChannelKind('text')}><Fa name="hashtag" size={14} /> Texto</button>
+              <button className={channelKind === 'voice' ? 'selected' : ''} onClick={() => setChannelKind('voice')}><Fa name="microphone" size={14} /> Voz</button>
             </div>
           </div>
         )}
@@ -258,7 +259,7 @@ function ResourceModal({ kind, onClose, onSave }: {
         <div className="ssw-modal-footer">
           <button className="ssw-modal-cancel" onClick={onClose}>Cancelar</button>
           <button className="ssw-primary-btn" disabled={!name.trim()} onClick={() => onSave(name.trim(), detail.trim(), kind === 'canal' ? channelKind : undefined)}>
-            <i className="fa-solid fa-floppy-disk" /> Salvar
+            <Fa name="floppy-disk" size={14} /> Salvar
           </button>
         </div>
       </div>
@@ -700,13 +701,13 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                   {editPhoto ? <img src={editPhoto} alt="" /> : (
                     <div className="ssw-icon-fallback-inline" style={{ background: editColor }}>{(editName || 'S').charAt(0).toUpperCase()}</div>
                   )}
-                  <button type="button" onClick={onRequestIcon} title="Enviar ícone"><i className="fa-solid fa-camera" /></button>
+                  <button type="button" onClick={onRequestIcon} title="Enviar ícone"><Fa name="camera" size={14} /></button>
                   <input ref={iconInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onIconFile} />
                 </div>
                 <div className="ssw-identity-copy">
                   <strong>{editName || 'Servidor sem nome'}</strong>
                   <p>{editDesc || 'Adicione uma descrição para apresentar sua comunidade.'}</p>
-                  <button type="button" className="ssw-ghost-link" onClick={onSave}><i className="fa-solid fa-floppy-disk" /> Salvar identidade</button>
+                  <button type="button" className="ssw-ghost-link" onClick={onSave}><Fa name="floppy-disk" size={14} /> Salvar identidade</button>
                 </div>
               </div>
             </div>
@@ -716,7 +717,7 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                 {editBanner ? <img src={editBanner} alt="" /> : (
                   <div className="ssw-banner-placeholder" style={{ background: `linear-gradient(135deg, ${editColor}, ${editColor}33)` }}>Sem banner — envie uma imagem de capa</div>
                 )}
-                <button type="button" className="ssw-banner-edit" onClick={onRequestBanner} title="Enviar banner"><i className="fa-solid fa-image" /></button>
+                <button type="button" className="ssw-banner-edit" onClick={onRequestBanner} title="Enviar banner"><Fa name="image" size={14} /></button>
                 <input ref={bannerInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onBannerFile} />
               </div>
               <p className="ssw-asset-recommendation">Recomendado: 1920×480px · PNG ou JPG</p>
@@ -748,9 +749,9 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
               action={<span className="ssw-count-badge">{selectedThemes.length} / 5</span>} />
             <div className="ssw-theme-row">
               {selectedThemes.map(t => (
-                <button key={t} className="ssw-theme-chip" onClick={() => removeTheme(t)}>{t}<i className="fa-solid fa-xmark" /></button>
+                <button key={t} className="ssw-theme-chip" onClick={() => removeTheme(t)}>{t}<Fa name="xmark" size={14} /></button>
               ))}
-              {selectedThemes.length < 5 && <button className="ssw-add-theme" onClick={addTheme}><i className="fa-solid fa-plus" /> Adicionar tema</button>}
+              {selectedThemes.length < 5 && <button className="ssw-add-theme" onClick={addTheme}><Fa name="plus" size={14} /> Adicionar tema</button>}
             </div>
             <div className="ssw-theme-options">
               <span>Temas disponíveis</span>
@@ -765,53 +766,53 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
             <section className="ssw-card ssw-compact-card">
               <SectionTitle eyebrow="RITMO DA COMUNIDADE" title="Qual é a sua frequência?" desc="Com que frequência você pretende interagir?" />
               <SelectField value={frequency} options={['Selecionar frequência', 'Diariamente', 'Algumas vezes por semana', 'Semanalmente', 'Mensalmente']} onChange={persistFrequency} />
-              <p className="ssw-helper-text"><i className="fa-solid fa-clock" /> Isso nos ajuda a sugerir ferramentas e recursos úteis.</p>
+              <p className="ssw-helper-text"><Fa name="clock" size={14} /> Isso nos ajuda a sugerir ferramentas e recursos úteis.</p>
             </section>
             <section className="ssw-card ssw-compact-card">
               <SectionTitle eyebrow="PORTA DE ENTRADA" title="Idade mínima para entrar" desc="Defina a idade mínima para novos membros." />
               <SelectField value={minAge} options={['Selecionar idade mínima', 'Sem restrição', '13 anos ou mais', '16 anos ou mais', '18 anos ou mais']} onChange={persistMinAge} />
-              <p className="ssw-helper-text"><i className="fa-solid fa-shield" /> Recomendamos 13+ para segurança da comunidade.</p>
+              <p className="ssw-helper-text"><Fa name="shield" size={14} /> Recomendamos 13+ para segurança da comunidade.</p>
             </section>
           </div>
 
           {/* Eventos + Canais + Categorias */}
           <div className="ssw-grid-three">
             <section className="ssw-card">
-              <SectionTitle eyebrow="ATIVAÇÕES" title="Eventos" desc="Organize eventos." action={<button className="ssw-mini-action" onClick={() => setResourceModal('evento')}><i className="fa-solid fa-plus" /> Criar evento</button>} />
+              <SectionTitle eyebrow="ATIVAÇÕES" title="Eventos" desc="Organize eventos." action={<button className="ssw-mini-action" onClick={() => setResourceModal('evento')}><Fa name="plus" size={14} /> Criar evento</button>} />
               <div className="ssw-resource-list">
                 {(liveEvents || []).map(ev => (
                   <div className="ssw-resource-row" key={ev.id}>
-                    <span className="ssw-resource-leading ssw-event-leading"><i className="fa-solid fa-calendar-days" /></span>
+                    <span className="ssw-resource-leading ssw-event-leading"><Fa name="calendar-days" size={14} /></span>
                     <div><strong>{ev.title}</strong><small>{fmtDate(ev.date)}</small></div>
-                    {canManage && <button className="ssw-row-del" onClick={() => handleDeleteEvent(ev.id)} title="Excluir"><i className="fa-solid fa-trash" /></button>}
+                    {canManage && <button className="ssw-row-del" onClick={() => handleDeleteEvent(ev.id)} title="Excluir"><Fa name="trash" size={14} /></button>}
                   </div>
                 ))}
                 {(liveEvents || []).length === 0 && (
-                  <div className="ssw-empty-event"><div className="ssw-empty-icon"><i className="fa-solid fa-calendar-days" /></div><strong>Nenhum evento criado ainda.</strong><span>Crie um evento para engajar sua comunidade.</span></div>
+                  <div className="ssw-empty-event"><div className="ssw-empty-icon"><Fa name="calendar-days" size={14} /></div><strong>Nenhum evento criado ainda.</strong><span>Crie um evento para engajar sua comunidade.</span></div>
                 )}
               </div>
             </section>
             <section className="ssw-card">
-              <SectionTitle eyebrow="ESTRUTURA" title="Salas e canais" desc="Crie espaços do servidor." action={<button className="ssw-mini-action" onClick={() => setResourceModal('canal')}><i className="fa-solid fa-plus" /> Nova sala</button>} />
+              <SectionTitle eyebrow="ESTRUTURA" title="Salas e canais" desc="Crie espaços do servidor." action={<button className="ssw-mini-action" onClick={() => setResourceModal('canal')}><Fa name="plus" size={14} /> Nova sala</button>} />
               <div className="ssw-resource-list ssw-compact-resource-list">
                 {(liveChannels || []).map(ch => (
                   <div className="ssw-resource-row" key={ch.id}>
-                    <span className="ssw-resource-leading"><i className={`fa-solid ${ch.type === 'voice' ? 'fa-microphone' : 'fa-hashtag'}`} /></span>
+                    <span className="ssw-resource-leading"><Fa name={ch.type === 'voice' ? 'microphone' : 'hashtag'} size={13} /></span>
                     <div><strong>{ch.type === 'text' ? `# ${ch.name}` : ch.name}</strong><small>{ch.type === 'voice' ? 'Voz' : 'Texto'}</small></div>
-                    {canManage && <button className="ssw-row-del" onClick={() => handleDeleteChannel(ch.id)} title="Excluir"><i className="fa-solid fa-trash" /></button>}
+                    {canManage && <button className="ssw-row-del" onClick={() => handleDeleteChannel(ch.id)} title="Excluir"><Fa name="trash" size={14} /></button>}
                   </div>
                 ))}
                 {(liveChannels || []).length === 0 && <div className="ssw-empty-event"><strong>Nenhum canal.</strong><span>Clique em Nova sala para criar.</span></div>}
               </div>
             </section>
             <section className="ssw-card">
-              <SectionTitle eyebrow="ORGANIZAÇÃO" title="Categorias" desc="Agrupe canais." action={<button className="ssw-mini-action" onClick={() => setResourceModal('categoria')}><i className="fa-solid fa-plus" /> Nova categoria</button>} />
+              <SectionTitle eyebrow="ORGANIZAÇÃO" title="Categorias" desc="Agrupe canais." action={<button className="ssw-mini-action" onClick={() => setResourceModal('categoria')}><Fa name="plus" size={14} /> Nova categoria</button>} />
               <div className="ssw-resource-list ssw-compact-resource-list">
                 {(liveCategories || []).map(cat => (
                   <div className="ssw-resource-row" key={cat.id}>
-                    <span className="ssw-resource-leading ssw-category-leading"><i className="fa-solid fa-folder" /></span>
+                    <span className="ssw-resource-leading ssw-category-leading"><Fa name="folder" size={14} /></span>
                     <div><strong>{cat.name}</strong><small>Visível para todos</small></div>
-                    {canManage && <button className="ssw-row-del" onClick={() => handleDeleteCategory(cat.id)} title="Excluir"><i className="fa-solid fa-trash" /></button>}
+                    {canManage && <button className="ssw-row-del" onClick={() => handleDeleteCategory(cat.id)} title="Excluir"><Fa name="trash" size={14} /></button>}
                   </div>
                 ))}
                 {(liveCategories || []).length === 0 && <div className="ssw-empty-event"><strong>Nenhuma categoria.</strong><span>Clique em Nova categoria para criar.</span></div>}
@@ -833,16 +834,16 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                       <button className="ssw-policy-text" onClick={() => { setEditingRule(i); setRuleDraft(policy) }}>{policy}</button>
                     )}
                     <div className="ssw-policy-actions">
-                      {editingRule === i ? <button onClick={saveRule} aria-label="Salvar"><i className="fa-solid fa-check" /></button>
-                        : <button onClick={() => { setEditingRule(i); setRuleDraft(policy) }} aria-label="Editar"><i className="fa-solid fa-pen" /></button>}
-                      <button onClick={() => moveRule(i, -1)} disabled={i === 0} aria-label="Subir"><i className="fa-solid fa-chevron-up" /></button>
-                      <button onClick={() => moveRule(i, 1)} disabled={i === rules.length - 1} aria-label="Descer"><i className="fa-solid fa-chevron-down" /></button>
-                      <button className="ssw-danger-icon" onClick={() => removeRule(i)} aria-label="Excluir"><i className="fa-solid fa-trash" /></button>
+                      {editingRule === i ? <button onClick={saveRule} aria-label="Salvar"><Fa name="check" size={14} /></button>
+                        : <button onClick={() => { setEditingRule(i); setRuleDraft(policy) }} aria-label="Editar"><Fa name="pen" size={14} /></button>}
+                      <button onClick={() => moveRule(i, -1)} disabled={i === 0} aria-label="Subir"><Fa name="chevron-up" size={14} /></button>
+                      <button onClick={() => moveRule(i, 1)} disabled={i === rules.length - 1} aria-label="Descer"><Fa name="chevron-down" size={14} /></button>
+                      <button className="ssw-danger-icon" onClick={() => removeRule(i)} aria-label="Excluir"><Fa name="trash" size={14} /></button>
                     </div>
                   </div>
                 ))}
               </div>
-              <button className="ssw-add-rule" onClick={addRule}><i className="fa-solid fa-plus" /> Adicionar regra</button>
+              <button className="ssw-add-rule" onClick={addRule}><Fa name="plus" size={14} /> Adicionar regra</button>
               <div className="ssw-policy-footer">
                 <div><strong>Aceite obrigatório</strong><span>Membros devem aceitar as regras para entrar.</span></div>
                 <Toggle checked={toggles.rules} onChange={() => flipToggle('rules')} />
@@ -856,7 +857,7 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                 <SettingRow icon="fa-message" title="Chat de boas-vindas" desc="Enviar mensagem automática de boas-vindas." checked={toggles.welcome} onChange={() => flipToggle('welcome')} />
                 <SettingRow icon="fa-clipboard-list" title="Registro de membros" desc="Manter registro de entradas e saídas." checked={toggles.log} onChange={() => flipToggle('log')} />
                 <div className="ssw-moderation-row">
-                  <div className="ssw-setting-icon"><i className="fa-solid fa-gauge" /></div>
+                  <div className="ssw-setting-icon"><Fa name="gauge" size={14} /></div>
                   <div className="ssw-setting-copy"><strong>Nível de moderação</strong><span>Defina a intensidade dos filtros automáticos.</span></div>
                   <div className="ssw-moderation-select"><SelectField value={moderation} options={['Baixo', 'Médio', 'Alto', 'Máximo']} onChange={persistModeration} /></div>
                 </div>
@@ -872,7 +873,7 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                 <button className="ssw-idea-card" key={t} onClick={() => notify(`${t} ${s}.`)}>
                   <span className="ssw-idea-emoji">{e}</span>
                   <span><strong>{t}</strong><small>{s}</small></span>
-                  <i className="fa-solid fa-arrow-up-right-from-square" />
+                  <Fa name="arrow-up-right-from-square" size={14} />
                 </button>
               ))}
             </div>
@@ -941,12 +942,12 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                 {driveBusy ? 'Conectando...' : driveConnected ? 'Desconectar' : 'Conectar'}
               </button>
             </div>
-            <p className="ssw-helper-text" style={{ marginTop: 10 }}><i className="fa-solid fa-circle-info" /> Mídias e mods ficam na pasta <b>friends-space</b> do seu Drive.</p>
+            <p className="ssw-helper-text" style={{ marginTop: 10 }}><Fa name="circle-info" size={14} /> Mídias e mods ficam na pasta <b>friends-space</b> do seu Drive.</p>
           </section>
           {canDelete && (
             <section className="ssw-card ssw-danger-card">
               <SectionTitle eyebrow="ZONA DE PERIGO" title="Apagar servidor" desc="Esta ação é permanente e não pode ser desfeita." />
-              <button type="button" className="ssw-danger-btn" onClick={onDelete}><i className="fa-solid fa-trash" /> Apagar servidor</button>
+              <button type="button" className="ssw-danger-btn" onClick={onDelete}><Fa name="trash" size={14} /> Apagar servidor</button>
             </section>
           )}
         </div>
@@ -958,14 +959,14 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
       return (
         <div className="ssw-stack">
           <section className="ssw-card">
-            <SectionTitle eyebrow="ESTRUTURA" title="Canais do servidor" desc={`${stats.texto} texto · ${stats.voz} voz`} action={<button className="ssw-primary-btn" onClick={() => setResourceModal('canal')}><i className="fa-solid fa-plus" /> Nova sala</button>} />
+            <SectionTitle eyebrow="ESTRUTURA" title="Canais do servidor" desc={`${stats.texto} texto · ${stats.voz} voz`} action={<button className="ssw-primary-btn" onClick={() => setResourceModal('canal')}><Fa name="plus" size={14} /> Nova sala</button>} />
             <div className="ssw-list">
               {(liveChannels || []).map(ch => (
                 <div className="ssw-list-row" key={ch.id}>
-                  <i className={`fa-solid ${ch.type === 'voice' ? 'fa-microphone' : 'fa-hashtag'}`} />
+                  <Fa name={ch.type === 'voice' ? 'microphone' : 'hashtag'} size={13} />
                   <span>{ch.type === 'text' ? `# ${ch.name}` : ch.name}</span>
                   <small>{ch.type === 'voice' ? 'Voz' : 'Texto'}</small>
-                  {canManage && <button className="ssw-row-del" onClick={() => handleDeleteChannel(ch.id)} title="Excluir"><i className="fa-solid fa-trash" /></button>}
+                  {canManage && <button className="ssw-row-del" onClick={() => handleDeleteChannel(ch.id)} title="Excluir"><Fa name="trash" size={14} /></button>}
                 </div>
               ))}
               {(liveChannels || []).length === 0 && <div className="ssw-empty">Nenhum canal criado ainda.</div>}
@@ -980,14 +981,14 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
       return (
         <div className="ssw-stack">
           <section className="ssw-card">
-            <SectionTitle eyebrow="ORGANIZAÇÃO" title="Categorias" desc="Agrupe seus canais." action={<button className="ssw-primary-btn" onClick={() => setResourceModal('categoria')}><i className="fa-solid fa-plus" /> Nova categoria</button>} />
+            <SectionTitle eyebrow="ORGANIZAÇÃO" title="Categorias" desc="Agrupe seus canais." action={<button className="ssw-primary-btn" onClick={() => setResourceModal('categoria')}><Fa name="plus" size={14} /> Nova categoria</button>} />
             <div className="ssw-list">
               {(liveCategories || []).map(cat => (
                 <div className="ssw-list-row" key={cat.id}>
-                  <i className="fa-solid fa-folder" />
+                  <Fa name="folder" size={14} />
                   <span>{cat.name}</span>
                   <small>Visível para todos</small>
-                  {canManage && <button className="ssw-row-del" onClick={() => handleDeleteCategory(cat.id)} title="Excluir"><i className="fa-solid fa-trash" /></button>}
+                  {canManage && <button className="ssw-row-del" onClick={() => handleDeleteCategory(cat.id)} title="Excluir"><Fa name="trash" size={14} /></button>}
                 </div>
               ))}
               {(liveCategories || []).length === 0 && <div className="ssw-empty">Nenhuma categoria criada ainda.</div>}
@@ -1006,12 +1007,12 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
             <div className="ssw-add-row">
               <input value={newRole} onChange={e => setNewRole(e.target.value)} placeholder="Nome do cargo (ex: Moderador)" onKeyDown={e => e.key === 'Enter' && handleAddRole()} />
               <input type="color" value={newRoleColor} onChange={e => setNewRoleColor(e.target.value)} className="ssw-color-input" title="Cor do cargo" />
-              <button className="ssw-primary-btn" onClick={handleAddRole} disabled={!newRole.trim()}><i className="fa-solid fa-plus" /> Criar</button>
+              <button className="ssw-primary-btn" onClick={handleAddRole} disabled={!newRole.trim()}><Fa name="plus" size={14} /> Criar</button>
             </div>
             <div className="ssw-list">
               {(liveRoles || []).map(role => (
                 <div className="ssw-list-row" key={role.id}>
-                  <i className="fa-solid fa-shield" style={{ color: role.color }} />
+                  <Fa name="shield" size={14} style={{ color: role.color }} />
                   <span>{role.name}</span>
                   <small>{role.permissions?.length || 0} permissões</small>
                 </div>
@@ -1028,14 +1029,14 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
       return (
         <div className="ssw-stack">
           <section className="ssw-card">
-            <SectionTitle eyebrow="ATIVAÇÕES" title="Eventos" desc="Organize eventos para sua comunidade." action={<button className="ssw-primary-btn" onClick={() => setResourceModal('evento')}><i className="fa-solid fa-plus" /> Criar evento</button>} />
+            <SectionTitle eyebrow="ATIVAÇÕES" title="Eventos" desc="Organize eventos para sua comunidade." action={<button className="ssw-primary-btn" onClick={() => setResourceModal('evento')}><Fa name="plus" size={14} /> Criar evento</button>} />
             <div className="ssw-list">
               {(liveEvents || []).map(ev => (
                 <div className="ssw-list-row" key={ev.id}>
-                  <i className="fa-solid fa-calendar-days" />
+                  <Fa name="calendar-days" size={14} />
                   <span>{ev.title}</span>
                   <small>{fmtDate(ev.date)}</small>
-                  {canManage && <button className="ssw-row-del" onClick={() => handleDeleteEvent(ev.id)} title="Excluir"><i className="fa-solid fa-trash" /></button>}
+                  {canManage && <button className="ssw-row-del" onClick={() => handleDeleteEvent(ev.id)} title="Excluir"><Fa name="trash" size={14} /></button>}
                 </div>
               ))}
               {(liveEvents || []).length === 0 && <div className="ssw-empty">Nenhum evento criado ainda.</div>}
@@ -1061,21 +1062,21 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                     <button className="ssw-policy-text" onClick={() => { setEditingRule(i); setRuleDraft(policy) }}>{policy}</button>
                   )}
                   <div className="ssw-policy-actions">
-                    {editingRule === i ? <button onClick={saveRule} aria-label="Salvar"><i className="fa-solid fa-check" /></button>
-                      : <button onClick={() => { setEditingRule(i); setRuleDraft(policy) }} aria-label="Editar"><i className="fa-solid fa-pen" /></button>}
-                    <button onClick={() => moveRule(i, -1)} disabled={i === 0} aria-label="Subir"><i className="fa-solid fa-chevron-up" /></button>
-                    <button onClick={() => moveRule(i, 1)} disabled={i === rules.length - 1} aria-label="Descer"><i className="fa-solid fa-chevron-down" /></button>
-                    <button className="ssw-danger-icon" onClick={() => removeRule(i)} aria-label="Excluir"><i className="fa-solid fa-trash" /></button>
+                    {editingRule === i ? <button onClick={saveRule} aria-label="Salvar"><Fa name="check" size={14} /></button>
+                      : <button onClick={() => { setEditingRule(i); setRuleDraft(policy) }} aria-label="Editar"><Fa name="pen" size={14} /></button>}
+                    <button onClick={() => moveRule(i, -1)} disabled={i === 0} aria-label="Subir"><Fa name="chevron-up" size={14} /></button>
+                    <button onClick={() => moveRule(i, 1)} disabled={i === rules.length - 1} aria-label="Descer"><Fa name="chevron-down" size={14} /></button>
+                    <button className="ssw-danger-icon" onClick={() => removeRule(i)} aria-label="Excluir"><Fa name="trash" size={14} /></button>
                   </div>
                 </div>
               ))}
             </div>
-            <button className="ssw-add-rule" onClick={addRule}><i className="fa-solid fa-plus" /> Adicionar regra</button>
+            <button className="ssw-add-rule" onClick={addRule}><Fa name="plus" size={14} /> Adicionar regra</button>
             <div className="ssw-policy-footer">
               <div><strong>Aceite obrigatório</strong><span>Membros devem aceitar as regras para entrar.</span></div>
               <Toggle checked={toggles.rules} onChange={() => flipToggle('rules')} />
             </div>
-            <p className="ssw-helper-text" style={{ marginTop: 12 }}><i className="fa-solid fa-circle-info" /> As regras são salvas na descrição do servidor ao clicar em Salvar alterações.</p>
+            <p className="ssw-helper-text" style={{ marginTop: 12 }}><Fa name="circle-info" size={14} /> As regras são salvas na descrição do servidor ao clicar em Salvar alterações.</p>
           </section>
         </div>
       )
@@ -1142,11 +1143,11 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
               <strong style={{ fontSize: 13 }}>Palavras bloqueadas ({blockedWords.length})</strong>
               <div className="ssw-add-row" style={{ marginTop: 8 }}>
                 <input value={newWord} onChange={e => setNewWord(e.target.value)} placeholder="Ex: spam" onKeyDown={e => e.key === 'Enter' && addBlockedWord()} />
-                <button className="ssw-primary-btn" onClick={addBlockedWord} disabled={!newWord.trim()}><i className="fa-solid fa-plus" /> Adicionar</button>
+                <button className="ssw-primary-btn" onClick={addBlockedWord} disabled={!newWord.trim()}><Fa name="plus" size={14} /> Adicionar</button>
               </div>
               <div className="ssw-theme-row" style={{ marginTop: 8 }}>
                 {blockedWords.map(w => (
-                  <button key={w} className="ssw-theme-chip" onClick={() => removeBlockedWord(w)} title="Remover">{w}<i className="fa-solid fa-xmark" /></button>
+                  <button key={w} className="ssw-theme-chip" onClick={() => removeBlockedWord(w)} title="Remover">{w}<Fa name="xmark" size={14} /></button>
                 ))}
                 {blockedWords.length === 0 && <span className="ssw-empty">Nenhuma palavra bloqueada.</span>}
               </div>
@@ -1161,15 +1162,15 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                 const silenced = until > Date.now()
                 return (
                   <div className="ssw-list-row" key={id}>
-                    <i className="fa-solid fa-user" />
+                    <Fa name="user" size={14} />
                     <span>{userNameOf(id)}</span>
                     <small>{banned ? 'banido' : silenced ? `silenciado até ${fmtTime(until)}` : 'ativo'}</small>
                     <span style={{ display: 'flex', gap: 4 }}>
-                      <button className="ssw-small-btn" onClick={() => void doTimeout(id)} title="Silenciar 10min"><i className="fa-solid fa-volume-xmark" /></button>
-                      <button className="ssw-small-btn" onClick={() => void doKick(id)} title="Expulsar"><i className="fa-solid fa-door-open" /></button>
+                      <button className="ssw-small-btn" onClick={() => void doTimeout(id)} title="Silenciar 10min"><Fa name="volume-xmark" size={14} /></button>
+                      <button className="ssw-small-btn" onClick={() => void doKick(id)} title="Expulsar"><Fa name="door-open" size={14} /></button>
                       {banned
-                        ? <button className="ssw-small-btn" onClick={() => void doUnban(id)} title="Desbanir"><i className="fa-solid fa-check" /></button>
-                        : <button className="ssw-row-del" onClick={() => void doBan(id)} title="Banir"><i className="fa-solid fa-gavel" /></button>}
+                        ? <button className="ssw-small-btn" onClick={() => void doUnban(id)} title="Desbanir"><Fa name="check" size={14} /></button>
+                        : <button className="ssw-row-del" onClick={() => void doBan(id)} title="Banir"><Fa name="gavel" size={14} /></button>}
                     </span>
                   </div>
                 )
@@ -1182,7 +1183,7 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                 <div className="ssw-list" style={{ marginTop: 8 }}>
                   {bannedList.map(id => (
                     <div className="ssw-list-row" key={id}>
-                      <i className="fa-solid fa-gavel" />
+                      <Fa name="gavel" size={14} />
                       <span>{userNameOf(id)}</span>
                       <small>banido</small>
                       <button className="ssw-small-btn" onClick={() => void doUnban(id)}>Desbanir</button>
@@ -1208,16 +1209,16 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                 <label className="ssw-field"><span>Token ou identificador</span><input type="password" value={botToken} onChange={e => setBotToken(e.target.value)} placeholder="Token do bot" /></label>
                 <label className="ssw-field" style={{ gridColumn: '1 / -1' }}><span>Descrição</span><input value={botDesc} onChange={e => setBotDesc(e.target.value)} placeholder="O que este bot faz?" /></label>
               </div>
-              <button className="ssw-primary-btn" onClick={addBot}><i className="fa-solid fa-plus" /> Adicionar bot</button>
+              <button className="ssw-primary-btn" onClick={addBot}><Fa name="plus" size={14} /> Adicionar bot</button>
             </div>
             <div className="ssw-list" style={{ marginTop: 14 }}>
               {bots.map(bot => (
                 <div className="ssw-list-row" key={bot.id}>
-                  <i className="fa-solid fa-robot" />
+                  <Fa name="robot" size={14} />
                   <span>{bot.name}</span>
                   <small>{bot.desc}</small>
-                  <button className="ssw-small-btn" onClick={() => void testBot(bot.id)} title="Testar bot"><i className="fa-solid fa-paper-plane" /> Testar</button>
-                  <button className="ssw-row-del" onClick={() => removeBot(bot.id)} title="Remover"><i className="fa-solid fa-trash" /></button>
+                  <button className="ssw-small-btn" onClick={() => void testBot(bot.id)} title="Testar bot"><Fa name="paper-plane" size={14} /> Testar</button>
+                  <button className="ssw-row-del" onClick={() => removeBot(bot.id)} title="Remover"><Fa name="trash" size={14} /></button>
                 </div>
               ))}
               {bots.length === 0 && <div className="ssw-empty">Nenhum bot cadastrado.</div>}
@@ -1238,16 +1239,16 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                 <label className="ssw-field"><span>Nome do webhook</span><input value={whName} onChange={e => setWhName(e.target.value)} placeholder="Ex: Webhook de anúncios" /></label>
                 <label className="ssw-field"><span>Endpoint HTTPS</span><input value={whUrl} onChange={e => setWhUrl(e.target.value)} placeholder="https://..." /></label>
               </div>
-              <button className="ssw-primary-btn" onClick={addWebhook}><i className="fa-solid fa-plus" /> Adicionar webhook</button>
+              <button className="ssw-primary-btn" onClick={addWebhook}><Fa name="plus" size={14} /> Adicionar webhook</button>
             </div>
             <div className="ssw-list" style={{ marginTop: 14 }}>
               {webhooks.map(wh => (
                 <div className="ssw-list-row" key={wh.id}>
-                  <i className="fa-solid fa-satellite-dish" />
+                  <Fa name="satellite-dish" size={14} />
                   <span>{wh.name}</span>
                   <small>{wh.url}</small>
-                  <button className="ssw-small-btn" onClick={() => void testWebhook(wh.id)} title="Testar webhook"><i className="fa-solid fa-paper-plane" /> Testar</button>
-                  <button className="ssw-row-del" onClick={() => removeWebhook(wh.id)} title="Remover"><i className="fa-solid fa-trash" /></button>
+                  <button className="ssw-small-btn" onClick={() => void testWebhook(wh.id)} title="Testar webhook"><Fa name="paper-plane" size={14} /> Testar</button>
+                  <button className="ssw-row-del" onClick={() => removeWebhook(wh.id)} title="Remover"><Fa name="trash" size={14} /></button>
                 </div>
               ))}
               {webhooks.length === 0 && <div className="ssw-empty">Nenhum webhook cadastrado.</div>}
@@ -1266,7 +1267,7 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
             <div className="ssw-list">
               {auditLog.map(e => (
                 <div className="ssw-list-row" key={e.id}>
-                  <i className="fa-solid fa-clipboard-list" />
+                  <Fa name="clipboard-list" size={14} />
                   <span>{e.action}</span>
                   <small>{new Date(e.at).toLocaleString('pt-BR')} · {e.actorName} · {e.detail}</small>
                 </div>
@@ -1289,14 +1290,14 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                 <label className="ssw-field"><span>Nome do emoji</span><input value={libName} onChange={e => setLibName(e.target.value)} placeholder="Ex.: coracao_verde" /></label>
                 <label className="ssw-field"><span>URL do arquivo</span><input value={libDetail} onChange={e => setLibDetail(e.target.value)} placeholder="Cole a URL do arquivo" /></label>
               </div>
-              <button className="ssw-primary-btn" onClick={addEmojiItem}><i className="fa-solid fa-plus" /> Adicionar</button>
+              <button className="ssw-primary-btn" onClick={addEmojiItem}><Fa name="plus" size={14} /> Adicionar</button>
             </div>
             <div className="ssw-list" style={{ marginTop: 14 }}>
               {emojiItems.map(item => (
                 <div className="ssw-list-row" key={item.id}>
-                  {item.detail.startsWith('http') ? <img src={item.detail} alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} /> : <i className="fa-solid fa-face-smile" />}
+                  {item.detail.startsWith('http') ? <img src={item.detail} alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} /> : <Fa name="face-smile" size={14} />}
                   <span>:{item.name}:</span><small>{item.detail}</small>
-                  <button className="ssw-row-del" onClick={() => { const next = emojiItems.filter(i => i.id !== item.id); setEmojiItems(next); void persist({ emojis: next }, 'emoji.remove', item.name) }}><i className="fa-solid fa-trash" /></button>
+                  <button className="ssw-row-del" onClick={() => { const next = emojiItems.filter(i => i.id !== item.id); setEmojiItems(next); void persist({ emojis: next }, 'emoji.remove', item.name) }}><Fa name="trash" size={14} /></button>
                 </div>
               ))}
               {emojiItems.length === 0 && <div className="ssw-empty">Nenhum emoji cadastrado.</div>}
@@ -1315,14 +1316,14 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                 <label className="ssw-field"><span>Nome da figurinha</span><input value={libName} onChange={e => setLibName(e.target.value)} placeholder="Ex.: reacao_aplausos" /></label>
                 <label className="ssw-field"><span>URL do arquivo</span><input value={libDetail} onChange={e => setLibDetail(e.target.value)} placeholder="Cole a URL do arquivo" /></label>
               </div>
-              <button className="ssw-primary-btn" onClick={addStickerItem}><i className="fa-solid fa-plus" /> Adicionar</button>
+              <button className="ssw-primary-btn" onClick={addStickerItem}><Fa name="plus" size={14} /> Adicionar</button>
             </div>
             <div className="ssw-list" style={{ marginTop: 14 }}>
               {stickerItems.map(item => (
                 <div className="ssw-list-row" key={item.id}>
-                  {item.detail.startsWith('http') ? <img src={item.detail} alt="" style={{ width: 28, height: 28, objectFit: 'contain' }} /> : <i className="fa-solid fa-stamp" />}
+                  {item.detail.startsWith('http') ? <img src={item.detail} alt="" style={{ width: 28, height: 28, objectFit: 'contain' }} /> : <Fa name="stamp" size={14} />}
                   <span>{item.name}</span><small>{item.detail}</small>
-                  <button className="ssw-row-del" onClick={() => { const next = stickerItems.filter(i => i.id !== item.id); setStickerItems(next); void persist({ stickers: next }, 'sticker.remove', item.name) }}><i className="fa-solid fa-trash" /></button>
+                  <button className="ssw-row-del" onClick={() => { const next = stickerItems.filter(i => i.id !== item.id); setStickerItems(next); void persist({ stickers: next }, 'sticker.remove', item.name) }}><Fa name="trash" size={14} /></button>
                 </div>
               ))}
               {stickerItems.length === 0 && <div className="ssw-empty">Nenhuma figurinha cadastrada.</div>}
@@ -1377,14 +1378,14 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
             <SectionTitle eyebrow="CONVITES" title="Convites extras" desc={`${inviteItems.length} convites`} />
             <div className="ssw-add-row">
               <input value={newInviteLabel} onChange={e => setNewInviteLabel(e.target.value)} placeholder="Rótulo (ex: amigos)" onKeyDown={e => e.key === 'Enter' && void createExtra()} />
-              <button className="ssw-primary-btn" onClick={() => void createExtra()}><i className="fa-solid fa-plus" /> Criar</button>
+              <button className="ssw-primary-btn" onClick={() => void createExtra()}><Fa name="plus" size={14} /> Criar</button>
             </div>
             <div className="ssw-list" style={{ marginTop: 14 }}>
               {inviteItems.map(inv => (
                 <div className="ssw-list-row" key={inv.id}>
-                  <i className="fa-solid fa-link" /><span>{inv.code}</span><small>{inv.label} · {fmtDate(inv.createdAt)}</small>
+                  <Fa name="link" size={14} /><span>{inv.code}</span><small>{inv.label} · {fmtDate(inv.createdAt)}</small>
                   <button className="ssw-small-btn" onClick={() => { void copyTextGlobal(inv.code).then(ok => notify(ok ? 'Copiado' : 'Falha ao copiar')) }}>Copiar</button>
-                  <button className="ssw-row-del" onClick={() => { const next = inviteItems.filter(i => i.id !== inv.id); setInviteItems(next); void persist({ invites: next }, 'invite.remove', inv.code) }}><i className="fa-solid fa-trash" /></button>
+                  <button className="ssw-row-del" onClick={() => { const next = inviteItems.filter(i => i.id !== inv.id); setInviteItems(next); void persist({ invites: next }, 'invite.remove', inv.code) }}><Fa name="trash" size={14} /></button>
                 </div>
               ))}
               {inviteItems.length === 0 && <div className="ssw-empty">Nenhum convite extra.</div>}
@@ -1403,7 +1404,7 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
             <SectionTitle eyebrow="WIDGET" title="Widget da comunidade" desc="Mostre seu servidor em sites." />
             <div className="ssw-setting-list">
               <div className="ssw-setting-row">
-                <span className="ssw-setting-icon"><i className="fa-solid fa-code" /></span>
+                <span className="ssw-setting-icon"><Fa name="code" size={14} /></span>
                 <div className="ssw-setting-copy"><strong>Ativar widget</strong><span>Exibir preview público</span></div>
                 <Toggle checked={widgetEnabled} onChange={() => { const v = !widgetEnabled; setWidgetEnabled(v); void persist({ widget: { title: widgetTitle, channel: widgetChannel, enabled: v } }) }} />
               </div>
@@ -1418,7 +1419,7 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
               </label>
             </div>
             <div className="ssw-add-row" style={{ marginTop: 12 }}>
-              <button className="ssw-primary-btn" onClick={() => { void persist({ widget: { title: widgetTitle, channel: widgetChannel, enabled: widgetEnabled } }, 'widget.save', widgetTitle); notify('Widget salvo') }}><i className="fa-solid fa-floppy-disk" /> Salvar widget</button>
+              <button className="ssw-primary-btn" onClick={() => { void persist({ widget: { title: widgetTitle, channel: widgetChannel, enabled: widgetEnabled } }, 'widget.save', widgetTitle); notify('Widget salvo') }}><Fa name="floppy-disk" size={14} /> Salvar widget</button>
               <button className="ssw-small-btn" onClick={() => { void copyTextGlobal(widgetHtml).then(ok => notify(ok ? 'HTML copiado' : 'Falha ao copiar')) }}>Copiar HTML</button>
             </div>
           </section>
@@ -1426,7 +1427,7 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
             <SectionTitle eyebrow="PREVIEW AO VIVO" title={widgetTitle || liveServer?.name || 'Servidor'} desc={liveServer?.description || 'Sem descrição'} />
             <p style={{ fontSize: 13 }}>{stats.membros} membros · {stats.online} online · {stats.texto} texto · {stats.voz} voz</p>
             <div className="ssw-list" style={{ marginTop: 8 }}>
-              {textCh.slice(0, 5).map(c => <div className="ssw-list-row" key={c.id}><i className="fa-solid fa-hashtag" /><span># {c.name}</span></div>)}
+              {textCh.slice(0, 5).map(c => <div className="ssw-list-row" key={c.id}><Fa name="hashtag" size={14} /><span># {c.name}</span></div>)}
             </div>
           </section>
         </div>
@@ -1480,7 +1481,7 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
             <SectionTitle eyebrow="MODELO" title="Modelo do servidor" desc={savedTpl ? `Salvo: ${savedTpl.name} · ${savedTpl.detail}` : 'Nenhum modelo salvo'} />
             <div className="ssw-add-row">
               <input value={tplName} onChange={e => setTplName(e.target.value)} placeholder="Nome do modelo" />
-              <button className="ssw-primary-btn" onClick={() => void saveTpl()}><i className="fa-solid fa-floppy-disk" /> Salvar estrutura atual</button>
+              <button className="ssw-primary-btn" onClick={() => void saveTpl()}><Fa name="floppy-disk" size={14} /> Salvar estrutura atual</button>
             </div>
             <div className="ssw-add-row" style={{ marginTop: 8 }}>
               <button className="ssw-small-btn" onClick={exportTpl}>Exportar JSON</button>
@@ -1504,13 +1505,13 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                 <label className="ssw-field"><span>Nome da integração</span><input value={intName} onChange={e => setIntName(e.target.value)} placeholder="Ex.: Twitch" /></label>
                 <label className="ssw-field"><span>Chave, URL ou identificador</span><input value={intDetail} onChange={e => setIntDetail(e.target.value)} placeholder="Informe o valor manualmente" /></label>
               </div>
-              <button className="ssw-primary-btn" onClick={addIntegration}><i className="fa-solid fa-plus" /> Adicionar integração</button>
+              <button className="ssw-primary-btn" onClick={addIntegration}><Fa name="plus" size={14} /> Adicionar integração</button>
             </div>
             <div className="ssw-list" style={{ marginTop: 14 }}>
               {integrations.map(int => (
                 <div className="ssw-list-row" key={int.id}>
-                  <i className="fa-solid fa-plug" /><span>{int.name}</span><small>{int.detail}</small>
-                  <button className="ssw-row-del" onClick={() => { const next = integrations.filter(i => i.id !== int.id); setIntegrations(next); void persist({ integrations: next }, 'integration.remove', int.name) }}><i className="fa-solid fa-trash" /></button>
+                  <Fa name="plug" size={14} /><span>{int.name}</span><small>{int.detail}</small>
+                  <button className="ssw-row-del" onClick={() => { const next = integrations.filter(i => i.id !== int.id); setIntegrations(next); void persist({ integrations: next }, 'integration.remove', int.name) }}><Fa name="trash" size={14} /></button>
                 </div>
               ))}
               {integrations.length === 0 && <div className="ssw-empty">Nenhuma integração cadastrada.</div>}
@@ -1583,7 +1584,7 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                   const key = `${effectiveActive}:${si}-${ii}`
                   return (
                     <div className="ssw-setting-row" key={item}>
-                      <span className="ssw-setting-icon"><i className="fa-solid fa-shield" /></span>
+                      <span className="ssw-setting-icon"><Fa name="shield" size={14} /></span>
                       <div className="ssw-setting-copy"><strong>{item}</strong><span>{communityValues[key] ? 'Ativado' : 'Não configurado'}</span></div>
                       <Toggle checked={communityValues[key] ?? false} onChange={() => toggleCommunity(key)} />
                     </div>
@@ -1616,7 +1617,7 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                 <span>Configurações</span>
               </div>
             </div>
-            <button type="button" className="ssw-icon-btn" onClick={onClose} aria-label="Fechar"><i className="fa-solid fa-xmark" /></button>
+            <button type="button" className="ssw-icon-btn" onClick={onClose} aria-label="Fechar"><Fa name="xmark" size={14} /></button>
           </div>
 
           <nav className="ssw-sidebar-nav">
@@ -1629,16 +1630,16 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                     // Recurso premium: banner comum com cadeado — NAO e um botao.
                     return (
                       <div key={item.key} className="ssw-nav-item ssw-nav-locked" title="Exclusivo ASTRO">
-                        <i className={`fa-solid ${item.icon}`} />
+                        <Fa name={item.icon} size={14} />
                         <span>{item.label}</span>
-                        <i className="fa-solid fa-lock ssw-nav-lock-icon" />
+                        <Fa name="lock" size={12} className="ssw-nav-lock-icon" />
                       </div>
                     )
                   }
                   return (
                     <button key={item.key} type="button" className={`ssw-nav-item ${effectiveActive === item.key ? 'active' : ''}`}
                       onClick={() => setActive(item.key)}>
-                      <i className={`fa-solid ${item.icon}`} />
+                      <Fa name={item.icon} size={14} />
                       <span>{item.label}</span>
                       {effectiveActive === item.key && <span className="ssw-active-pip" />}
                     </button>
@@ -1650,14 +1651,14 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
 
           <div className="ssw-sidebar-bottom">
             <div className="ssw-tip-card">
-              <i className="fa-solid fa-lightbulb" />
+              <Fa name="lightbulb" size={14} />
               <div>
                 <strong>Dica</strong>
                 <p>Suas alterações são salvas ao clicar em Salvar alterações.</p>
               </div>
             </div>
             <button className="ssw-delete-button" onClick={onDelete} disabled={!canDelete} title={canDelete ? 'Excluir servidor' : 'Somente o dono do servidor pode excluir'}>
-              <i className="fa-solid fa-trash" /> Excluir servidor
+              <Fa name="trash" size={14} /> Excluir servidor
             </button>
           </div>
         </aside>
@@ -1674,7 +1675,7 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
             </div>
             <div className="ssw-header-actions">
               <span className="ssw-status-badge"><span className="ssw-status-dot" /> {driveConnected ? 'Drive conectado' : 'Modo manual'}</span>
-              <button type="button" className="ssw-save-btn" onClick={onSave}><i className="fa-solid fa-floppy-disk" /> Salvar alterações</button>
+              <button type="button" className="ssw-save-btn" onClick={onSave}><Fa name="floppy-disk" size={14} /> Salvar alterações</button>
             </div>
           </header>
 

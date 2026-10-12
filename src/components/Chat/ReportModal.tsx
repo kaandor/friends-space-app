@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useEffect, useMemo, useState } from 'react'
 import type { Report } from '../../types'
 import { useServerStore } from '../../stores/serverStore'
@@ -142,13 +143,13 @@ export function ReportModal({ open, type, target, onClose }: ReportModalProps) {
         onClick={e => e.stopPropagation()}
       >
         <button onClick={onClose} aria-label="Fechar" style={{ position: 'absolute', top: 16, right: 16, color: '#9ca3af', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 20, zIndex: 10 }}>
-          <i className="fa-solid fa-xmark" />
+          <Fa name="xmark" size={14} />
         </button>
 
         <div style={{ padding: '24px 28px 16px', borderBottom: `1px solid ${BORDER}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
             <div style={{ width: 40, height: 40, background: '#3b1f1f', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <i className="fa-solid fa-flag" style={{ color: '#f87171', fontSize: 18 }} />
+              <Fa name="flag" size={18} style={{ color: '#f87171' }} />
             </div>
             <h1 style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 700, margin: 0 }}>
               {step === 'myreports' ? 'Minhas denuncias' : `Denunciar ${TYPE_LABEL[type] || 'conteudo'}`}
@@ -192,7 +193,7 @@ export function ReportModal({ open, type, target, onClose }: ReportModalProps) {
               <p style={{ color: '#d1d5db', fontSize: 13.5, margin: '14px 0 8px', fontWeight: 600 }}>Prova (opcional)</p>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 12px', cursor: 'pointer', overflow: 'hidden' }}>
-                  <i className="fa-solid fa-paperclip" style={{ color: GREEN, fontSize: 13 }} />
+                  <Fa name="paperclip" size={13} style={{ color: GREEN }} />
                   <span style={{ color: '#9ca3af', fontSize: 12.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fileInputLabel}</span>
                   <input type="file" accept="image/*,video/*,application/pdf" style={{ display: 'none' }} onChange={e => setProofFile(e.target.files?.[0] || null)} />
                 </label>
@@ -204,7 +205,7 @@ export function ReportModal({ open, type, target, onClose }: ReportModalProps) {
               </div>
 
               <div style={{ display: 'flex', gap: 8, marginTop: 16, background: '#1e2e1e', border: `1px solid #2c4a2c`, borderRadius: 10, padding: '10px 12px', alignItems: 'flex-start' }}>
-                <i className="fa-solid fa-clock" style={{ color: GREEN, fontSize: 13, marginTop: 2 }} />
+                <Fa name="clock" size={13} style={{ color: GREEN, marginTop: 2 }} />
                 <span style={{ color: '#c6e6c6', fontSize: 12.5, lineHeight: 1.5 }}>
                   O Friends Space responde em ate <b>uma semana</b>. Se demorar, voce podera fazer uma <b>reclamacao de denuncia nao respondida</b>.
                 </span>
@@ -224,7 +225,7 @@ export function ReportModal({ open, type, target, onClose }: ReportModalProps) {
                   disabled={uploading}
                   style={{ padding: '10px 16px', borderRadius: 10, background: GREEN, border: 'none', color: '#04120a', fontSize: 13.5, cursor: uploading ? 'default' : 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, opacity: uploading ? 0.7 : 1 }}
                 >
-                  {uploading ? <span className="inline-spinner" /> : <i className="fa-solid fa-paper-plane" style={{ fontSize: 12 }} />}
+                  {uploading ? <span className="inline-spinner" /> : <Fa name="paper-plane" size={12} />}
                   Enviar denuncia
                 </button>
               </div>
@@ -234,7 +235,7 @@ export function ReportModal({ open, type, target, onClose }: ReportModalProps) {
           {step === 'done' && (
             <div style={{ textAlign: 'center', padding: '12px 0 4px' }}>
               <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#1e2e1e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
-                <i className="fa-solid fa-check" style={{ color: GREEN, fontSize: 24 }} />
+                <Fa name="check" size={24} style={{ color: GREEN }} />
               </div>
               <h2 style={{ color: 'var(--text-primary)', fontSize: 18, fontWeight: 700, margin: '0 0 8px' }}>Denuncia enviada!</h2>
               <p style={{ color: '#9ca3af', fontSize: 13.5, lineHeight: 1.6, margin: '0 0 18px' }}>
@@ -246,7 +247,7 @@ export function ReportModal({ open, type, target, onClose }: ReportModalProps) {
                   onClick={() => void openMyReports()}
                   style={{ padding: '11px 16px', borderRadius: 10, background: 'var(--bg-hover)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 13.5, cursor: 'pointer', fontWeight: 600 }}
                 >
-                  <i className="fa-solid fa-list-check" style={{ marginRight: 8, color: GREEN }} />
+                  <Fa name="list-check" size={14} style={{ marginRight: 8, color: GREEN }} />
                   Ver minhas denuncias
                 </button>
                 <button
@@ -301,7 +302,7 @@ export function ReportModal({ open, type, target, onClose }: ReportModalProps) {
                 </>
               ) : myReports.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '24px 0' }}>
-                  <i className="fa-solid fa-inbox" style={{ fontSize: 32, color: '#3a3d42', marginBottom: 10 }} />
+                  <Fa name="inbox" size={32} style={{  color: '#3a3d42', marginBottom: 10 }} />
                   <p style={{ color: '#9ca3af', fontSize: 13.5, margin: 0 }}>Voce ainda nao fez nenhuma denuncia.</p>
                 </div>
               ) : (
@@ -334,13 +335,13 @@ export function ReportModal({ open, type, target, onClose }: ReportModalProps) {
                         onClick={() => setComplaintFor(report)}
                         style={{ marginTop: 8, padding: '7px 12px', borderRadius: 8, background: '#3b2a1f', border: 'none', color: '#fbbf24', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}
                       >
-                        <i className="fa-solid fa-rotate-left" style={{ marginRight: 6 }} />
+                        <Fa name="rotate-left" size={14} style={{ marginRight: 6 }} />
                         Reclamacao de denuncia nao respondida
                       </button>
                     )}
                     {report.complained && (
                       <div style={{ marginTop: 8, fontSize: 12, color: '#fbbf24' }}>
-                        <i className="fa-solid fa-check-circle" style={{ marginRight: 6 }} />
+                        <Fa name="check-circle" size={14} style={{ marginRight: 6 }} />
                         Reclamacao enviada - a equipe foi avisada.
                       </div>
                     )}

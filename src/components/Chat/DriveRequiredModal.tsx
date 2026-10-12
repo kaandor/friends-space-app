@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useState } from 'react'
 import { assetUrl } from '../../utils/assets'
 import { connectDrive } from '../../services/driveService'
@@ -20,7 +21,7 @@ function InfoCard({ icon, text }: { icon: string; text: React.ReactNode }) {
   return (
     <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 14, display: 'flex', gap: 12 }}>
       <div style={{ flexShrink: 0, marginTop: 1 }}>
-        <i className={`fa-solid ${icon}`} style={{ color: GREEN, fontSize: 16 }} />
+        <Fa name={icon} size={16} style={{ color: GREEN }} />
       </div>
       <p style={{ color: '#d1d5db', fontSize: 13.5, lineHeight: 1.55, margin: 0 }}>{text}</p>
     </div>
@@ -30,7 +31,7 @@ function InfoCard({ icon, text }: { icon: string; text: React.ReactNode }) {
 function Feature({ icon, text }: { icon: string; text: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#d1d5db', fontSize: 13.5 }}>
-      <i className={`fa-solid ${icon}`} style={{ color: GREEN, fontSize: 16, width: 20, textAlign: 'center' }} />
+      <Fa name={icon} size={16} style={{ color: GREEN, width: 20 }} />
       <span>{text}</span>
     </div>
   )
@@ -68,7 +69,7 @@ export function DriveRequiredModal({ open, onClose, onConnected, file, required 
       >
         {!required && (
           <button onClick={onClose} aria-label="Fechar" style={{ position: 'absolute', top: 16, right: 16, color: '#9ca3af', zIndex: 10, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 20 }}>
-            <i className="fa-solid fa-xmark" />
+            <Fa name="xmark" size={14} />
           </button>
         )}
 
@@ -83,7 +84,7 @@ export function DriveRequiredModal({ open, onClose, onConnected, file, required 
           <div style={{ flex: '1 1 340px', display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 40, height: 40, background: '#1e2e1e', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <i className={variant === 'server' ? 'fa-solid fa-server' : variant === 'perfil' ? 'fa-solid fa-user-pen' : 'fa-solid fa-bolt'} style={{ color: GREEN, fontSize: 20 }} />
+                {variant === 'server' ? <Fa name="server" size={20} style={{ color: GREEN }} /> : variant === 'perfil' ? <Fa name="user-pen" size={20} style={{ color: GREEN }} /> : <Fa name="bolt" size={20} style={{ color: GREEN }} />}
               </div>
               <h1 style={{ color: 'var(--text-primary)', fontSize: 24, fontWeight: 700, margin: 0 }}>
                 {variant === 'server' ? 'Servidor criado!' : variant === 'perfil' ? 'Editar perfil' : 'Enviar mídia'}
@@ -126,7 +127,7 @@ export function DriveRequiredModal({ open, onClose, onConnected, file, required 
           </div>
           <div style={{ flex: '1 1 340px', minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <i className="fa-solid fa-star" style={{ color: GREEN, fontSize: 16 }} />
+              <Fa name="star" size={16} style={{ color: GREEN }} />
               <h2 style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 18, margin: 0 }}>Sobre os planos ASTRO</h2>
             </div>
             <p style={{ color: '#d1d5db', fontSize: 14, lineHeight: 1.5, margin: '0 0 12px' }}>
@@ -143,13 +144,13 @@ export function DriveRequiredModal({ open, onClose, onConnected, file, required 
 
         <div style={{ margin: '0 28px 20px' }}>
           <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
-            <i className="fa-solid fa-shield-halved" style={{ color: GREEN, fontSize: 20, flexShrink: 0 }} />
+            <Fa name="shield-halved" size={20} style={{ color: GREEN, flexShrink: 0 }} />
             <p style={{ color: '#d1d5db', fontSize: 14, lineHeight: 1.5, margin: 0, flex: 1, minWidth: 0 }}>
               Ao conectar sua conta, será criada automaticamente uma pasta chamada <b style={{ color: GREEN }}>Friends Space</b> no seu Google Drive para organizar todas as mídias enviadas.
             </p>
             <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
               <img src={assetUrl('friends-space-icon.png')} alt="Friends Space" style={{ width: 40, height: 40, objectFit: 'contain' }} />
-              <i className="fa-solid fa-arrow-right-long" style={{ color: '#444', fontSize: 14 }} />
+              <Fa name="arrow-right-long" size={14} style={{ color: '#444' }} />
               <img src={assetUrl('gdrive.png')} alt="Google Drive" style={{ width: 34, height: 34, objectFit: 'contain' }} />
             </div>
           </div>

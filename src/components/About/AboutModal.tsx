@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { APP_VERSION } from '../../config/version'
 import { assetUrl } from '../../utils/assets'
 
@@ -30,9 +31,9 @@ export function AboutModal({ open, onClose }: AboutModalProps) {
           servidores, mensagens diretas e integracao com o seu proprio Google Drive para guardar a midia.
         </p>
         <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.7 }}>
-          <div><i className="fa-solid fa-globe" style={{ width: 18 }} /> https://friends-space.pages.dev</div>
-          <div><i className="fa-solid fa-lock" style={{ width: 18 }} /> Chamadas SRTP criptografadas</div>
-          <div><i className="fa-solid fa-hard-drive" style={{ width: 18 }} /> Midia no seu Drive (FRIENDS-SPACE)</div>
+          <div><Fa name="globe" size={14} style={{ width: 18 }} /> https://friends-space.pages.dev</div>
+          <div><Fa name="lock" size={14} style={{ width: 18 }} /> Chamadas SRTP criptografadas</div>
+          <div><Fa name="hard-drive" size={14} style={{ width: 18 }} /> Midia no seu Drive (FRIENDS-SPACE)</div>
         </div>
         <button onClick={onClose} style={{ marginTop: 20, width: '100%', padding: '10px 0', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'var(--accent, #5865f2)', color: '#fff', fontWeight: 700, fontSize: 14 }}>Fechar</button>
       </div>

@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useState } from 'react'
 import { requestBackend } from '../../services/backend'
 import { CirclePlay } from 'lucide-react'
@@ -55,19 +56,19 @@ export function SharePostModal({ post, authorName, currentUserId, onClose, onSha
     {
       name: 'Facebook',
       color: '#1877f2',
-      icon: <i className="fa-brands fa-facebook-f" style={{ fontSize: 16 }} />,
+      icon: <Fa name="facebook-f" size={16} />,
       url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`,
     },
     {
       name: 'WhatsApp',
       color: '#25d366',
-      icon: <i className="fa-brands fa-whatsapp" style={{ fontSize: 16 }} />,
+      icon: <Fa name="whatsapp" size={16} />,
       url: `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + postUrl)}`,
     },
     {
       name: 'Telegram',
       color: '#229ed9',
-      icon: <i className="fa-brands fa-telegram" style={{ fontSize: 16 }} />,
+      icon: <Fa name="telegram" size={16} />,
       url: `https://t.me/share/url?url=${encodeURIComponent(postUrl)}&text=${encodeURIComponent(shareText)}`,
     },
   ]

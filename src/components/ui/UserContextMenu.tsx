@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useEffect, useState } from 'react'
 import { Avatar } from './Avatar'
 import { StatusIcon } from './StatusIcon'
@@ -212,12 +213,12 @@ export function UserContextMenu() {
           {isFriend && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'var(--accent)', color: '#000', fontWeight: 700 }}>{t('menu.friend')}</span>}
           {!badgeHidden && astro && (
             <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#a020f0', color: '#fff', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <i className="fa-solid fa-rocket" style={{ fontSize: 9 }} /> ASTRO
+              <Fa name="rocket" size={9} /> ASTRO
             </span>
           )}
           {!badgeHidden && verified && (
             <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <i className="fa-solid fa-check" style={{ fontSize: 9, color: '#23a55a' }} /> {t('menu.verified')}
+              <Fa name="check" size={9} style={{  color: '#23a55a' }} /> {t('menu.verified')}
             </span>
           )}
           {pronoun && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>{pronoun}</span>}
@@ -232,7 +233,7 @@ export function UserContextMenu() {
         )}
         {user.activityName && settings['showActivity'] !== false && user.activityPrivacy !== 'private' && (
           <div style={{ margin: '10px 0 0', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 9px', background: 'var(--bg-tertiary)', borderRadius: 8, border: '1px solid var(--border)' }}>
-            <i className="fa-solid fa-gamepad" style={{ color: 'var(--accent)', fontSize: 12 }} />
+            <Fa name="gamepad" size={12} style={{ color: 'var(--accent)' }} />
             <div style={{ minWidth: 0 }}>
               <div style={{ color: 'var(--text-primary)', fontSize: 12, fontWeight: 600 }}>{user.activityName}</div>
               {user.activityDetails && <div style={{ color: 'var(--text-muted)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.activityDetails}</div>}
@@ -244,16 +245,16 @@ export function UserContextMenu() {
       {activeCall && !isMe && participants.some(p => p.userId === user.id) && (
         <div style={{ padding: '8px 12px 10px', borderBottom: '1px solid var(--border)' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <i className="fa-solid fa-volume-high" style={{ fontSize: 10 }} /> Volume na chamada
+            <Fa name="volume-high" size={10} /> Volume na chamada
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <i className="fa-solid fa-microphone" style={{ fontSize: 12, color: 'var(--text-muted)', width: 16, flexShrink: 0 }} />
+            <Fa name="microphone" size={12} style={{  color: 'var(--text-muted)', width: 16, flexShrink: 0 }} />
             <VolumeSlider value={clampVolume(volumes[user.id])} onChange={v => setVolume(user.id, v)} />
             <span style={{ fontSize: 11, color: 'var(--text-secondary)', width: 30, textAlign: 'right', flexShrink: 0 }}>{Math.round(clampVolume(volumes[user.id]) * 100)}%</span>
           </div>
           {remoteScreenStreams[user.id] && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-              <i className="fa-solid fa-display" style={{ fontSize: 12, color: 'var(--text-muted)', width: 16, flexShrink: 0 }} />
+              <Fa name="display" size={12} style={{  color: 'var(--text-muted)', width: 16, flexShrink: 0 }} />
               <VolumeSlider value={clampVolume(volumes[`screen:${user.id}`])} onChange={v => setVolume(`screen:${user.id}`, v)} />
               <span style={{ fontSize: 11, color: 'var(--text-secondary)', width: 30, textAlign: 'right', flexShrink: 0 }}>{Math.round(clampVolume(volumes[`screen:${user.id}`]) * 100)}%</span>
             </div>
@@ -265,7 +266,7 @@ export function UserContextMenu() {
         {!isMe && (
           <Item icon={<IconSend width={15} height={15} />} label={t('menu.conversar')} onClick={sendMessage} />
         )}
-        <Item icon={<i className="fa-solid fa-user" style={{ fontSize: 12 }} />} label={t('menu.viewProfile')} onClick={() => setViewProfileUser(user)} />
+        <Item icon={<Fa name="user" size={12} />} label={t('menu.viewProfile')} onClick={() => setViewProfileUser(user)} />
         {!isMe && isIncoming && (
           <Item icon={<IconCheck width={15} height={15} />} label={t('menu.acceptRequest')} onClick={accept} />
         )}
@@ -290,7 +291,7 @@ export function UserContextMenu() {
           }} />
         )}
         {!isMe && (
-          <Item icon={<i className="fa-solid fa-flag" style={{ fontSize: 12 }} />} label="Denunciar usuario" danger onClick={() => { setReportUser(user); close() }} />
+          <Item icon={<Fa name="flag" size={12} />} label="Denunciar usuario" danger onClick={() => { setReportUser(user); close() }} />
         )}
       </div>
     </div>

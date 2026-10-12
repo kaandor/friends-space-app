@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useEffect, useState } from 'react'
 import { useCallStore } from '../../stores/callStore'
 
@@ -13,12 +14,12 @@ export const CAMERA_MODE_KEY = 'friends-space:camera-mode'
 export const CAMERA_POSITION_KEY = 'friends-space:camera-position'
 
 export const CAMERA_POSITIONS: { value: CameraPosition; label: string; icon: string }[] = [
-  { value: 'tl', label: 'Canto sup. esquerdo', icon: 'fa-solid fa-arrow-up-left' },
-  { value: 'tc', label: 'Topo centralizado', icon: 'fa-solid fa-arrow-up' },
-  { value: 'tr', label: 'Canto sup. direito', icon: 'fa-solid fa-arrow-up-right' },
-  { value: 'bl', label: 'Canto inf. esquerdo', icon: 'fa-solid fa-arrow-down-left' },
-  { value: 'bc', label: 'Base centralizada', icon: 'fa-solid fa-arrow-down' },
-  { value: 'br', label: 'Canto inf. direito', icon: 'fa-solid fa-arrow-down-right' },
+  { value: 'tl', label: 'Canto sup. esquerdo', icon: 'arrow-up-left' },
+  { value: 'tc', label: 'Topo centralizado', icon: 'arrow-up' },
+  { value: 'tr', label: 'Canto sup. direito', icon: 'arrow-up-right' },
+  { value: 'bl', label: 'Canto inf. esquerdo', icon: 'arrow-down-left' },
+  { value: 'bc', label: 'Base centralizada', icon: 'arrow-down' },
+  { value: 'br', label: 'Canto inf. direito', icon: 'arrow-down-right' },
 ]
 
 const POSITION_STYLE: Record<CameraPosition, React.CSSProperties> = {
@@ -114,7 +115,7 @@ export function CameraOverlay({ videoId = 'call-video-camera-mini' }: { videoId?
       <video id={videoId} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', background: '#000' }} />
       {mode === 'empresa' && (
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.55)', padding: '3px 8px', fontSize: 10.5, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <i className="fa-solid fa-video" style={{ fontSize: 9 }} /> Você
+          <Fa name="video" size={9} /> Você
         </div>
       )}
     </div>

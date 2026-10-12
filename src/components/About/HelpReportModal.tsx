@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useState } from 'react'
 import { useUserStore } from '../../stores/userStore'
 import { useServerStore } from '../../stores/serverStore'
@@ -8,10 +9,10 @@ interface HelpReportModalProps {
 }
 
 const CATEGORIES = [
-  { key: 'bug', label: 'Bug / travamento', icon: 'fa-solid fa-bug' },
-  { key: 'suggestion', label: 'Sugestao', icon: 'fa-solid fa-lightbulb' },
-  { key: 'missing', label: 'Recurso faltando', icon: 'fa-solid fa-list-check' },
-  { key: 'other', label: 'Outro', icon: 'fa-solid fa-ellipsis' },
+  { key: 'bug', label: 'Bug / travamento', icon: 'bug' },
+  { key: 'suggestion', label: 'Sugestao', icon: 'lightbulb' },
+  { key: 'missing', label: 'Recurso faltando', icon: 'list-check' },
+  { key: 'other', label: 'Outro', icon: 'ellipsis' },
 ]
 
 // Formulario de ajuda/relato de experiencia — os relatos caem na aba
@@ -68,13 +69,13 @@ export function HelpReportModal({ open, onClose }: HelpReportModalProps) {
         onClick={e => e.stopPropagation()}
       >
         <button onClick={() => { reset(); onClose() }} aria-label="Fechar" style={{ position: 'absolute', top: 14, right: 16, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18 }}>
-          <i className="fa-solid fa-xmark" />
+          <Fa name="xmark" size={14} />
         </button>
 
         {done ? (
           <div style={{ textAlign: 'center', padding: '18px 0 8px' }}>
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#1e2e1e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
-              <i className="fa-solid fa-check" style={{ color: '#4ade80', fontSize: 24 }} />
+              <Fa name="check" size={24} style={{ color: '#4ade80' }} />
             </div>
             <h2 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px' }}>Relato enviado!</h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: 13.5, lineHeight: 1.6, margin: '0 0 18px' }}>
@@ -91,7 +92,7 @@ export function HelpReportModal({ open, onClose }: HelpReportModalProps) {
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
               <div style={{ width: 40, height: 40, background: 'var(--bg-hover)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <i className="fa-solid fa-circle-question" style={{ color: 'var(--accent)', fontSize: 18 }} />
+                <Fa name="circle-question" size={18} style={{ color: 'var(--accent)' }} />
               </div>
               <div>
                 <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Ajuda</h2>
@@ -112,7 +113,7 @@ export function HelpReportModal({ open, onClose }: HelpReportModalProps) {
                     color: 'var(--text-primary)', fontSize: 13, cursor: 'pointer', textAlign: 'left',
                   }}
                 >
-                  <i className={cat.icon} style={{ color: 'var(--accent)', fontSize: 13 }} />
+                  <Fa name={cat.icon} size={13} style={{ color: 'var(--accent)' }} />
                   {cat.label}
                 </button>
               ))}
@@ -141,7 +142,7 @@ export function HelpReportModal({ open, onClose }: HelpReportModalProps) {
                 disabled={busy}
                 style={{ padding: '10px 18px', borderRadius: 10, background: 'var(--accent, #5865f2)', border: 'none', color: '#fff', fontSize: 13.5, cursor: busy ? 'default' : 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, opacity: busy ? 0.7 : 1 }}
               >
-                {busy ? <span className="inline-spinner" /> : <i className="fa-solid fa-paper-plane" style={{ fontSize: 12 }} />}
+                {busy ? <span className="inline-spinner" /> : <Fa name="paper-plane" size={12} />}
                 Enviar relato
               </button>
             </div>

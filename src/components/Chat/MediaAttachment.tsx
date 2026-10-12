@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useEffect, useMemo, useState } from 'react'
 import { detectMediaKind, type MediaKind } from '../../services/mediaDetect'
 import { MediaViewer } from './MediaViewer'
@@ -117,13 +118,13 @@ export function MediaAttachment({ url, name, compact, msgId, type }: MediaAttach
           }}
         >
           <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <i className="fa-solid fa-file-lines" style={{ fontSize: 16 }} />
+            <Fa name="file-lines" size={16} />
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name || 'Arquivo'}</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>.txt · clique para abrir</div>
           </div>
-          <i className="fa-solid fa-download" style={{ color: 'var(--text-muted)', fontSize: 13, flexShrink: 0 }} />
+          <Fa name="download" size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
         </div>
         {viewer && <MediaViewer url={currentUrl} name={name} msgId={msgId} onClose={() => setViewer(false)} />}
       </>

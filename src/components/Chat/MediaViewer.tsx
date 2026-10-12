@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useEffect, useRef, useState } from 'react'
 import { detectMediaKind, driveFolderFor } from '../../services/mediaDetect'
 import { isDriveConnected, uploadToDriveWithProgress } from '../../services/driveService'
@@ -139,12 +140,12 @@ export function MediaViewer({ url, name, msgId, onClose }: MediaViewerProps) {
         ) : kind === 'none' ? (
           <div style={{ textAlign: 'center', color: '#fff' }}>
             <div style={{ fontSize: 64, marginBottom: 16 }}>
-              <i className="fa-solid fa-file-lines" />
+              <Fa name="file-lines" size={14} />
             </div>
             <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>{name || 'Arquivo'}</div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 20, wordBreak: 'break-all', maxWidth: '70vw' }}>{url}</div>
             <button onClick={() => void handleDownload()} disabled={downloading} style={{ padding: '10px 20px', borderRadius: 8, background: 'var(--accent)', color: '#000', fontWeight: 700, fontSize: 14, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, opacity: downloading ? 0.6 : 1 }}>
-              <i className="fa-solid fa-download" /> {downloading ? 'Baixando...' : 'Baixar arquivo'}
+              <Fa name="download" size={14} /> {downloading ? 'Baixando...' : 'Baixar arquivo'}
             </button>
           </div>
         ) : (
@@ -165,21 +166,21 @@ export function MediaViewer({ url, name, msgId, onClose }: MediaViewerProps) {
       >
         {kind !== 'audio' && (
           <button onClick={() => setZoom(z => !z)} style={toolBtn}>
-            <i className={zoom ? 'fa-solid fa-magnifying-glass-minus' : 'fa-solid fa-magnifying-glass-plus'} /> {zoom ? t('media.zoomOut') : t('media.zoomIn')}
+            {zoom ? <Fa name="magnifying-glass-minus" size={14} /> : <Fa name="magnifying-glass-plus" size={14} />} {zoom ? t('media.zoomOut') : t('media.zoomIn')}
           </button>
         )}
         <a href={url} target="_blank" rel="noopener noreferrer" style={toolBtn}>
-          <i className="fa-solid fa-arrow-up-right-from-square" /> {t('media.openBrowser')}
+          <Fa name="arrow-up-right-from-square" size={14} /> {t('media.openBrowser')}
         </a>
         <button onClick={() => void handleDownload()} disabled={downloading} style={{ ...toolBtn, opacity: downloading ? 0.6 : 1 }}>
-          <i className="fa-solid fa-download" /> {downloading ? '...' : t('media.download')}
+          <Fa name="download" size={14} /> {downloading ? '...' : t('media.download')}
         </button>
         <button onClick={copyLink} style={toolBtn}>
-          <i className="fa-solid fa-link" /> {copied === 'link' ? t('media.linkCopied') : t('media.copyLink')}
+          <Fa name="link" size={14} /> {copied === 'link' ? t('media.linkCopied') : t('media.copyLink')}
         </button>
         <div style={{ position: 'relative' }}>
           <button onClick={() => setShowForward(s => !s)} style={toolBtn}>
-            <i className="fa-solid fa-share" /> {t('media.forward')}
+            <Fa name="share" size={14} /> {t('media.forward')}
           </button>
           {showForward && (
             <>

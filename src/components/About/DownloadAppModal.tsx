@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useEffect, useState } from 'react'
 import { getApiBaseUrl } from '../../services/config'
 
@@ -55,19 +56,19 @@ export function DownloadAppModal({ open, onClose }: DownloadAppModalProps) {
     {
       name: 'Windows',
       description: links.version ? `Versão ${links.version} · Windows 10 ou superior` : 'Windows 10 ou superior',
-      icon: 'fa-brands fa-windows',
+      icon: 'windows',
       url: links.win || releasesPage,
     },
     {
       name: 'Linux',
       description: links.version ? `Versão ${links.version} · Ubuntu, Debian, Fedora e mais` : 'Ubuntu, Debian, Fedora e mais',
-      icon: 'fa-brands fa-linux',
+      icon: 'linux',
       url: links.linux || releasesPage,
     },
     {
       name: 'macOS',
       description: links.version ? `Versão ${links.version} · macOS 11 (Big Sur) ou superior` : 'macOS 11 (Big Sur) ou superior',
-      icon: 'fa-brands fa-apple',
+      icon: 'apple',
       url: links.mac || releasesPage,
     },
   ]
@@ -99,7 +100,7 @@ export function DownloadAppModal({ open, onClose }: DownloadAppModalProps) {
           onMouseOver={e => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.background = 'var(--bg-hover)' }}
           onMouseOut={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent' }}
         >
-          <i className="fa-solid fa-xmark" style={{ fontSize: 30, fontWeight: 300 }} />
+          <Fa name="xmark" size={30} style={{  fontWeight: 300 }} />
         </button>
 
         <header style={{ paddingBottom: 'clamp(26px, 3vw, 40px)' }}>
@@ -123,7 +124,7 @@ export function DownloadAppModal({ open, onClose }: DownloadAppModalProps) {
               onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border)' }}
             >
               <div style={{ display: 'grid', placeItems: 'center', minHeight: 140, width: '100%' }}>
-                <i className={p.icon} style={{ fontSize: 92, color: 'var(--text-primary)' }} />
+                <Fa name={p.icon} size={92} style={{ color: 'var(--text-primary)' }} />
               </div>
               <div style={{ textAlign: 'center' }}>
                 <h3 style={{ margin: '10px 0 6px', fontSize: 'clamp(22px, 2vw, 30px)', fontWeight: 700, letterSpacing: '-0.03em' }}>{p.name}</h3>
@@ -142,7 +143,7 @@ export function DownloadAppModal({ open, onClose }: DownloadAppModalProps) {
                 onMouseOver={e => { e.currentTarget.style.filter = 'brightness(1.1)' }}
                 onMouseOut={e => { e.currentTarget.style.filter = 'brightness(1)' }}
               >
-                <i className="fa-solid fa-download" style={{ fontSize: 20 }} />
+                <Fa name="download" size={20} />
                 <span>{downloaded === p.name ? 'Baixando…' : p.url ? 'Baixar' : 'Em breve'}</span>
               </button>
             </div>
@@ -151,7 +152,7 @@ export function DownloadAppModal({ open, onClose }: DownloadAppModalProps) {
 
         <footer style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 'clamp(24px, 2.5vw, 34px)', paddingTop: 'clamp(20px, 2vw, 28px)', borderTop: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 'clamp(13px, 1.2vw, 17px)' }}>
           <div style={{ display: 'grid', flex: '0 0 auto', placeItems: 'center', width: 40, height: 40, color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '50%', background: 'var(--bg-secondary)' }}>
-            <i className="fa-solid fa-circle-info" />
+            <Fa name="circle-info" size={14} />
           </div>
           <p style={{ margin: 0, lineHeight: 1.45 }}>
             Precisa de ajuda? Consulte nossa <a href="#help" onClick={e => e.preventDefault()} style={{ color: 'var(--accent)' }}>Central de Ajuda</a> ou entre no nosso <a href="#community" onClick={e => e.preventDefault()} style={{ color: 'var(--accent)' }}>servidor no Friends Space.</a>

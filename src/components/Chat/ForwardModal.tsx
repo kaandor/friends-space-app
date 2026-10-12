@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useState } from 'react'
 import type { Message, Server } from '../../types'
 
@@ -51,7 +52,7 @@ export function ForwardModal({ message, servers, onSelect, onClose }: ForwardMod
                       onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)' }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
                     >
-                      <i className="fa-solid fa-hashtag" style={{ color: 'var(--text-muted)', fontSize: 12 }} />
+                      <Fa name="hashtag" size={12} style={{ color: 'var(--text-muted)' }} />
                       {channel.name}
                     </button>
                   ))}

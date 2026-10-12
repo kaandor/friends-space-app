@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useState, useRef, useMemo } from 'react'
 import { Plus, Check, CalendarDays, Trash2, Hash, X, Mic, Folder, Lightbulb, ArrowLeft, ArrowRight } from 'lucide-react'
 import { ImageCropper } from '../ui/ImageCropper'
@@ -65,7 +66,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
 function UploadBox({ banner = false, onClick }: { banner?: boolean; onClick: () => void }) {
   return (
     <button className={`csw-upload-box ${banner ? 'csw-banner-upload' : 'csw-icon-upload'}`} type="button" onClick={onClick}>
-      <span className="csw-upload-icon"><i className={`fa-solid ${banner ? 'fa-image' : 'fa-camera'}`} /></span>
+      <span className="csw-upload-icon"><Fa name={banner ? 'image' : 'camera'} size={16} /></span>
       <span className="csw-upload-add"><Plus size={14} strokeWidth={2.5} /></span>
     </button>
   )
@@ -90,7 +91,7 @@ function SettingRow({ icon, title, desc, checked, onChange }: {
 }) {
   return (
     <div className="csw-setting-row">
-      <span className="csw-setting-icon"><i className={`fa-solid ${icon}`} /></span>
+      <span className="csw-setting-icon"><Fa name={icon} size={15} /></span>
       <div>
         <strong>{title}</strong>
         <small>{desc}</small>
@@ -689,7 +690,7 @@ export function CreateServerModal({ open, onClose, onCreate }: CreateServerModal
                   className={`csw-nav-item ${activeStep === i ? 'active' : ''}`}
                   onClick={() => setActiveStep(i)}
                 >
-                  <span className="csw-nav-icon"><i className={`fa-solid ${item.icon}`} /></span>
+                  <span className="csw-nav-icon"><Fa name={item.icon} size={15} /></span>
                   <span className="csw-nav-copy">
                     <strong>{item.title}</strong>
                     <small>{item.desc}</small>

@@ -80,3 +80,13 @@ export const IconSun = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <>
 export const IconMoon = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" /></>, p2)
 export const IconVolume = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07" /></>, p2)
 export const IconVolumeX = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" /></>, p2)
+
+export const IconMicOff = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10v1a7 7 0 0014 0v-1" /><line x1="12" y1="18" x2="12" y2="22" /><line x1="2" y1="2" x2="22" y2="22" /></>, p2)
+
+export const IconHeadphonesOff = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M4 14v-2a8 8 0 0116 0v2" /><rect x="3" y="14" width="4" height="7" rx="2" /><rect x="17" y="14" width="4" height="7" rx="2" /><line x1="2" y1="2" x2="22" y2="22" /></>, p2)
+
+export const IconGear = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><circle cx="12" cy="12" r="3.2" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" /></>, p2)
+
+export const IconDisplay = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><rect x="2" y="4" width="20" height="12" rx="2" /><line x1="8" y1="20" x2="16" y2="20" /><line x1="12" y1="16" x2="12" y2="20" /></>, p2)
+
+export const IconChat = (p2?: React.SVGProps<SVGSVGElement>) => s('0 0 24 24', <><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" /></>, p2)

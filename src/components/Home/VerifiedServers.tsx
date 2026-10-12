@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useEffect, useState } from 'react'
 import { requestBackend } from '../../services/backend'
 import { useServerStore } from '../../stores/serverStore'
@@ -38,7 +39,7 @@ export function VerifiedServers() {
   return (
     <div style={{ padding: '16px 20px 24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <i className="fa-solid fa-badge-check" style={{ color: '#5865f2', fontSize: 15 }} />
+        <Fa name="badge-check" size={15} style={{ color: '#5865f2' }} />
         <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: 0.3 }}>
           Servidores verificados
         </span>
@@ -60,12 +61,12 @@ export function VerifiedServers() {
                 <span style={{ fontSize: 13.5, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{server.name}</span>
                 {server.partner === 'friends-space' && (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#0f0f12', background: 'var(--accent)', padding: '2px 7px', borderRadius: 20, flexShrink: 0 }}>
-                    <i className="fa-solid fa-handshake" style={{ fontSize: 9 }} /> PARCEIRO
+                    <Fa name="handshake" size={9} /> PARCEIRO
                   </span>
                 )}
                 {server.partner !== 'friends-space' && (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#fff', background: '#5865f2', padding: '2px 7px', borderRadius: 20, flexShrink: 0 }}>
-                    <i className="fa-solid fa-badge-check" style={{ fontSize: 9 }} /> VERIFICADO
+                    <Fa name="badge-check" size={9} /> VERIFICADO
                   </span>
                 )}
               </span>
@@ -73,10 +74,10 @@ export function VerifiedServers() {
                 <span style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{server.description}</span>
               )}
               <span style={{ display: 'block', fontSize: 10.5, color: 'var(--text-muted)', marginTop: 3, opacity: 0.85 }}>
-                <i className="fa-solid fa-user-group" /> {(server.members || []).length} membros
+                <Fa name="user-group" size={14} /> {(server.members || []).length} membros
               </span>
             </span>
-            <i className="fa-solid fa-chevron-right" style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+            <Fa name="chevron-right" size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
           </button>
         ))}
       </div>

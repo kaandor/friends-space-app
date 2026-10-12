@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useEffect, useState } from 'react'
 import { requestBackend } from '../../services/backend'
 import { useServerStore } from '../../stores/serverStore'
@@ -27,9 +28,9 @@ function formatTime(ts: number) {
 }
 
 function icon(kind: string) {
-  if (kind === 'call') return <i className="fa-solid fa-phone" style={{ color: '#23a55a' }} />
-  if (kind === 'dm') return <i className="fa-solid fa-envelope" style={{ color: '#5865f2' }} />
-  return <i className="fa-solid fa-hashtag" style={{ color: '#80848e' }} />
+  if (kind === 'call') return <Fa name="phone" size={14} style={{ color: '#23a55a' }} />
+  if (kind === 'dm') return <Fa name="envelope" size={14} style={{ color: '#5865f2' }} />
+  return <Fa name="hashtag" size={14} style={{ color: '#80848e' }} />
 }
 
 export function ActivityHistory({ userId }: { userId: string }) {

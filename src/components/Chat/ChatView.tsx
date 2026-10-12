@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import type { Channel, Message } from '../../types'
 import { Avatar } from '../ui/Avatar'
@@ -459,7 +460,7 @@ export function ChatView({ channel }: ChatViewProps) {
         fontWeight: 600, fontSize: 15, color: 'var(--text-primary)',
         background: 'var(--bg-primary)',
       }}>
-        <i className={channel.type === 'voice' ? 'fa-solid fa-volume-high' : 'fa-solid fa-hashtag'} style={{ color: 'var(--text-muted)', fontSize: 18 }} />
+        {channel.type === 'voice' ? <Fa name="volume-high" size={18} style={{ color: 'var(--text-muted)' }} /> : <Fa name="hashtag" size={18} style={{ color: 'var(--text-muted)' }} />}
         <span>{channel.name}</span>
         {channel.type === 'voice' && activeCall && createdAt && (
           <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>
@@ -468,7 +469,7 @@ export function ChatView({ channel }: ChatViewProps) {
         )}
         {currentServer && (
           <button onClick={() => setShowMembers(s => !s)} title={showMembers ? 'Ocultar membros' : 'Mostrar membros'} style={{ marginLeft: 'auto', width: 32, height: 32, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: showMembers ? 'var(--bg-active)' : 'transparent', border: 'none', color: showMembers ? 'var(--text-primary)' : 'var(--text-muted)', cursor: 'pointer', flexShrink: 0 }}>
-            <i className="fa-solid fa-users" style={{ fontSize: 15 }} />
+            <Fa name="users" size={15} />
           </button>
         )}
       </div>
@@ -477,7 +478,7 @@ export function ChatView({ channel }: ChatViewProps) {
         {groupedMessages.length === 0 && (
           <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 40 }}>
             <div style={{ width: 64, height: 64, background: 'var(--bg-hover)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: 'var(--text-secondary)', margin: '0 auto 16px' }}>
-              <i className="fa-solid fa-hashtag" />
+              <Fa name="hashtag" size={14} />
             </div>
             <h3 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>Bem-vindo ao #{channel.name}!</h3>
             <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Este e o inicio do canal #{channel.name}.</p>
@@ -530,7 +531,7 @@ export function ChatView({ channel }: ChatViewProps) {
                     )}
                     {msg.forwardedFrom && (
                       <div style={{ fontSize: 11, color: sent ? '#000' : 'var(--text-muted)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6, opacity: sent ? 0.7 : 1 }}>
-                        <i className="fa-solid fa-share" style={{ fontSize: 9 }} />
+                        <Fa name="share" size={9} />
                         Encaminhado de {msg.forwardedFrom.userName}
                       </div>
                     )}
@@ -554,7 +555,7 @@ export function ChatView({ channel }: ChatViewProps) {
                         {renderMessageBody(msg, sent)}
                         <span style={{ fontSize: 10, color: sent ? '#000' : 'var(--text-secondary)', display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'flex-end', marginTop: 4, opacity: sent ? 0.6 : 1 }}>
                           {isBotMsg(msg) && botBadge(sent)}
-                          {formatTime(msg.createdAt)} {sent && <i className="fa-solid fa-check-double" style={{ marginLeft: 2 }} />}
+                          {formatTime(msg.createdAt)} {sent && <Fa name="check-double" size={14} style={{ marginLeft: 2 }} />}
                           {msg.edited && <span style={{ marginLeft: 4, opacity: 0.7 }}>(editado)</span>}
                         </span>
                       </>
@@ -593,11 +594,11 @@ export function ChatView({ channel }: ChatViewProps) {
 
       {replyTo && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)' }}>
-          <i className="fa-solid fa-reply" style={{ color: 'var(--accent)', fontSize: 14 }} />
+          <Fa name="reply" size={14} style={{ color: 'var(--accent)' }} />
           <div style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             Respondendo a <b style={{ color: 'var(--accent)' }}>{replyTo.userName}</b>: {replyTo.content.slice(0, 120)}
           </div>
-          <button onClick={() => setReplyTo(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><i className="fa-solid fa-xmark" /></button>
+          <button onClick={() => setReplyTo(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><Fa name="xmark" size={14} /></button>
         </div>
       )}
 
@@ -616,7 +617,7 @@ export function ChatView({ channel }: ChatViewProps) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ position: 'relative' }}>
             <button onClick={() => fileInputRef.current?.click()} className="fs-input-icon" title="Enviar midia">
-              <i className="fa-solid fa-plus" />
+              <Fa name="plus" size={14} />
             </button>
             <input ref={fileInputRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handleFileChange} />
           </div>
@@ -635,7 +636,7 @@ export function ChatView({ channel }: ChatViewProps) {
           </div>
           <div style={{ position: 'relative' }}>
             <button onClick={() => setShowEmoji(s => !s)} className="fs-input-icon" title="Emojis">
-              <i className="fa-regular fa-face-smile" />
+              <Fa name="face-smile" size={14} />
             </button>
             {showEmoji && (
               <>
@@ -654,7 +655,7 @@ export function ChatView({ channel }: ChatViewProps) {
             )}
           </div>
           <button className="fs-send-btn" onClick={handleSend} disabled={!input.trim() || sending}>
-            {sending ? <span className="inline-spinner" /> : <i className="fa-solid fa-paper-plane" />}
+            {sending ? <span className="inline-spinner" /> : <Fa name="paper-plane" size={14} />}
           </button>
           {input.trim().length >= 300 && (
             <button
@@ -668,7 +669,7 @@ export function ChatView({ channel }: ChatViewProps) {
                 color: 'var(--accent)', cursor: sending ? 'default' : 'pointer', flexShrink: 0,
               }}
             >
-              <i className="fa-solid fa-file-lines" /> Enviar como .txt
+              <Fa name="file-lines" size={14} /> Enviar como .txt
             </button>
           )}
         </div>

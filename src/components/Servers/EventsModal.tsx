@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useState } from 'react'
 import type { Server } from '../../types'
 import { Modal } from '../ui/Modal'
@@ -59,7 +60,7 @@ export function EventsModal({ open, onClose, server, canManage }: EventsModalPro
     <Modal open={open} onClose={() => { onClose(); resetForm() }} title={`Eventos de ${server.name}`}>
       {canManage && !showForm && (
         <Button size="sm" onClick={() => setShowForm(true)} style={{ marginBottom: 12 }}>
-          <i className="fa-solid fa-plus" style={{ marginRight: 6 }} /> Criar evento
+          <Fa name="plus" size={14} style={{ marginRight: 6 }} /> Criar evento
         </Button>
       )}
 
@@ -135,7 +136,7 @@ function EventCard({ title, description, date, location, canManage, onDelete }: 
       </div>
       {canManage && (
         <button onClick={onDelete} title="Excluir evento" style={{ color: '#ed4245', padding: 4, flexShrink: 0, fontSize: 15 }}>
-          <i className="fa-solid fa-trash" />
+          <Fa name="trash" size={14} />
         </button>
       )}
     </div>

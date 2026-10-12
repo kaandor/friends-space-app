@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useEffect, useState, useCallback } from 'react'
 import type { User, Server, WallPost } from '../../types'
 import { Avatar } from './Avatar'
@@ -77,7 +78,7 @@ function WallSection({ ownerId, meId, canPost }: WallSectionProps) {
   return (
     <div style={{ marginTop: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <i className="fa-solid fa-clipboard" style={{ color: 'var(--accent)', fontSize: 13 }} />
+        <Fa name="clipboard" size={13} style={{ color: 'var(--accent)' }} />
         <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13 }}>Mural</span>
         <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{posts.length}</span>
       </div>
@@ -129,7 +130,7 @@ function WallSection({ ownerId, meId, canPost }: WallSectionProps) {
                   onClick={() => void like(post.id)}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 999, background: liked ? 'var(--accent)' : 'var(--bg-secondary)', color: liked ? '#000' : 'var(--text-muted)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: 11.5, fontWeight: 700 }}
                 >
-                  <i className={`fa-solid ${liked ? 'fa-heart' : 'fa-heart'}`} style={{ fontSize: 10, color: liked ? '#000' : '#f23f43' }} /> {post.likes.length}
+                  <Fa name="heart" size={10} style={{ color: liked ? '#000' : '#f23f43' }} /> {post.likes.length}
                 </button>
               </div>
             </div>
@@ -249,12 +250,12 @@ export function FullProfileModal({ user, onClose }: { user: User; onClose: () =>
             {rel?.status === 'accepted' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'var(--accent)', color: '#000', fontWeight: 700 }}>{t('menu.friend')}</span>}
             {!badgeHidden && astro && (
               <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#a020f0', color: '#fff', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <i className="fa-solid fa-rocket" style={{ fontSize: 9 }} /> ASTRO
+                <Fa name="rocket" size={9} /> ASTRO
               </span>
             )}
             {!badgeHidden && verified && (
               <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <i className="fa-solid fa-check" style={{ fontSize: 9, color: '#23a55a' }} /> {t('menu.verified')}
+                <Fa name="check" size={9} style={{  color: '#23a55a' }} /> {t('menu.verified')}
               </span>
             )}
             {pronoun && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>{pronoun}</span>}
@@ -268,7 +269,7 @@ export function FullProfileModal({ user, onClose }: { user: User; onClose: () =>
           {/* Atividade */}
           {user.activityName && settings['showActivity'] !== false && (
             <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'var(--bg-tertiary)', borderRadius: 8, border: '1px solid var(--border)' }}>
-              <i className="fa-solid fa-gamepad" style={{ color: 'var(--accent)' }} />
+              <Fa name="gamepad" size={14} style={{ color: 'var(--accent)' }} />
               <div style={{ minWidth: 0 }}>
                 <div style={{ color: 'var(--text-primary)', fontSize: 12, fontWeight: 600 }}>{user.activityName}</div>
                 {user.activityDetails && <div style={{ color: 'var(--text-muted)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.activityDetails}</div>}
@@ -284,7 +285,7 @@ export function FullProfileModal({ user, onClose }: { user: User; onClose: () =>
             )}
             {user.id === meId && (
               <button onClick={() => { onClose(); window.dispatchEvent(new Event('friends-space:edit-profile')) }} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '9px 0', borderRadius: 8, background: 'var(--accent)', color: '#000', border: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-                <i className="fa-solid fa-pen" style={{ fontSize: 12 }} /> Editar perfil
+                <Fa name="pen" size={12} /> Editar perfil
               </button>
             )}
           </div>
@@ -293,7 +294,7 @@ export function FullProfileModal({ user, onClose }: { user: User; onClose: () =>
           {user.id !== meId && (
             <div style={{ marginTop: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <i className="fa-solid fa-user-group" style={{ color: 'var(--accent)', fontSize: 13 }} />
+                <Fa name="user-group" size={13} style={{ color: 'var(--accent)' }} />
                 <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13 }}>Amigos em comum</span>
                 <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{mutualFriends.length}</span>
               </div>
@@ -316,7 +317,7 @@ export function FullProfileModal({ user, onClose }: { user: User; onClose: () =>
           {user.id !== meId && (
             <div style={{ marginTop: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <i className="fa-solid fa-server" style={{ color: 'var(--accent)', fontSize: 13 }} />
+                <Fa name="server" size={13} style={{ color: 'var(--accent)' }} />
                 <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13 }}>Servidores em comum</span>
                 <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{mutualServers.length}</span>
               </div>

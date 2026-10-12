@@ -1,3 +1,4 @@
+import { Fa } from './utils/fa'
 import { useEffect, useState, useCallback, useRef, Fragment, lazy, Suspense } from 'react'
 import './App.css'
 import { Avatar } from './components/ui/Avatar'
@@ -1070,14 +1071,18 @@ function App() {
 
   if (!authReady) {
     return (
-      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)' }}>
-        <div style={{ width: 400, maxWidth: 'calc(100vw - 32px)', padding: 32, borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-          <img src={assetUrl('Logo.png')} alt="Friends Space Beta" style={{ width: 116, height: 116, objectFit: 'contain' }} />
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 55%), var(--bg-primary)' }}>
+        <div style={{ width: 400, maxWidth: 'calc(100vw - 32px)', padding: '40px 36px 34px', borderRadius: 24, border: '1px solid color-mix(in srgb, var(--accent) 25%, var(--border))', background: 'var(--bg-secondary)', boxShadow: '0 24px 70px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
+          <img src={assetUrl('friends-space-logo.png')} alt="Friends Space Beta" style={{ height: 76, width: 'auto', maxWidth: '100%', objectFit: 'contain', background: '#050807', border: '1px solid rgba(0, 255, 136, .22)', borderRadius: 14, padding: '6px 14px 6px 8px' }} />
           <div style={{ textAlign: 'center' }}>
-            <h1 style={{ fontSize: 24, marginBottom: 2 }}>Friends Space Beta</h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Carregando...</p>
+            <h1 style={{ fontSize: 22, margin: 0, fontFamily: '"Space Grotesk", sans-serif', fontWeight: 800, letterSpacing: '-0.02em' }}>Friends Space Beta</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: '6px 0 0' }}>Carregando...</p>
+          </div>
+          <div style={{ width: '100%', height: 4, borderRadius: 999, background: 'var(--bg-tertiary)', overflow: 'hidden' }}>
+            <div className="fs-loadbar" style={{ height: '100%', width: '40%', borderRadius: 999, background: 'linear-gradient(90deg, var(--accent-hover), var(--accent))' }} />
           </div>
         </div>
+        <style>{`@keyframes fsLoadSlide{0%{transform:translateX(-110%)}100%{transform:translateX(280%)}}.fs-loadbar{animation:fsLoadSlide 1.2s ease-in-out infinite}`}</style>
       </div>
     )
   }
@@ -1118,10 +1123,10 @@ function App() {
     setFolderMenu(null)
   }
   const folderItems = (folder: ServerFolder) => [
-    { label: 'Abrir pasta', icon: <i className="fa-solid fa-folder-open" style={{ fontSize: 13 }} />, onClick: () => { setExpandedFolderId(expandedFolderId === folder.id ? null : folder.id); setFolderMenu(null) } },
-    { label: 'Personalizar (nome / servidores)', icon: <i className="fa-solid fa-sliders" style={{ fontSize: 13 }} />, onClick: () => { openFolderModal(folder); setFolderMenu(null) } },
-    { label: 'Encaminhar pasta', icon: <i className="fa-solid fa-share-nodes" style={{ fontSize: 13 }} />, onClick: () => { setFolderShare(folder); setFolderMenu(null) } },
-    { label: 'Apagar pasta', icon: <i className="fa-solid fa-trash" style={{ fontSize: 13 }} />, danger: true, onClick: () => void handleDeleteFolder() },
+    { label: 'Abrir pasta', icon: <Fa name="folder-open" size={13} />, onClick: () => { setExpandedFolderId(expandedFolderId === folder.id ? null : folder.id); setFolderMenu(null) } },
+    { label: 'Personalizar (nome / servidores)', icon: <Fa name="sliders" size={13} />, onClick: () => { openFolderModal(folder); setFolderMenu(null) } },
+    { label: 'Encaminhar pasta', icon: <Fa name="share-nodes" size={13} />, onClick: () => { setFolderShare(folder); setFolderMenu(null) } },
+    { label: 'Apagar pasta', icon: <Fa name="trash" size={13} />, danger: true, onClick: () => void handleDeleteFolder() },
   ]
 
   const siteAppearance = activeUser?.settings ? clampAppearanceToPlan(parseAppearance(activeUser.settings as Record<string, unknown>), planFromUser(activeUser)) : null
@@ -1199,7 +1204,7 @@ function App() {
             </div>
             <div style={{ display: 'flex', gap: 14 }}>
               <Button onClick={() => void callUser(callRejectedBy.userId, callRejectedBy.mode)}>
-                <i className="fa-solid fa-phone" style={{ marginRight: 8 }} /> Ligar de novo?
+                <Fa name="phone" size={14} style={{ marginRight: 8 }} /> Ligar de novo?
               </Button>
               <Button variant="secondary" onClick={dismissRejectedCall}>Desistir?</Button>
             </div>
@@ -1214,8 +1219,8 @@ function App() {
       {updateDownloadedVersion && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2100, display: !updateBannerDismissed ? 'flex' : 'none', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, maxWidth: 400, textAlign: 'center', padding: 20 }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--accent)', boxShadow: '0 0 40px color-mix(in srgb, var(--accent) 30%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-tertiary)' }}>
-              <i className="fa-solid fa-arrow-up" style={{ fontSize: 32, color: 'var(--accent)' }} />
+            <div style={{ width: 80, height: 80, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--accent)', boxShadow: '0 0 24px color-mix(in srgb, var(--accent) 22%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-tertiary)' }}>
+              <Fa name="arrow-up" size={32} style={{  color: 'var(--accent)' }} />
             </div>
             <div>
               <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Atualização pronta</h2>
@@ -1227,7 +1232,7 @@ function App() {
               <Button onClick={() => {
                 try { (window as unknown as { electronAPI?: { installUpdate?: () => void } }).electronAPI?.installUpdate?.() } catch { /* silencioso */ }
               }}>
-                <i className="fa-solid fa-rotate" style={{ marginRight: 8 }} /> Instalar e reiniciar
+                <Fa name="rotate" size={14} style={{ marginRight: 8 }} /> Instalar e reiniciar
               </Button>
               <Button variant="secondary" onClick={() => setUpdateBannerDismissed(true)}>Depois</Button>
             </div>
@@ -1240,23 +1245,24 @@ function App() {
           title={`Instalar Friends Space ${updateDownloadedVersion}`}
           style={{ position: 'fixed', right: 16, bottom: 16, zIndex: 2500, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 999, border: '1px solid var(--accent)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 30px rgba(0,0,0,0.5)', animation: 'fs-blink 1.6s infinite' }}
         >
-          <i className="fa-solid fa-rotate" style={{ color: 'var(--accent)' }} />
+          <Fa name="rotate" size={14} style={{ color: 'var(--accent)' }} />
           Atualizar app
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }} />
         </button>
       )}
       {staleBuild && !isElectron && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, maxWidth: 420, textAlign: 'center' }}>
-            <div style={{ width: 72, height: 72, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-tertiary)', border: '3px solid var(--accent)' }}>
-              <i className="fa-solid fa-rotate" style={{ fontSize: 28, color: 'var(--accent)' }} />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, maxWidth: 400, width: '100%', textAlign: 'center', background: 'var(--bg-secondary)', border: '1px solid color-mix(in srgb, var(--accent) 30%, var(--border))', borderRadius: 22, padding: '32px 28px 26px', boxShadow: '0 30px 80px rgba(0,0,0,0.55)' }}>
+            <img src={assetUrl('friends-space-logo.png')} alt="Friends Space" style={{ height: 44, width: 'auto', maxWidth: '100%', objectFit: 'contain', background: '#050807', border: '1px solid rgba(0, 255, 136, .22)', borderRadius: 10, padding: '4px 10px 4px 6px' }} />
+            <div style={{ width: 64, height: 64, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in srgb, var(--accent) 12%, var(--bg-tertiary))', border: '2px solid var(--accent)', boxShadow: '0 0 24px color-mix(in srgb, var(--accent) 25%, transparent)' }}>
+              <Fa name="rotate" size={26} style={{ color: 'var(--accent)' }} />
             </div>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Nova versão disponível</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: 0 }}>
+            <h2 style={{ fontSize: 21, fontWeight: 800, fontFamily: '"Space Grotesk", sans-serif', letterSpacing: '-0.02em', color: 'var(--text-primary)', margin: 0 }}>Nova versão disponível</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.5, margin: 0 }}>
               O site foi atualizado e esta aba ficou velha — a call pode falhar. Atualize para continuar.
             </p>
             <Button onClick={() => window.location.reload()}>
-              <i className="fa-solid fa-rotate" style={{ marginRight: 8 }} /> Atualizar agora
+              <Fa name="rotate" size={14} style={{ marginRight: 8 }} /> Atualizar agora
             </Button>
             <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Se não atualizar, pressione Ctrl+F5.</span>
           </div>
@@ -1265,8 +1271,8 @@ function App() {
       {updateAvailable && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, maxWidth: 400, textAlign: 'center', padding: 20 }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--accent)', boxShadow: '0 0 40px color-mix(in srgb, var(--accent) 30%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-tertiary)' }}>
-              <i className="fa-solid fa-arrow-up" style={{ fontSize: 32, color: 'var(--accent)' }} />
+            <div style={{ width: 80, height: 80, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--accent)', boxShadow: '0 0 24px color-mix(in srgb, var(--accent) 22%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-tertiary)' }}>
+              <Fa name="arrow-up" size={32} style={{  color: 'var(--accent)' }} />
             </div>
             <div>
               <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Nova versão disponível</h2>
@@ -1292,7 +1298,7 @@ function App() {
                 window.open(url, '_blank')
                 setUpdateAvailable(null)
               }}>
-                <i className="fa-solid fa-download" style={{ marginRight: 8 }} /> Baixar nova versão
+                <Fa name="download" size={14} style={{ marginRight: 8 }} /> Baixar nova versão
               </Button>
               <Button variant="secondary" onClick={() => setUpdateAvailable(null)}>Agora não</Button>
             </div>
@@ -1380,7 +1386,7 @@ function App() {
                   onClick={() => { setCurrentServer(null); setShowUsers(false); setCurrentChannel(null) }}
                   title="Amigos"
                 >
-                  <i className="fa-solid fa-house" />
+                  <Fa name="house" size={14} />
                   {totalUnread > 0 && (
                     <span style={navBadgeStyle}>
                       {totalUnread > 99 ? '99+' : totalUnread}
@@ -1399,7 +1405,7 @@ function App() {
                         onContextMenu={e => { e.preventDefault(); setFolderMenu({ folder, x: e.clientX, y: e.clientY }) }}
                         title={folder.name}
                       >
-                        <i className={`fa-solid ${expanded ? 'fa-folder-open' : 'fa-folder'}`} />
+                        <Fa name={expanded ? 'folder-open' : 'folder'} size={14} />
                         {unreadCount > 0 && (
                           <span style={navBadgeStyle}>
                             {unreadCount > 99 ? '99+' : unreadCount}
@@ -1452,13 +1458,13 @@ function App() {
               </div>
               <div className="fs-icon-sidebar-bottom">
                 <button className="fs-nav-item fs-add-btn" onClick={() => setShowDiscover(true)} title="Descubra">
-                  <i className="fa-solid fa-compass" />
+                  <Fa name="compass" size={14} />
                 </button>
                 <button className="fs-nav-item fs-folder-add-btn" onClick={() => openFolderModal(null)} title="Criar pasta">
-                  <i className="fa-solid fa-folder-plus" />
+                  <Fa name="folder-plus" size={14} />
                 </button>
                 <button className="fs-nav-item fs-add-btn" onClick={() => setShowServerSearch(true)} title="Procurar servidor">
-                  <i className="fa-solid fa-magnifying-glass" />
+                  <Fa name="magnifying-glass" size={14} />
                 </button>
                 <button className="fs-nav-item fs-add-btn" onClick={() => {
                   if (!isDriveConnected()) {
@@ -1468,7 +1474,7 @@ function App() {
                   }
                   setShowCreateServer(true)
                 }} title="Criar servidor">
-                  <i className="fa-solid fa-plus" />
+                  <Fa name="plus" size={14} />
                 </button>
                 {/* Botao de download do app — só no site (web), nao no desktop */}
                 {!isElectron && (
@@ -1477,7 +1483,7 @@ function App() {
                     setDesktopSeen(desktopRelease)
                     setShowDownloadApp(true)
                   }} title="Baixar app">
-                    <i className="fa-solid fa-download" />
+                    <Fa name="download" size={14} />
                     {desktopRelease && desktopSeen !== desktopRelease && (<span className="fs-update-dot" />)}
                   </button>
                 )}
@@ -1784,14 +1790,14 @@ function App() {
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                  <i className="fa-solid fa-right-to-bracket" /> Abrir servidor
+                  <Fa name="right-to-bracket" size={14} /> Abrir servidor
                 </button>
                 <button onClick={() => shareServerLink(serverMenu.server)}
                   style={{ width: '100%', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13, cursor: 'pointer', borderRadius: 4, textAlign: 'left' }}
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                  <i className="fa-solid fa-share-nodes" /> Compartilhar link de convite
+                  <Fa name="share-nodes" size={14} /> Compartilhar link de convite
                 </button>
                 {!canDeleteServer(serverMenu.server, activeUser?.id) && (
                   <button onClick={() => void handleLeaveServer()}
@@ -1799,7 +1805,7 @@ function App() {
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    <i className="fa-solid fa-right-from-bracket" /> Sair do servidor
+                    <Fa name="right-from-bracket" size={14} /> Sair do servidor
                   </button>
                 )}
                 {canManageServer(serverMenu.server, activeUser?.id) && (
@@ -1808,7 +1814,7 @@ function App() {
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    <i className="fa-solid fa-gear" /> Configuracoes
+                    <Fa name="gear" size={14} /> Configuracoes
                   </button>
                 )}
                 <button onClick={() => { setReportServer(serverMenu.server); setServerMenu(null) }}
@@ -1816,7 +1822,7 @@ function App() {
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                  <i className="fa-solid fa-flag" /> Denunciar servidor
+                  <Fa name="flag" size={14} /> Denunciar servidor
                 </button>
               </div>
             </>

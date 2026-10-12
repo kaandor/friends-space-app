@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useState, useEffect, useRef, type CSSProperties } from 'react'
 import { IconScreenShare, IconVolume, IconClose } from '../../utils/icons'
 import { useCallStore } from '../../stores/callStore'
@@ -471,7 +472,7 @@ export function CallView() {
           )}
           {pendingScreens.map(id => (
             <div key={id} style={{ position: 'absolute', top: recordingActive ? 52 : 12, left: '50%', transform: 'translateX(-50%)', zIndex: 299, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,.72)', border: '1px solid var(--border)', borderRadius: 999, padding: '7px 16px', fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-              <i className="fa-solid fa-circle-notch fa-spin" style={{ fontSize: 12, color: 'var(--accent)' }} />
+              <Fa name="circle-notch" size={12} className="fa-spin" style={{ color: 'var(--accent)' }} />
               {participants.find(p => p.userId === id)?.userName || 'Usu�rio'} est� transmitindo � conectando...
             </div>
           ))}
@@ -483,19 +484,19 @@ export function CallView() {
                   <RemoteControlOverlay onInput={sendControlInput} />
                 )}
                 {isFullscreen && fullscreenMode === 'normal' && (
-                  <button onClick={() => exitCallFullscreen()} title="Minimizar (sair da tela cheia)" className="vc-fs-exit"><i className="fa-solid fa-minimize" style={{ fontSize: 14 }} /></button>
+                  <button onClick={() => exitCallFullscreen()} title="Minimizar (sair da tela cheia)" className="vc-fs-exit"><Fa name="minimize" size={14} /></button>
                 )}
               </div>
             )}
             {showMosaic && (
               <div className="vc-mosaic">
                 <div className="vc-mosaic-header">
-                  <i className="fa-solid fa-grid-2" style={{ fontSize: 13 }} />
+                  <Fa name="grid-2" size={13} />
                   <span>Modo mosaico � todas as telas</span>
                   <div className="vc-mosaic-header-actions">
                     {mosaicFocus && (
                       <button onClick={() => setMosaicFocus(null)} title="Desfazer destaque (voltar a grade normal)">
-                        <i className="fa-solid fa-xmark" style={{ fontSize: 11 }} /> Desfazer destaque
+                        <Fa name="xmark" size={11} /> Desfazer destaque
                       </button>
                     )}
                     <button onClick={() => { setMosaic(false); setMosaicFocus(null) }}>Voltar</button>
@@ -518,7 +519,7 @@ export function CallView() {
                           className="vc-fs-exit"
                           onClick={e => { e.stopPropagation(); exitCallFullscreen() }}
                           title="Minimizar (sair da tela cheia)"
-                        ><i className="fa-solid fa-minimize" style={{ fontSize: 14 }} /></button>
+                        ><Fa name="minimize" size={14} /></button>
                       )}
                     </div>
                     <div className="vc-mosaic-thumbs">
@@ -538,7 +539,7 @@ export function CallView() {
                               className="vc-fs-exit"
                               onClick={e => { e.stopPropagation(); exitCallFullscreen() }}
                               title="Minimizar (sair da tela cheia)"
-                            ><i className="fa-solid fa-minimize" style={{ fontSize: 14 }} /></button>
+                            ><Fa name="minimize" size={14} /></button>
                           )}
                         </div>
                       ))}
@@ -562,7 +563,7 @@ export function CallView() {
                             className="vc-fs-exit"
                             onClick={e => { e.stopPropagation(); exitCallFullscreen() }}
                             title="Minimizar (sair da tela cheia)"
-                          ><i className="fa-solid fa-minimize" style={{ fontSize: 14 }} /></button>
+                          ><Fa name="minimize" size={14} /></button>
                         )}
                       </div>
                     ))}
@@ -573,19 +574,19 @@ export function CallView() {
             {hasActiveScreen && !popout && !showMosaic && controlling !== screenUserId && (
               <div className="vc-topbar">
                 <span className="vc-live-dot" />
-                <i className="fa-solid fa-display" style={{ fontSize: 14, color: '#00ff88' }} />
+                <Fa name="display" size={14} style={{  color: '#00ff88' }} />
                 <span style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Tela de {screenLabel}</span>
                 <span className="vc-aolive">AO VIVO</span>
                 <span className="vc-call-time">{callElapsed}</span>
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
                   {isElectronDevice() && screenUserId && (
                     <button className="vc-topbar-btn" onClick={() => { if (controlling === screenUserId) { stopControlling(); setAnydeskMode(false) } else { requestControl(screenUserId); setAnydeskMode(true) } }} title={controlling === screenUserId ? 'Parar controle' : 'Controlar o PC de ' + screenLabel} style={controlling === screenUserId ? { background: '#00c853', color: '#04120a', borderColor: '#00c853', fontWeight: 700 } : undefined}>
-                      <i className="fa-solid fa-hand-pointer" style={{ fontSize: 12 }} />
+                      <Fa name="hand-pointer" size={12} />
                       <span style={{ fontSize: 12, fontWeight: 700 }}>{controlling === screenUserId ? 'Parar controle' : 'Controlar'}</span>
                     </button>
                   )}
                   {allRemoteScreenIds.length > 1 && (
-                    <button className="vc-topbar-btn" onClick={() => setMosaic(true)} title="Modo mosaico (ver todas as telas ao mesmo tempo)"><i className="fa-solid fa-grid-2" style={{ fontSize: 12 }} /></button>
+                    <button className="vc-topbar-btn" onClick={() => setMosaic(true)} title="Modo mosaico (ver todas as telas ao mesmo tempo)"><Fa name="grid-2" size={12} /></button>
                   )}
                   <button className="vc-topbar-btn" onClick={() => setPopout(true)} title="Janela pop-up (sempre no topo)"><PictureInPicture2 size={14} strokeWidth={2} /></button>
                 </div>
@@ -598,7 +599,7 @@ export function CallView() {
                   <span className="vc-call-title">{callTitle}</span>
                   <span className="vc-call-time">{callElapsed}</span>
                   <span className="vc-call-count">
-                    <i className="fa-solid fa-user-group" style={{ fontSize: 10, marginRight: 5 }} />
+                    <Fa name="user-group" size={10} style={{  marginRight: 5 }} />
                     {totalInCall}
                   </span>
                 </div>
@@ -611,10 +612,9 @@ export function CallView() {
                           <Avatar src={t.userPhoto} name={t.userName} size={84} />
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 7, maxWidth: '100%' }}>
-                          <span className="vc-tile-name">{t.isSelf ? 'Voc�' : t.userName}</span>
-                          {t.isSelf && <span className="vc-tile-you">VOC�</span>}
+                          <span className="vc-tile-name">{t.isSelf ? 'Você' : t.userName}</span>
                         </div>
-                        <span className={`vc-tile-status${t.muted || t.deafened ? ' off' : ''}`} title={t.deafened ? 'Com som desativado' : t.muted ? 'Mutado' : 'Falando / com �udio'}>
+                        <span className={`vc-tile-status${t.muted || t.deafened ? ' off' : ''}`} title={t.deafened ? 'Com som desativado' : t.muted ? 'Mutado' : 'Falando / com áudio'}>
                           {t.deafened ? <HeadphoneOff size={13} /> : t.muted ? <MicOff size={13} /> : <Mic size={13} />}
                         </span>
                       </div>
@@ -678,7 +678,7 @@ export function CallView() {
                     title={isOwnRecording ? 'Parar grava��o' : recordingActive ? `Gravando por ${recordingBy?.name || 'outro participante'}` : 'Gravar call (avisa a todos)'}
                   >
                     <span className={`vc-btn ${isOwnRecording ? 'active' : ''}`} style={isOwnRecording ? { background: '#ef4444', color: '#fff' } : undefined}>
-                      <i className="fa-solid fa-circle-dot" style={{ fontSize: 19 }} />
+                      <Fa name="circle-dot" size={19} />
                     </span>
                     <span className="vc-ctrl-label">{isOwnRecording ? 'Gravando' : 'Gravar'}</span>
                   </button>
@@ -734,7 +734,7 @@ export function CallView() {
             </div>
           )}
           <button className="vc-debug-toggle" onClick={() => setShowDebugWindow(true)} title="Diagn�stico de conex�o" style={controlling === screenUserId ? { display: 'none' } : undefined}>
-            <i className="fa-solid fa-bug" />
+            <Fa name="bug" size={14} />
           </button>
           {showDebugWindow && <DebugWindow onClose={() => setShowDebugWindow(false)} />}
 
@@ -798,7 +798,7 @@ export function CallView() {
                 {screenMenu.userId && (
                   <>
                     <div style={{ padding: '7px 10px 3px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <i className="fa-solid fa-microphone" style={{ fontSize: 11 }} />
+                      <Fa name="microphone" size={11} />
                       Volume da voz de {participants.find(p => p.userId === screenMenu.userId)?.userName || 'Usu�rio'}
                     </div>
                     <div style={{ padding: '4px 10px 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -808,7 +808,7 @@ export function CallView() {
                   </>
                 )}
                 <div style={{ padding: '7px 10px 3px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <i className="fa-solid fa-volume-high" style={{ fontSize: 11 }} />
+                  <Fa name="volume-high" size={11} />
                   Volume da tela de {screenMenu.userId ? (participants.find(p => p.userId === screenMenu.userId)?.userName || 'Usu�rio') : 'Voc�'}
                 </div>
                 <div style={{ padding: '4px 10px 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -816,7 +816,7 @@ export function CallView() {
                   <span style={{ fontSize: 11, color: 'var(--text-secondary)', width: 34, textAlign: 'right' }}>{Math.round(clampVolume(volumes[screenMenu.userId ? `screen:${screenMenu.userId}` : 'screen:local']) * 100)}%</span>
                 </div>
                 <button onClick={() => { setVolume(screenMenu.userId ? `screen:${screenMenu.userId}` : 'screen:local', 0); setScreenMenu(null) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: 'var(--text-primary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
-                  <i className="fa-solid fa-volume-xmark" style={{ fontSize: 12 }} />
+                  <Fa name="volume-xmark" size={12} />
                   Silenciar tela
                 </button>
               </>
@@ -843,14 +843,14 @@ export function CallView() {
                   ?? Silenciar todas as telas
                 </button>
                 <button onClick={() => { const id = screenMenu.userId as string; setScreenMenu(null); void toggleFullscreen(fullscreenKeyFor(id), 'normal') }} style={{ width: '100%', display: screenMenu.userId && screenMenu.userId !== currentUser?.id ? 'flex' : 'none', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: 'var(--text-primary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
-                  <i className="fa-solid fa-expand" style={{ fontSize: 12 }} />
+                  <Fa name="expand" size={12} />
                   Tela cheia
                 </button>
               </>
             )}
             {menuIsSelfScreen && isLocalScreen && (
               <button onClick={() => { const on = localStorage.getItem('friends-space:screen-audio') !== '0'; try { useCallStore.getState().setScreenAudioEnabled(!on) } catch { }; setScreenMenu(null) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: 'var(--text-primary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
-                <i className="fa-solid fa-music" style={{ fontSize: 12 }} />
+                <Fa name="music" size={12} />
                 {localStorage.getItem('friends-space:screen-audio') !== '0' ? 'Parar de compartilhar �udio da tela' : 'Compartilhar �udio da tela'}
               </button>
             )}
@@ -869,7 +869,7 @@ export function CallView() {
             </div>
             <div style={{ display: 'flex', gap: 8, padding: '0 10px 8px' }}>
               <select value={preferredFps} onChange={e => { void setPreferredFps(Number(e.target.value) as never) }} style={{ flex: 1, background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 6, padding: 6, fontSize: 12 }}>
-                {([30, 60] as const).map(f => <option key={f} value={f} disabled={currentUser ? f > getMaxStreamFps(currentUser) : false}>{f > (currentUser ? getMaxStreamFps(currentUser) : 30) ? `??${f}fps` : `${f}fps`}</option>)}
+                {([30, 60] as const).map(f => <option key={f} value={f} disabled={currentUser ? f > getMaxStreamFps(currentUser) : false}>{f > (currentUser ? getMaxStreamFps(currentUser) : 30) ? `${f}fps · bloqueado` : `${f}fps`}</option>)}
               </select>
               <select value={preferredBitrate} onChange={e => { void setPreferredBitrate(Number(e.target.value)) }} style={{ flex: 1, background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 6, padding: 6, fontSize: 12 }}>
                 {[2000, 4000, 6000, 8000, 12000, 16000, 25000, 35000, 45000].map(k => <option key={k} value={k} disabled={currentUser ? k > getMaxBitrateKbps(currentUser) : false}>{k >= 1000 ? `${k / 1000}M` : `${k}k`}</option>)}
@@ -881,7 +881,7 @@ export function CallView() {
             </button>
             {mosaic && (
               <button onClick={() => { setMosaic(false); setScreenMenu(null) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: 'var(--text-primary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
-                <i className="fa-solid fa-grid-2" style={{ fontSize: 12 }} /> Sair do mosaico
+                <Fa name="grid-2" size={12} /> Sair do mosaico
               </button>
             )}
           </div>
@@ -900,7 +900,7 @@ export function CallView() {
                 onClick={() => { setSelectedMic(device.deviceId); localStorage.setItem('friends-space:mic', device.deviceId); void switchMicDevice(device.deviceId).catch(() => { }); setMicMenu(null) }}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: selectedMic === device.deviceId ? 'var(--accent)' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}
               >
-                <i className="fa-solid fa-microphone" style={{ fontSize: 12, opacity: selectedMic === device.deviceId ? 1 : 0.3 }} />
+                <Fa name="microphone" size={12} style={{  opacity: selectedMic === device.deviceId ? 1 : 0.3 }} />
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{device.label}</span>
               </button>
             ))}
@@ -910,7 +910,7 @@ export function CallView() {
                 title="Remove ruido de fundo com IA (RNNoise). Vale na hora e nas proximas calls."
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: isCleanAudioEnabledPref() ? 'var(--accent)' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}
               >
-                <i className="fa-solid fa-wand-magic-sparkles" style={{ fontSize: 12, opacity: isCleanAudioEnabledPref() ? 1 : 0.3 }} />
+                <Fa name="wand-magic-sparkles" size={12} style={{  opacity: isCleanAudioEnabledPref() ? 1 : 0.3 }} />
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{isCleanAudioEnabledPref() ? '? �udio limpo ativado' : '�udio limpo (BETA)'}</span>
               </button>
             )}
@@ -923,7 +923,7 @@ export function CallView() {
           <div style={{ position: 'fixed', inset: 0, zIndex: 119 }} onClick={() => setCamMenu(null)} />
           <div style={{ position: 'fixed', top: Math.min(camMenu.y, (typeof window !== 'undefined' ? window.innerHeight : 600) - 380), left: Math.max(8, camMenu.x - 180), zIndex: 120, minWidth: 220, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 8, padding: 6, boxShadow: '0 8px 24px rgba(0,0,0,0.6)', maxHeight: 380, overflowY: 'auto' }}>
             <button onClick={() => { toggleCamera(); setCamMenu(null) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
-              <i className="fa-solid fa-video" style={{ fontSize: 12 }} />
+              <Fa name="video" size={12} />
               {cameraOn ? 'Desligar camera' : 'Ligar camera'}
             </button>
             {hasCamera && (
@@ -931,7 +931,7 @@ export function CallView() {
                 <div style={{ padding: '7px 10px 3px', color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Modo da camera</div>
                 {([['casual', 'Casual'], ['empresa', 'Empresa'], ['full', 'Tela cheia']] as [CameraMode, string][]).map(([value, label]) => (
                   <button key={value} onClick={() => { setCameraMode(value); setCamMenu(null) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: getCameraMode() === value ? 'var(--accent)' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
-                    <i className={`fa-solid ${value === 'casual' ? 'fa-user' : value === 'empresa' ? 'fa-briefcase' : 'fa-maximize'}`} style={{ fontSize: 12 }} />
+                    <Fa name={value === 'casual' ? 'user' : value === 'empresa' ? 'briefcase' : 'maximize'} size={12} />
                     {label}
                   </button>
                 ))}
@@ -941,7 +941,7 @@ export function CallView() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                       {CAMERA_POSITIONS.map(pos => (
                         <button key={pos.value} onClick={() => { setCameraPosition(pos.value); setCamMenu(null) }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px', borderRadius: 6, color: getCameraPosition() === pos.value ? 'var(--accent)' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 12, cursor: 'pointer' }} title={pos.label}>
-                          <i className={pos.icon} style={{ fontSize: 10 }} />
+                          <Fa name={pos.icon} size={10} />
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pos.label}</span>
                         </button>
                       ))}
@@ -1000,7 +1000,7 @@ export function CallView() {
                 <button key={user.id} onClick={() => { void inviteToCall(user.id); setAddMenu(false); setAddQuery('') }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', borderRadius: 6, background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, color: 'var(--text-primary)', cursor: 'pointer' }} onMouseEnter={e => (e.currentTarget.style.background = '#1a1b1e')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   <Avatar src={user.photoUrl} name={user.name} size={30} />
                   <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</span>
-                  <i className="fa-solid fa-user-plus" style={{ color: 'var(--accent)', fontSize: 12 }} />
+                  <Fa name="user-plus" size={12} style={{ color: 'var(--accent)' }} />
                 </button>
               ))}
             </div>
@@ -1013,18 +1013,18 @@ export function CallView() {
           <div style={{ position: 'fixed', inset: 0, zIndex: 119 }} onClick={() => setQualityMenu(false)} />
           <div style={{ position: 'fixed', top: Math.max(8, (typeof window !== 'undefined' ? window.innerHeight : 600) - 240), left: Math.max(8, (typeof window !== 'undefined' ? window.innerWidth : 800) - 220), zIndex: 120, minWidth: 200, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 8, padding: 6, boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }}>
             <div style={{ padding: '7px 10px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <i className="fa-solid fa-tower-broadcast" style={{ fontSize: 11 }} /> Qualidade de transmissao
+              <Fa name="tower-broadcast" size={11} /> Qualidade de transmissao
               <span style={{ marginLeft: 'auto', fontSize: 10.5, color: getStreamPlanLabel(currentUser).color, fontWeight: 700 }}>{getStreamPlanLabel(currentUser).label}</span>
             </div>
             <div style={{ padding: '2px 10px 6px', fontSize: 10.5, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <i className="fa-solid fa-video" style={{ fontSize: 10 }} />
+              <Fa name="video" size={10} />
               Atual: <b style={{ color: 'var(--text-secondary)' }}>{preferredQuality} � {preferredFps} fps � {preferredBitrate >= 1000 ? `${(preferredBitrate / 1000).toFixed(preferredBitrate % 1000 === 0 ? 0 : 1)} Mbps` : `${preferredBitrate} kbps`}</b>
             </div>
             {(['480p', '720p', '1080p', '2k', '4k'] as const).map(quality => {
               const blocked = isQualityBlocked(currentUser, quality)
               return (
                 <button key={quality} disabled={blocked} onClick={() => { setPreferredQuality(quality); setQualityMenu(false) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: preferredQuality === quality ? 'var(--accent)' : blocked ? '#4a4d52' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: blocked ? 'not-allowed' : 'pointer', opacity: blocked ? 0.55 : 1 }} title={blocked ? `Qualidade bloqueada no seu plano ${getStreamPlanLabel(currentUser).label}. Assine ASTRO+ para liberar.` : undefined}>
-                  {preferredQuality === quality ? '?' : (blocked ? <i className="fa-solid fa-lock" style={{ width: 16, fontSize: 11, color: '#4a4d52' }} /> : <span style={{ width: 16 }} />)}
+                  {preferredQuality === quality ? '?' : (blocked ? <Fa name="lock" size={11} style={{ width: 16, color: '#4a4d52' }} /> : <span style={{ width: 16 }} />)}
                   {quality}
                   {blocked && <span style={{ marginLeft: 'auto', fontSize: 10, color: '#4a4d52' }}>bloqueado</span>}
                 </button>
@@ -1035,7 +1035,7 @@ export function CallView() {
               const blocked = fps > getMaxStreamFps(currentUser)
               return (
                 <button key={fps} disabled={blocked} onClick={() => { void setPreferredFps(fps); setQualityMenu(false) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: preferredFps === fps ? 'var(--accent)' : blocked ? '#4a4d52' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: blocked ? 'not-allowed' : 'pointer', opacity: blocked ? 0.55 : 1 }} title={blocked ? '60 FPS bloqueado no seu plano. Assine ASTRO para liberar.' : undefined}>
-                  {preferredFps === fps ? '?' : (blocked ? <i className="fa-solid fa-lock" style={{ width: 16, fontSize: 11, color: '#4a4d52' }} /> : <span style={{ width: 16 }} />)}
+                  {preferredFps === fps ? '?' : (blocked ? <Fa name="lock" size={11} style={{ width: 16, color: '#4a4d52' }} /> : <span style={{ width: 16 }} />)}
                   {fps} fps
                   {blocked && <span style={{ marginLeft: 'auto', fontSize: 10, color: '#4a4d52' }}>bloqueado</span>}
                 </button>
@@ -1046,14 +1046,14 @@ export function CallView() {
               const bitrateBlocked = kbps > getMaxBitrateKbps(currentUser)
               return (
               <button key={kbps} disabled={bitrateBlocked} onClick={() => { void setPreferredBitrate(kbps); setQualityMenu(false) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: preferredBitrate === kbps ? 'var(--accent)' : bitrateBlocked ? '#4a4d52' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: bitrateBlocked ? 'not-allowed' : 'pointer', opacity: bitrateBlocked ? 0.55 : 1 }} title={bitrateBlocked ? 'Bitrate bloqueado no seu plano. Assine ASTRO+ para liberar.' : undefined}>
-                {preferredBitrate === kbps ? '?' : (bitrateBlocked ? <i className="fa-solid fa-lock" style={{ width: 16, fontSize: 11, color: '#4a4d52' }} /> : <span style={{ width: 16 }} />)}
+                {preferredBitrate === kbps ? '?' : (bitrateBlocked ? <Fa name="lock" size={11} style={{ width: 16, color: '#4a4d52' }} /> : <span style={{ width: 16 }} />)}
                 {kbps >= 1000 ? `${(kbps / 1000).toFixed(kbps % 1000 === 0 ? 0 : 1)} Mbps` : `${kbps} kbps`}
                 {bitrateBlocked && <span style={{ marginLeft: 'auto', fontSize: 10, color: '#4a4d52' }}>bloqueado</span>}
               </button>
             )})}
             <div style={{ padding: '6px 10px 0', color: 'var(--text-muted)', fontSize: 10.5 }}>Video e tela compartilhada</div>
             <div style={{ padding: '2px 10px 8px', color: liveStats.width > 0 ? '#4ade80' : 'var(--text-muted)', fontSize: 10.5, display: 'flex', alignItems: 'center', gap: 6 }}>
-              {liveStats.width > 0 && <i className="fa-solid fa-circle" style={{ fontSize: 5 }} />}
+              {liveStats.width > 0 && <Fa name="circle" size={5} />}
               {liveStats.width > 0
                 ? `Ao vivo: ${liveStats.width}x${liveStats.height} @ ${liveStats.fps} fps (${liveStats.kind === 'screen' ? 'tela' : 'camera'})`
                 : 'Sem video ativo no momento'}
@@ -1082,7 +1082,7 @@ export function CallView() {
           ))}
           {Object.keys(remoteScreenStreams).map(userId => (
             <div key={`vol-screen-${userId}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0' }}>
-              <i className="fa-solid fa-display" style={{ fontSize: 12, color: 'var(--accent)', width: 20, textAlign: 'center' }} />
+              <Fa name="display" size={12} style={{  color: 'var(--accent)', width: 20, textAlign: 'center' }} />
               <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, color: 'var(--text-secondary)' }}>Tela de {participants.find(p => p.userId === userId)?.userName || 'Algu�m'}</span>
               <VolumeSlider value={clampVolume(volumes[`screen:${userId}`])} onChange={v => setScreenVolume(userId, v)} />
               <span style={{ fontSize: 10, color: 'var(--text-secondary)', width: 30, textAlign: 'right' }}>{Math.round(clampVolume(volumes[`screen:${userId}`]) * 100)}%</span>
@@ -1106,7 +1106,7 @@ export function CallView() {
 
       {controlledBy && (
         <div style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 210, background: '#f0b232', color: '#000', padding: '10px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <i className="fa-solid fa-hand-pointer" />
+          <Fa name="hand-pointer" size={14} />
           <span>Alguem esta controlando seu PC</span>
           <button onClick={revokeControl} style={{ background: '#ed4245', color: 'var(--text-primary)', border: 'none', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>
             Revogar agora
@@ -1116,7 +1116,7 @@ export function CallView() {
 
       {controlRequests.length > 0 && (
         <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 230, width: 'min(380px, calc(100vw - 32px))', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 12, padding: 24, textAlign: 'center', color: 'var(--text-primary)', boxShadow: '0 16px 48px rgba(0,0,0,0.6)' }}>
-          <i className="fa-solid fa-hand-pointer" style={{ fontSize: 28, color: 'var(--accent)', marginBottom: 10 }} />
+          <Fa name="hand-pointer" size={28} style={{  color: 'var(--accent)', marginBottom: 10 }} />
           <h3 style={{ margin: '0 0 8px', fontSize: 17 }}>{controlRequests[0].userName || 'Alguem'} quer controlar seu PC</h3>
           <p style={{ margin: '0 0 18px', fontSize: 13, color: 'var(--text-secondary)' }}>Aceitar permite que a pessoa mova o mouse e digite no seu computador durante a chamada.</p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>

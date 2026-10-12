@@ -1,5 +1,7 @@
+import { Fa } from '../../utils/fa'
 import { useRef, useState } from 'react'
 import type { ServerEmoji } from '../../types'
+import { Tw } from '../../utils/twemoji'
 import { uploadToDrive, isDriveConnected, toImageUrl } from '../../services/driveService'
 import { assertUploadLimit } from '../../utils/astro'
 import { sanitizeEmojiName } from '../../services/serverEmojis'
@@ -37,7 +39,7 @@ const kindBadge: Record<string, string> = {
 }
 
 export function EmojiPicker({ onPick, onPickMedia, serverId, manageable = false, allEmojis = [], hasAstro = false }: EmojiPickerProps) {
-  const [group, setGroup] = useState(0)
+  const [tab, setTab] = useState<string>('custom')
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
   const [search, setSearch] = useState('')
@@ -51,14 +53,24 @@ export function EmojiPicker({ onPick, onPickMedia, serverId, manageable = false,
   const crossServer = serverId ? all.filter(e => e.serverId !== serverId) : all
   const usable = hasAstro ? [...inServer, ...crossServer] : inServer
   const customVisible = usable.length > 0 || (manageable && !!serverId)
-  const customOffset = customVisible ? 1 : 0
-  const gifTabIndex = customOffset + EMOJI_GROUPS.length
-  const stickerTabIndex = gifTabIndex + 1
 
-  const isCustom = customVisible && group === 0
-  const isGifTab = group === gifTabIndex
-  const isStickerTab = group === stickerTabIndex
-  const active = !isCustom && !isGifTab && !isStickerTab ? EMOJI_GROUPS[group - customOffset] : null
+  // Aba estável por id (antes era índice numérico que deslocava quando
+  // "Personalizados" aparecia/sumia, e a aba Símbolos vazava por cima de
+  // GIFs/figurinhas).
+  const validTabs = [
+    ...(customVisible ? ['custom'] : []),
+    ...EMOJI_GROUPS.map(g => `emoji:${g.label}`),
+    'gifs',
+    'stickers',
+  ]
+  const safeTab = validTabs.includes(tab) ? tab : (customVisible ? 'custom' : `emoji:${EMOJI_GROUPS[0].label}`)
+
+  const isCustom = safeTab === 'custom'
+  const isGifTab = safeTab === 'gifs'
+  const isStickerTab = safeTab === 'stickers'
+  const active = !isCustom && !isGifTab && !isStickerTab
+    ? (EMOJI_GROUPS.find(g => `emoji:${g.label}` === safeTab) || null)
+    : null
 
   const usableEmojis = usable.filter(e => !e.kind || e.kind === 'emoji')
   const usableGifs = usable.filter(e => e.kind === 'gif')
@@ -141,21 +153,21 @@ export function EmojiPicker({ onPick, onPickMedia, serverId, manageable = false,
       </div>
       <div className="fs-emoji-tabs">
         {customVisible && (
-          <button onClick={() => setGroup(0)} title={t('emoji.custom')} style={tabBtnStyle(isCustom)}>
-            <i className="fa-solid fa-icons" />
+          <button onClick={() => setTab('custom')} title={t('emoji.custom')} style={tabBtnStyle(isCustom)}>
+            <Fa name="icons" size={14} />
           </button>
         )}
-        {EMOJI_GROUPS.map((g, i) => (
-          <button key={g.label} onClick={() => setGroup(i + customOffset)} title={g.label} style={tabBtnStyle(group === i + customOffset)}>
-            {g.emojis[0]}
+        {EMOJI_GROUPS.map((g) => (
+          <button key={g.label} onClick={() => setTab(`emoji:${g.label}`)} title={g.label} style={tabBtnStyle(safeTab === `emoji:${g.label}`)}>
+            <Tw char={g.emojis[0]} size={15} />
           </button>
         ))}
-        <button onClick={() => setGroup(gifTabIndex)} title={t('emoji.gifs')} style={{ ...tabBtnStyle(isGifTab), fontSize: 11, fontWeight: 800, color: '#23a55a' }}>
+        <button onClick={() => setTab('gifs')} title={t('emoji.gifs')} style={{ ...tabBtnStyle(isGifTab), fontSize: 11, fontWeight: 800, color: '#23a55a' }}>
           GIF
         </button>
-        <button onClick={() => setGroup(stickerTabIndex)} title={t('emoji.stickers')} style={tabBtnStyle(isStickerTab)}>
-          🌈
-        </button>
+          <button onClick={() => setTab('stickers')} title={t('emoji.stickers')} style={{ ...tabBtnStyle(isStickerTab), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Tw char="🌈" size={15} />
+          </button>
       </div>
 
       {isCustom ? (
@@ -183,7 +195,7 @@ export function EmojiPicker({ onPick, onPickMedia, serverId, manageable = false,
                   title={t('emoji.add')}
                   style={{ fontSize: 24, color: 'var(--text-secondary)' }}
                 >
-                  {busy ? <span className="inline-spinner" /> : <i className="fa-solid fa-plus" />}
+                  {busy ? <span className="inline-spinner" /> : <Fa name="plus" size={14} />}
                 </button>
               </div>
             )}
@@ -191,7 +203,7 @@ export function EmojiPicker({ onPick, onPickMedia, serverId, manageable = false,
           {note && <div className="fs-emoji-manage-note">{note}</div>}
           {hasHiddenCross && (
             <div className="fs-emoji-astro-note">
-              <i className="fa-solid fa-rocket" style={{ color: '#a855f7' }} /> {t('emoji.astroNote')}
+              <Fa name="rocket" size={14} style={{ color: '#a855f7' }} /> {t('emoji.astroNote')}
             </div>
           )}
           {manageable && serverId && (
@@ -228,9 +240,10 @@ export function EmojiPicker({ onPick, onPickMedia, serverId, manageable = false,
                 <button
                   key={emoji}
                   onClick={() => onPick(emoji)}
-                  style={{ background: 'transparent', border: 'none', fontSize: 20, cursor: 'pointer', padding: 4, borderRadius: 6, lineHeight: 1 }}
+                  title={emoji}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 6, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
-                  {emoji}
+                  <Tw char={emoji} size={22} />
                 </button>
               ))
               : <p className="fs-emoji-no-results">Nenhum emoji encontrado</p>)
@@ -238,9 +251,10 @@ export function EmojiPicker({ onPick, onPickMedia, serverId, manageable = false,
               <button
                 key={emoji}
                 onClick={() => onPick(emoji)}
-                style={{ background: 'transparent', border: 'none', fontSize: 20, cursor: 'pointer', padding: 4, borderRadius: 6, lineHeight: 1 }}
+                title={emoji}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 6, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                {emoji}
+                <Tw char={emoji} size={22} />
               </button>
             ))}
         </div>

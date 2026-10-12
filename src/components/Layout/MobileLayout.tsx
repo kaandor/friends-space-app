@@ -150,7 +150,7 @@ export function MobileLayout({
               )}
               {mobileTab === 'me' && (
                 <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, padding: 28 }}>
-                  <div style={{ width: 96, height: 96, borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--accent)' }}>
+                  <div style={{ width: 96, height: 96, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--accent)' }}>
                     <Avatar src={activeUser?.photoUrl || ''} name={activeUser?.name || 'U'} size={96} />
                   </div>
                   <div style={{ textAlign: 'center' }}>

@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useEffect, useRef, useState } from 'react'
 import type { Channel, Message } from '../../types'
 import { Avatar } from '../ui/Avatar'
@@ -122,9 +123,9 @@ export function CallChatPanel({ channel, onClose }: { channel: Channel; onClose:
   return (
     <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-tertiary)', borderLeft: '1px solid var(--border)', minWidth: 0 }}>
       <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <i className="fa-solid fa-hashtag" style={{ color: 'var(--text-muted)', fontSize: 16 }} />
+        <Fa name="hashtag" size={16} style={{ color: 'var(--text-muted)' }} />
         <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{channel.name}</span>
-        <button onClick={onClose} title="Fechar chat" style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4, fontSize: 15 }}><i className="fa-solid fa-xmark" /></button>
+        <button onClick={onClose} title="Fechar chat" style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4, fontSize: 15 }}><Fa name="xmark" size={14} /></button>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -163,7 +164,7 @@ export function CallChatPanel({ channel, onClose }: { channel: Channel; onClose:
           style={{ display: 'none' }}
           onChange={handleFile}
         />
-        <button onClick={() => fileInputRef.current?.click()} title="Compartilhar midia (foto, video, audio, arquivo)" disabled={sending} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 15, padding: 4 }}><i className="fa-solid fa-paperclip" /></button>
+        <button onClick={() => fileInputRef.current?.click()} title="Compartilhar midia (foto, video, audio, arquivo)" disabled={sending} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 15, padding: 4 }}><Fa name="paperclip" size={14} /></button>
         <input
           value={input}
           onChange={e => setInput(e.target.value)}
@@ -171,8 +172,8 @@ export function CallChatPanel({ channel, onClose }: { channel: Channel; onClose:
           placeholder={`Mensagem para ${channel.name}`}
           style={{ flex: 1, minWidth: 0, background: 'var(--bg-secondary)', border: 'none', borderRadius: 8, padding: '8px 10px', color: 'var(--text-primary)', fontSize: 12.5, outline: 'none' }}
         />
-        <button onClick={() => setShowEmoji(s => !s)} title="Emojis" style={{ background: 'transparent', border: 'none', color: showEmoji ? 'var(--accent)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 15, padding: 4 }}><i className="fa-solid fa-face-smile" /></button>
-        <button onClick={() => void send()} disabled={sending} title="Enviar" style={{ background: 'var(--accent)', border: 'none', color: '#000', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="fa-solid fa-paper-plane" /></button>
+        <button onClick={() => setShowEmoji(s => !s)} title="Emojis" style={{ background: 'transparent', border: 'none', color: showEmoji ? 'var(--accent)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 15, padding: 4 }}><Fa name="face-smile" size={14} /></button>
+        <button onClick={() => void send()} disabled={sending} title="Enviar" style={{ background: 'var(--accent)', border: 'none', color: '#000', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Fa name="paper-plane" size={14} /></button>
       </div>
     </div>
   )

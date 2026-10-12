@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useEffect, useState } from 'react'
 import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
@@ -15,8 +16,8 @@ type SettingsTab = 'voz' | 'sistema'
 interface SettingsModalProps {}
 
 const TABS: { key: SettingsTab; icon: string; label: string }[] = [
-  { key: 'voz', icon: 'fa-solid fa-microphone', label: 'settings.voice' },
-  { key: 'sistema', icon: 'fa-solid fa-server', label: 'settings.system' },
+  { key: 'voz', icon: 'microphone', label: 'settings.voice' },
+  { key: 'sistema', icon: 'server', label: 'settings.system' },
 ]
 
 function Row({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
@@ -139,7 +140,7 @@ export function SettingsModal(_props: SettingsModalProps) {
                 fontSize: 13, fontWeight: tab === tb.key ? 700 : 500, cursor: 'pointer', textAlign: 'left',
               }}
             >
-              <i className={tb.icon} style={{ width: 16, fontSize: 13 }} />
+              <Fa name={tb.icon} size={13} style={{ width: 16 }} />
               {t(tb.label)}
             </button>
           ))}
@@ -214,8 +215,8 @@ export function SettingsModal(_props: SettingsModalProps) {
                         }}
                         title={blocked ? `Qualidade bloqueada no plano ${getStreamPlanLabel(currentUser).label}.` : undefined}
                       >
-                        {active && <i className="fa-solid fa-check" style={{ fontSize: 11 }} />}
-                        {blocked && <i className="fa-solid fa-lock" style={{ fontSize: 11 }} />}
+                        {active && <Fa name="check" size={11} />}
+                        {blocked && <Fa name="lock" size={11} />}
                         {q}
                       </button>
                     )
@@ -223,7 +224,7 @@ export function SettingsModal(_props: SettingsModalProps) {
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>FPS <i className="fa-solid fa-gauge-high" style={{ fontSize: 10 }} /></div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>FPS <Fa name="gauge-high" size={10} /></div>
                     <select
                       value={preferredFps}
                       onChange={e => { void useCallStore.getState().setPreferredFps(Number(e.target.value) as never) }}
@@ -233,7 +234,7 @@ export function SettingsModal(_props: SettingsModalProps) {
                         const blocked = isFpsBlocked(currentUser, f)
                         return (
                           <option key={f} value={f} disabled={blocked}>
-                            {blocked ? `🔒 ${f} fps` : `${f} fps`}
+                            {blocked ? `${f} fps · bloqueado` : `${f} fps`}
                           </option>
                         )
                       })}
@@ -251,7 +252,7 @@ export function SettingsModal(_props: SettingsModalProps) {
                         const label = k >= 1000 ? `${(k / 1000).toFixed(k % 1000 === 0 ? 0 : 1)} Mbps` : `${k} kbps`
                         return (
                           <option key={k} value={k} disabled={blocked}>
-                            {blocked ? `🔒 ${label}` : label}
+                            {blocked ? `${label} · bloqueado` : label}
                           </option>
                         )
                       })}

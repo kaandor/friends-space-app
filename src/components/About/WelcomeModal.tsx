@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { APP_VERSION } from '../../config/version'
 import { assetUrl } from '../../utils/assets'
 
@@ -57,7 +58,7 @@ export function WelcomeModal({ open, platform, onClose, onHelp }: WelcomeModalPr
               onClick={() => { onClose(); onHelp() }}
               style={{ flex: 1, padding: '11px 0', borderRadius: 9, border: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg-hover)', color: 'var(--text-primary)', fontWeight: 700, fontSize: 14 }}
             >
-              <i className="fa-solid fa-circle-question" style={{ marginRight: 8 }} /> Ajuda
+              <Fa name="circle-question" size={14} style={{ marginRight: 8 }} /> Ajuda
             </button>
           )}
           <button

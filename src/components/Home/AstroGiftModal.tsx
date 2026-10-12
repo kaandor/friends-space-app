@@ -1,3 +1,4 @@
+import { Fa } from '../../utils/fa'
 import { useState } from 'react'
 import { useUserStore } from '../../stores/userStore'
 import { useLangStore } from '../../stores/langStore'
@@ -30,7 +31,7 @@ export function AstroGiftModal({ onClose }: AstroGiftModalProps) {
     <div style={{ position: 'fixed', inset: 0, zIndex: 3500, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)' }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{ maxWidth: 440, width: 'calc(100% - 32px)', background: 'linear-gradient(160deg, #1a1035, #111214)', border: '1px solid #5b3fa0', borderRadius: 16, padding: 32, textAlign: 'center', color: '#fff', boxShadow: '0 20px 60px rgba(160,32,240,0.35)' }}>
         <div style={{ fontSize: 52, marginBottom: 12 }}>
-          <i className="fa-solid fa-rocket" style={{ color: '#a855f7' }} />
+          <Fa name="rocket" size={14} style={{ color: '#a855f7' }} />
         </div>
         <h2 style={{ margin: '0 0 8px', fontSize: 26, fontWeight: 800, letterSpacing: 1 }}>FRIENDS SPACE <span style={{ color: '#a855f7' }}>ASTRO</span></h2>
         <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, lineHeight: 1.6, margin: '0 0 20px' }}>
