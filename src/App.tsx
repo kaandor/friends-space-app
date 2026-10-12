@@ -122,6 +122,23 @@ function App() {
     try { return localStorage.getItem('friends-space:desktop-seen') || '' } catch { return '' }
   })
 
+  // Compara versões semver (1.2.4 > 1.2.3): o !== ingênuo avisava até
+  // downgrade ou "v1.2.4" vs "1.2.4" como se fosse update.
+  function isNewerVersion(latest: string, current: string): boolean {
+    const norm = (v: string) => String(v || '').trim().replace(/^[v=\s]+/, '').split('.').map(p => {
+      const n = parseInt(p, 10)
+      return Number.isFinite(n) ? n : 0
+    })
+    const a = norm(latest)
+    const b = norm(current)
+    for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+      const x = a[i] ?? 0
+      const y = b[i] ?? 0
+      if (x !== y) return x > y
+    }
+    return false
+  }
+
   useEffect(() => {
     // Atualização automática no Electron: 1º electron-updater (GitHub
     // Releases, baixa em segundo plano), 2º fallback checkUpdate do backend
@@ -161,7 +178,7 @@ function App() {
         if (cancelled || !result) return
         let current = '1.0.0'
         try { current = (await api.appVersion?.()) || current } catch { /* silencioso */ }
-        if (result.latestVersion && result.latestVersion !== current) {
+        if (result.latestVersion && isNewerVersion(result.latestVersion, current)) {
           setUpdateAvailable(result)
         }
       } catch { /* silencioso — nao mostrar erro se falhar */ }
@@ -468,7 +485,11 @@ function App() {
       setToast(message)
     }
     window.addEventListener('friends-space:toast', onToast)
-    return () => window.removeEventListener('friends-space:toast', onToast)
+    const onOpenDiscover = () => setShowDiscover(true)
+    window.addEventListener('friends-space:open-discover', onOpenDiscover)
+    const onOpenDownload = () => setShowDownloadApp(true)
+    window.addEventListener('friends-space:open-download', onOpenDownload)
+    return () => { window.removeEventListener('friends-space:toast', onToast); window.removeEventListener('friends-space:open-discover', onOpenDiscover); window.removeEventListener('friends-space:open-download', onOpenDownload) }
   }, [])
 
   useEffect(() => {
@@ -1292,7 +1313,11 @@ function App() {
                 const isElectron = typeof window !== 'undefined' && Boolean((window as unknown as { electronAPI?: { isElectron?: boolean } }).electronAPI?.isElectron)
                 let url = updateAvailable.downloadUrl
                 if (isElectron) {
-                  const platform = (window as unknown as { electronAPI?: { platform?: string } }).electronAPI?.platform
+                  let platform = (window as unknown as { electronAPI?: { platform?: string } }).electronAPI?.platform || ''
+                  if (!platform && typeof navigator !== 'undefined') {
+                    const ua = navigator.userAgent.toLowerCase()
+                    platform = ua.includes('linux') ? 'linux' : (ua.includes('mac') ? 'darwin' : 'win32')
+                  }
                   if (platform === 'linux' && updateAvailable.downloadUrlLinux) url = updateAvailable.downloadUrlLinux
                   else if (platform === 'darwin' && updateAvailable.downloadUrlMac) url = updateAvailable.downloadUrlMac
                 }
@@ -1898,6 +1923,7 @@ function App() {
         platform={welcomePlatform}
         onClose={() => setShowWelcome(false)}
         onHelp={() => setShowHelpReport(true)}
+        onExplore={() => setShowDiscover(true)}
       />
       <HelpReportModal open={showHelpReport} onClose={() => setShowHelpReport(false)} />
       <DownloadAppModal open={showDownloadApp} onClose={() => setShowDownloadApp(false)} />

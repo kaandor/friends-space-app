@@ -961,6 +961,85 @@ const upsertGlobalServer = (store, server) => {
   store.directory.servers = servers
 }
 
+// Onboarding conta nova: lobby público garantido + entrada automática +
+// seed do feed oficial. Tudo idempotente (flags no store).
+const ensureLobbyServer = (store, data) => {
+  const servers = getAllServers(store)
+  const ok = servers.find((s) => s && (!s.settings || !s.settings.toggles || s.settings.toggles.public !== false)
+    && Array.isArray(s.channels) && s.channels.some((c) => c && c.type === 'voice')
+    && (s.members || []).length < 50)
+  if (ok) return ok
+  if (data.lobbySeeded) return servers.find((s) => s && s.id === data.lobbySeeded) || null
+  const serverId = id()
+  const lobby = {
+    id: serverId,
+    name: 'Praça Central',
+    category: 'Comunidade',
+    photoUrl: '',
+    bannerUrl: '',
+    description: 'Ponto de encontro público: entre na call, transmita e faça amigos.',
+    accentColor: '#00ff88',
+    ownerId: 'system',
+    inviteCode: makeCode(getAllServers(store), 'inviteCode'),
+    createdAt: now(),
+    members: [],
+    channels: [
+      { id: id(), name: 'geral', type: 'text', serverId },
+      { id: id(), name: 'Call', type: 'voice', serverId },
+    ],
+    roles: [{ id: id(), name: 'Admin', color: '#00ff88', serverId, permissions: ['all'] }],
+    categories: [],
+    events: [],
+    settings: { themes: ['Comunidade'], frequency: '', minAge: '', moderation: 'Médio', toggles: { public: true, verification: false, welcome: true, log: false, rules: false } },
+    callAccess: 'public',
+    callPassword: '',
+    staffMemberIds: [],
+    verified: true,
+  }
+  data.servers.push(lobby)
+  upsertGlobalServer(store, lobby)
+  data.lobbySeeded = serverId
+  return lobby
+}
+
+const seedOfficialFeed = (store, data) => {
+  if (data.feedSeeded) return
+  let official = getAllUsers(store).find((u) => u && u.flags && u.flags.official)
+  if (!official) {
+    official = { id: id(), friendCode: 'FS-OFICIAL', name: 'Friends Space', bio: 'Conta oficial', photoUrl: '', bannerUrl: '', accentColor: '#00ff88', status: '', createdAt: now(), lastSeenAt: now(), flags: { official: true } }
+    data.users.push(official)
+    upsertGlobalUser(store, official)
+  }
+  if (!Array.isArray(data.posts)) data.posts = []
+  const mk = (content) => ({
+    id: id(), authorId: official.id, authorKind: 'user', content, poll: null,
+    location: '', scheduledFor: 0, promoted: false, mediaUrl: '', type: 'image',
+    linkUrl: '', linkTitle: '', linkImage: '', linkDescription: '', embedType: 'generic',
+    hashtags: ['boasvindas'], likes: [], reposts: [], reports: 0, reportedBy: [], comments: [], createdAt: now(),
+  })
+  data.posts.push(mk('Bem-vindo ao Friends Space! Entre na Praça Central, abra a call e transmita sua tela. #boasvindas'))
+  data.posts.push(mk('Novo por aqui? Use o Descobrir para achar servidores públicos, peça amizades e chame todo mundo para a call. #boasvindas'))
+  data.posts.sort((a, b) => b.createdAt - a.createdAt)
+  for (const p of data.posts.slice(0, 2)) { try { savePostEverywhere(store, data, p) } catch { } }
+  data.feedSeeded = true
+}
+
+const onboardNewUser = (store, data, user) => {
+  try { seedOfficialFeed(store, data) } catch { }
+  if (!user || user.welcomed) return null
+  const hasServers = memberServerIdsOf(store, user.id).length > 0
+  if (hasServers) { user.welcomed = true; return null }
+  const lobby = ensureLobbyServer(store, data)
+  if (!lobby) return null
+  if (!Array.isArray(lobby.members)) lobby.members = []
+  if (!lobby.members.includes(user.id) && lobby.members.length < 50) {
+    lobby.members.push(user.id)
+    upsertGlobalServer(store, lobby)
+  }
+  user.welcomed = true
+  return lobby
+}
+
 const upsertGlobalFriend = (store, friend) => {
   if (!store.directory) store.directory = { users: [], servers: [], friends: [] }
   const friends = Array.isArray(store.directory.friends) ? [...store.directory.friends] : []
@@ -1578,7 +1657,10 @@ const actions = {
     }
     upsertGlobalUser(store, user)
     if (user.googleId) throw new Error('Esta conta usa login Google. Entre com o Google.')
-    return { user: withPublicFlags(user), users: getAllUsers(store).concat(data.users.filter((u) => !getAllUsers(store).some((g) => g.id === u.id))), sessionToken: await issueSession(user.id) }
+    let lobbyByName = null
+    try { lobbyByName = onboardNewUser(store, data, user) } catch { }
+    try { upsertGlobalUser(store, user) } catch { }
+    return { user: withPublicFlags(user), users: getAllUsers(store).concat(data.users.filter((u) => !getAllUsers(store).some((g) => g.id === u.id))), sessionToken: await issueSession(user.id), lobby: lobbyByName ? { id: lobbyByName.id, name: lobbyByName.name, inviteCode: lobbyByName.inviteCode || '' } : null }
   },
   signInWithGoogle: async (store, data, body) => {
     if (!(await rateCheck('login:' + (body.__ip || 'unknown'), 30, 60000))) throw rateLimitError()
@@ -1709,7 +1791,13 @@ const actions = {
       if (storedUser?.id) upsertGlobalUser(store, storedUser)
     }
 
-    return { user: withPublicFlags(user), users: withPublicUsers(data.users), sessionToken: await issueSession(user.id) }
+    // Onboarding: conta nova entra sozinha no lobby público (poder total:
+    // públicos, amizades, calls) + garante seed do feed oficial.
+    let lobby = null
+    try { lobby = onboardNewUser(store, data, user) } catch { }
+    try { upsertGlobalUser(store, user) } catch { }
+
+    return { user: withPublicFlags(user), users: withPublicUsers(data.users), sessionToken: await issueSession(user.id), lobby: lobby ? { id: lobby.id, name: lobby.name, inviteCode: lobby.inviteCode || '' } : null }
   },
   updateUser: async (store, data, body) => {
     if (String(body.id || '') !== String(body.__actor || '')) deny('Operação negada (403)')
@@ -1790,7 +1878,16 @@ const actions = {
   },
   searchDirectory: async (store, data, body) => {
     const query = normalizeFriendCode(body.query || '')
-    if (!query) return { users: [], servers: [] }
+    if (!query) {
+      // Sem digitar: top servidores públicos (descoberta imediata). Pessoas
+      // continuam exigindo busca (privacidade).
+      const pubs = getAllServers(store)
+        .filter((s) => s && (!s.settings || !s.settings.toggles || s.settings.toggles.public !== false))
+        .sort((a, b) => ((b.members || []).length) - ((a.members || []).length))
+        .slice(0, 6)
+        .map((s) => ({ id: s.id, name: s.name, photoUrl: s.photoUrl || '', description: s.description || '', members: (s.members || []).length, category: String(s.category || '') }))
+      return { users: [], servers: pubs }
+    }
     const matches = (value) => normalizeFriendCode(value).includes(query)
     return {
       users: getAllUsers(store).filter((user) => user.id !== body.userId && (matches(user.name) || matches(user.friendCode))).slice(0, 20).map((u) => ({ id: u.id, name: u.name, photoUrl: u.photoUrl || '', friendCode: u.friendCode || '' })),
@@ -1993,8 +2090,13 @@ const actions = {
     try {
       if (isTurso()) {
         await tursoFetch('CREATE TABLE IF NOT EXISTS client_errors (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, ts INTEGER NOT NULL, whereami TEXT NOT NULL, message TEXT NOT NULL)')
+        try { await tursoFetch('ALTER TABLE client_errors ADD COLUMN code TEXT') } catch { }
         await tursoFetch('CREATE INDEX IF NOT EXISTS idx_client_errors_ts ON client_errors (ts)')
-        await tursoFetch('INSERT INTO client_errors (id, user_id, ts, whereami, message) VALUES (?, ?, ?, ?, ?)', [id(), actor, now(), String(body.where || '').slice(0, 120), String(body.message || '').slice(0, 1000)])
+        try {
+          await tursoFetch('INSERT INTO client_errors (id, user_id, ts, whereami, message, code) VALUES (?, ?, ?, ?, ?, ?)', [id(), actor, now(), String(body.where || '').slice(0, 120), String(body.message || '').slice(0, 1000), String(body.code || '').slice(0, 24)])
+        } catch {
+          await tursoFetch('INSERT INTO client_errors (id, user_id, ts, whereami, message) VALUES (?, ?, ?, ?, ?)', [id(), actor, now(), String(body.where || '').slice(0, 120), String(body.message || '').slice(0, 1000)])
+        }
         await tursoFetch('DELETE FROM client_errors WHERE ts < ?', [now() - 86400000])
       }
     } catch {}
@@ -2005,8 +2107,14 @@ const actions = {
     const errors = []
     if (isTurso()) {
       try {
-        for (const r of tursoRows(await tursoFetch('SELECT id, user_id, ts, whereami, message FROM client_errors ORDER BY ts DESC LIMIT 100'))) {
-          errors.push({ id: r[0], userId: r[1], ts: r[2], where: r[3], message: r[4] })
+        let rows
+        try {
+          rows = await tursoFetch('SELECT id, user_id, ts, whereami, message, code FROM client_errors ORDER BY ts DESC LIMIT 100')
+        } catch {
+          rows = await tursoFetch('SELECT id, user_id, ts, whereami, message FROM client_errors ORDER BY ts DESC LIMIT 100')
+        }
+        for (const r of tursoRows(rows)) {
+          errors.push({ id: r[0], userId: r[1], ts: r[2], where: r[3], message: r[4], code: r[5] || '' })
         }
       } catch {}
     }
@@ -2084,13 +2192,18 @@ const actions = {
     if (!(await rateCheck('join:' + String(body.__actor || body.userId || 'x'), 15, 60000))) throw rateLimitError()
     const inviteCode = String(body.inviteCode || '').trim()
     const norm = inviteCode.toUpperCase()
+    const byId = String(body.serverId || '').trim()
+    const isPublic = (s) => s && (!s.settings || !s.settings.toggles || s.settings.toggles.public !== false)
     const server = getAllServers(store).find((item) => {
       if (!item) return false
+      // Entrada direta por ID: SÓ servidor público (Discover). Privado
+      // continua exigindo o código de convite.
+      if (byId && item.id === byId) return isPublic(item)
       if (String(item.inviteCode || '').toUpperCase() === norm) return true
       const invites = item.settings && Array.isArray(item.settings.invites) ? item.settings.invites : []
       return invites.some((inv) => inv && String(inv.code || '').toUpperCase() === norm)
     })
-    if (!server) return { success: false, error: 'Servidor nao encontrado com este codigo' }
+    if (!server) return { success: false, error: byId ? 'Servidor privado: peça o código de convite' : 'Servidor nao encontrado com este codigo' }
     const joinerId = String(body.__actor || body.userId || '')
     if (!joinerId) return { success: false, error: 'Sessão inválida' }
     if (!Array.isArray(server.members)) server.members = []
@@ -2226,6 +2339,45 @@ const actions = {
       await saveStore(store)
     }
     return { accepted: true }
+  },
+  sendCallSignals: async (store, data, body) => {
+    // Lote de signals (trickle de candidates): 1 HTTP em vez de N.
+    const list = Array.isArray(body.signals) ? body.signals.slice(0, 25) : []
+    const allowedTypes = ['offer', 'answer', 'candidate', 'renegotiate', 'decline', 'cancel', 'resync']
+    const rows = []
+    for (const signal of list) {
+      if (!signal || !signal.sessionId || !signal.fromUserId || !signal.toUserId || !allowedTypes.includes(signal.type) || !signal.payload) continue
+      rows.push({
+        id: id(),
+        sessionId: String(signal.sessionId),
+        fromUserId: String(signal.fromUserId),
+        toUserId: String(signal.toUserId),
+        type: signal.type,
+        payload: signal.payload,
+        createdAt: now(),
+      })
+    }
+    if (rows.length === 0) return { accepted: 0 }
+    if (isTurso()) {
+      await ensureTursoSchema()
+      for (const r of rows) {
+        await tursoFetch(
+          `INSERT INTO call_signals (id, session_id, from_user_id, to_user_id, type, payload, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [r.id, r.sessionId, r.fromUserId, r.toUserId, r.type, JSON.stringify(r.payload), r.createdAt],
+        )
+      }
+      try {
+        await tursoFetch(`DELETE FROM call_signals WHERE created_at < ?`, [now() - 300_000])
+      } catch { }
+    } else {
+      if (!store.directory) store.directory = { users: [], servers: [], friends: [], callSessions: [], callSignals: [] }
+      const signals = getAllCallSignals(store)
+      for (const r of rows) signals.push(r)
+      store.directory.callSignals = signals.slice(-500)
+      await saveStore(store)
+    }
+    return { accepted: rows.length }
   },
   loadCallSignals: async (store, data, body) => {
     const userId = String(body.userId || '')
@@ -3850,7 +4002,7 @@ const actions = {
     const q = String(body.q || '').trim().toLowerCase()
     if (!userId || q.length < 2) return { ok: true, people: [] }
     const people = getAllUsers(store)
-      .filter((u) => u && u.id !== userId && !u.flags?.banned && (`${u.name || ''} ${u.friendCode || ''}`.toLowerCase().includes(q)))
+      .filter((u) => u && u.id !== userId && !u.flags?.banned && !u.flags?.official && (`${u.name || ''} ${u.friendCode || ''}`.toLowerCase().includes(q)))
       .slice(0, 20)
       .map((u) => ({ id: u.id, name: u.name, photoUrl: u.photoUrl || '', friendCode: u.friendCode || '' }))
     return { ok: true, people }
@@ -3858,10 +4010,20 @@ const actions = {
   searchServers: async (store, data, body) => {
     const userId = String(body.userId || '')
     const q = String(body.q || '').trim().toLowerCase()
-    if (!userId || q.length < 2) return { ok: true, servers: [] }
     const mine = new Set(memberServerIdsOf(store, userId))
     const catOf = (s) => String(s.category || (s.settings && s.settings.category) || '')
     const tagsOf = (s) => (Array.isArray(s.tags) ? s.tags : (s.settings && Array.isArray(s.settings.tags) ? s.settings.tags : [])).map((x) => String(x))
+    const toCard = (s) => ({ id: s.id, name: s.name, photoUrl: s.photoUrl || '', members: (s.members || []).length, inviteCode: s.inviteCode || '', verified: Boolean(s.verified), member: mine.has(s.id) || s.ownerId === userId, category: catOf(s).slice(0, 40), tags: tagsOf(s).slice(0, 5), description: String(s.description || '').slice(0, 160) })
+    // Sem busca: top públicos (aba Servidores nunca abre vazia).
+    if (!userId) return { ok: true, servers: [] }
+    if (q.length < 2) {
+      const pubs = getAllServers(store)
+        .filter((s) => s && (!s.settings || !s.settings.toggles || s.settings.toggles.public !== false))
+        .sort((a, b) => ((b.members || []).length) - ((a.members || []).length))
+        .slice(0, 6)
+        .map(toCard)
+      return { ok: true, servers: pubs }
+    }
     const servers = getAllServers(store)
       .filter((s) => {
         if (!s) return false
@@ -3870,8 +4032,20 @@ const actions = {
       })
       .sort((a, b) => ((b.members || []).length) - ((a.members || []).length))
       .slice(0, 20)
-      .map((s) => ({ id: s.id, name: s.name, photoUrl: s.photoUrl || '', members: (s.members || []).length, inviteCode: s.inviteCode || '', verified: Boolean(s.verified), member: mine.has(s.id) || s.ownerId === userId, category: catOf(s).slice(0, 40), tags: tagsOf(s).slice(0, 5), description: String(s.description || '').slice(0, 160) }))
+      .map(toCard)
     return { ok: true, servers }
+  },
+  suggestedPeople: async (store, data, body) => {
+    // Pessoas sugeridas (sem precisar digitar): contas recentes ativas, sem
+    // banidos, sem a conta oficial e sem eu. Para a aba de amizades.
+    const userId = String(body.userId || '')
+    if (!userId) return { ok: true, people: [] }
+    const people = getAllUsers(store)
+      .filter((u) => u && u.id !== userId && !u.flags?.banned && !u.flags?.official)
+      .sort((a, b) => ((b.lastSeenAt || b.createdAt || 0)) - ((a.lastSeenAt || a.createdAt || 0)))
+      .slice(0, 8)
+      .map((u) => ({ id: u.id, name: u.name, photoUrl: u.photoUrl || '', friendCode: u.friendCode || '' }))
+    return { ok: true, people }
   },
   getFeed: async (store, data, body) => {
     const userId = String(body.userId || '')
@@ -4739,7 +4913,7 @@ export default async function handler(req, res) {
     // devolve 503, perdendo oferta/resposta/candidatos e travando a media.
     // Exemptos do lock (o saveStore continua sendo feito, pois a chamada nao
     // pode depender do lock para persistir os sinais).
-    const NO_LOCK_ACTIONS = new Set(['sendCallSignal', 'upsertCallSession', 'loadMessages', 'loadCallSessions'])
+    const NO_LOCK_ACTIONS = new Set(['sendCallSignal', 'sendCallSignals', 'upsertCallSession', 'loadMessages', 'loadCallSessions'])
     try {
       const h = req?.headers || {}
       const origin = String(h.origin || (typeof h.get === 'function' ? h.get('origin') : '') || '')
@@ -4759,7 +4933,7 @@ export default async function handler(req, res) {
     if (__ip && await isIpBanned(__ip)) { json(res, 403, { ok: false, error: 'Rede bloqueada. Contate o suporte.' }); return }
     const __dev = String(body.deviceId || '')
     if (__dev && await isDeviceBanned(__dev)) { json(res, 403, { ok: false, error: 'Dispositivo bloqueado. Contate o suporte.' }); return }
-    const CALL_CV_ACTIONS = new Set(['upsertCallSession', 'loadCallSessions', 'loadCallSignals', 'sendCallSignal', 'heartbeat', 'markOffline'])
+    const CALL_CV_ACTIONS = new Set(['upsertCallSession', 'loadCallSessions', 'loadCallSignals', 'sendCallSignal', 'sendCallSignals', 'heartbeat', 'markOffline'])
     if (CALL_CV_ACTIONS.has(body.action) && body.cv) {
       const day = String(body.cv).slice(0, 10)
       if (day < '2026-09-08') { json(res, 403, { ok: false, error: 'Atualize o app (Ctrl+F5). Versão antiga.' }); return }

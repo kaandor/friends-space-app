@@ -25,6 +25,7 @@ export interface User {
     verified?: boolean
     banned?: boolean
     contentRestricted?: boolean
+    official?: boolean
   }
   verifiedAt?: number
   verifiedBy?: string

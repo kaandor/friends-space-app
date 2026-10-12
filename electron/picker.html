@@ -77,7 +77,8 @@
         const sources = await window.picker.getSources()
         grid.innerHTML = ''
         if (!sources || sources.length === 0) {
-          grid.innerHTML = '<div class="loading">Nenhuma fonte disponível</div>'
+          grid.innerHTML = '<div class="loading">Nenhuma fonte disponível<br><span style="font-size:11px">No Linux (Wayland), autorize no diálogo do sistema e <a href="#" id="fs-retry" style="color:#5865f2">tente de novo</a>.</span></div>'
+          document.getElementById('fs-retry').addEventListener('click', (e) => { e.preventDefault(); window.location.reload() })
           return
         }
         for (const s of sources) {

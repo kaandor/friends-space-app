@@ -1,7 +1,7 @@
 import { Fa } from '../../utils/fa'
 import { useState, useEffect, useRef, type CSSProperties } from 'react'
 import { IconScreenShare, IconVolume, IconClose } from '../../utils/icons'
-import { useCallStore } from '../../stores/callStore'
+import { useCallStore, CALL_PROTO } from '../../stores/callStore'
 import { useUserStore } from '../../stores/userStore'
 import { useFriendStore } from '../../stores/friendStore'
 import { Avatar } from '../ui/Avatar'
@@ -87,6 +87,8 @@ export function CallView() {
   const recordingActive = useCallStore(s => s.recordingActive)
   const recordingBy = useCallStore(s => s.recordingBy)
   const sharingPeers = useCallStore(s => s.sharingPeers)
+  const peerProtos = useCallStore(s => s.peerProtos)
+  const stalePeers = participants.filter(p => { const v = peerProtos[p.userId]; return typeof v === 'number' && v !== CALL_PROTO })
   const pendingScreens = sharingPeers.filter(id => !remoteScreenStreams[id])
   const [showRecConfirm, setShowRecConfirm] = useState(false)
   const isOwnRecording = Boolean(recordingActive && recordingBy && currentUser && recordingBy.id === currentUser.id)
@@ -468,6 +470,13 @@ export function CallView() {
               <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', animation: 'fs-rec-blink 1.2s infinite' }} />
               <style>{`@keyframes fs-rec-blink { 0%,100% { opacity: 1 } 50% { opacity: .25 } }`}</style>
               {isOwnRecording ? 'Você está gravando · todos foram avisados' : `${recordingBy?.name || 'Alguém'} está gravando esta call`}
+            </div>
+          )}
+          {stalePeers.length > 0 && (
+            <div style={{ position: 'absolute', top: recordingActive ? 52 : 12, left: '50%', transform: 'translateX(-50%)', zIndex: 300, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,.78)', border: '1px solid #f0b232', borderRadius: 999, padding: '7px 12px 7px 16px', fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+              <Fa name="download" size={12} style={{ color: '#f0b232' }} />
+              {stalePeers.length === 1 ? `${stalePeers[0].userName || 'Um participante'} está com o app desatualizado` : `${stalePeers.length} participantes com o app desatualizado`} · atualize para continuar
+              <button onClick={() => window.dispatchEvent(new CustomEvent('friends-space:open-download'))} style={{ padding: '5px 12px', borderRadius: 7, background: 'var(--accent)', color: '#04120a', border: 'none', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>Atualizar app</button>
             </div>
           )}
           {pendingScreens.map(id => (
@@ -871,6 +880,7 @@ export function CallView() {
                 )
               })}
             </div>
+            <div style={{ padding: '0 10px 8px', color: 'var(--text-muted)', fontSize: 11 }}>Pares no navegador recebem até 720p (limite do Chrome).</div>
             <div style={{ display: 'flex', gap: 8, padding: '0 10px 8px' }}>
               <select value={preferredFps} onChange={e => { void setPreferredFps(Number(e.target.value) as never) }} style={{ flex: 1, background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 6, padding: 6, fontSize: 12 }}>
                 {([30, 60] as const).map(f => <option key={f} value={f} disabled={currentUser ? f > getMaxStreamFps(currentUser) : false}>{f > (currentUser ? getMaxStreamFps(currentUser) : 30) ? `${f}fps · bloqueado` : `${f}fps`}</option>)}

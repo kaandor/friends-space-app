@@ -6,6 +6,7 @@ import { useUserStore } from '../../stores/userStore'
 import { getStreamPlanLabel } from '../../utils/astro'
 import { requestBackend } from '../../services/backend'
 import { isCleanAudioEnabledPref } from '../../services/rnnoise'
+import { lastDiagCodes } from '../../utils/diagCodes'
 
 const HISTORY_MAX = 40
 const POLL_MS = 2500
@@ -155,6 +156,61 @@ function formatElapsed(ms: number): string {
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
 }
 
+// Impressão digital da sessão (Fase 3 "um print basta"): build, peers e
+// último código numa linha + botão que copia o pacote completo.
+function FingerprintBar({ buildId, connectedCount, totalPeers, signalErrors, connectionStates, diag }: {
+  buildId: string
+  connectedCount: number
+  totalPeers: number
+  signalErrors: Array<{ type: string; msg: string; ts: number }>
+  connectionStates: Record<string, string>
+  diag: CallDiagnostics | null
+}) {
+  const [copied, setCopied] = useState(false)
+  const codes = lastDiagCodes()
+  const last = codes.length > 0 ? codes[0] : null
+  const print = `${buildId} · ${connectedCount}/${totalPeers} peers · último ${last ? last.code : (signalErrors.length > 0 ? signalErrors[signalErrors.length - 1].type : 'sem erros')}`
+  const copyAll = useCallback(async () => {
+    const payload = {
+      v: 1,
+      build: buildId,
+      at: new Date().toISOString(),
+      peers: `${connectedCount}/${totalPeers}`,
+      connectionStates,
+      serverLatencyMs: diag?.serverLatencyMs ?? null,
+      signalRttMs: diag?.signalRttMs ?? null,
+      presenceRttMs: diag?.presenceRttMs ?? null,
+      codes: codes.map(c => ({ code: c.code, where: c.where, ts: c.ts })),
+      signalErrors: (signalErrors || []).slice(-10),
+      remote: diag?.remoteByPeer ?? {},
+      ua: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 160) : '?',
+    }
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 1))
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 2500)
+    } catch {
+      try {
+        window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Não deu para copiar — selecione o texto do diagnóstico' }))
+      } catch { }
+    }
+  }, [buildId, connectedCount, totalPeers, connectionStates, diag, codes, signalErrors])
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 12px' }}>
+      <Fa name="bug" size={12} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+      <span style={{ fontFamily: 'monospace', fontSize: 11.5, color: 'var(--text-primary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={print}>
+        {print}
+      </span>
+      <button
+        onClick={() => { void copyAll() }}
+        style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
+      >
+        {copied ? 'Copiado!' : 'Copiar diagnóstico'}
+      </button>
+    </div>
+  )
+}
+
 export default function DebugWindow({ onClose }: { onClose: () => void }) {
   const { currentUser } = useUserStore()
   const participants = useCallStore(s => s.participants)
@@ -284,6 +340,14 @@ export default function DebugWindow({ onClose }: { onClose: () => void }) {
         </div>
 
         <div style={{ overflowY: 'auto', padding: '14px 18px 18px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <FingerprintBar
+            buildId={buildId}
+            connectedCount={connectedCount}
+            totalPeers={Math.max(connEntries.length, peers.length)}
+            signalErrors={diag?.signalErrors ?? []}
+            connectionStates={connectionStates}
+            diag={diag}
+          />
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <HeroTile
               label="Ping servidor"

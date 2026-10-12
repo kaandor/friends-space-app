@@ -287,7 +287,7 @@ export async function unbanDevice(deviceId: string): Promise<{ ok: boolean; erro
   }
 }
 
-export interface ClientErrorEntry { id: string; userId: string; ts: number; where: string; message: string }
+export interface ClientErrorEntry { id: string; userId: string; ts: number; where: string; message: string; code?: string }
 
 export async function listClientErrors(): Promise<ClientErrorEntry[]> {
   try {

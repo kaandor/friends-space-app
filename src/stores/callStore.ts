@@ -7,6 +7,7 @@ import { stopMediaStream, QUALITY_BITRATE_KBPS } from '../services/antiloud'
 import type { CallMode, CallQuality, CallFps } from '../services/antiloud'
 import { startCallRecording, refreshCallRecording, stopCallRecording } from '../services/callRecording'
 import { playSound } from '../services/sounds'
+import { diag } from '../utils/diagCodes'
 
 interface CallState {
   activeCall: boolean
@@ -25,6 +26,7 @@ interface CallState {
   remoteStreams: Record<string, MediaStream>
   remoteScreenStreams: Record<string, MediaStream>
   connectionStates: Record<string, string>
+  peerProtos: Record<string, number>
   speakingUsers: Record<string, boolean>
   screenMuted: boolean
   volumes: Record<string, number>
@@ -229,6 +231,7 @@ function stopCursorFeed() {
 }
 
 let cursorRelayOff: (() => void) | null = null
+let rcUnavailOff: (() => void) | null = null
 // Quando EU sou controlado (estilo AnyDesk), o app desktop (Electron) envia a
 // posicao real do mouse aqui, e repassamos ao controlador pelo data channel.
 function setupCursorRelay(controlledBy: string | null) {
@@ -238,7 +241,18 @@ function setupCursorRelay(controlledBy: string | null) {
   }
   const api = getElectronAPI()
   startCursorFeed(controlledBy)
-  if (!controlledBy || !api?.onRemoteCursor) return
+  if (api?.onRemoteControlUnavailable && !rcUnavailOff) {
+    try {
+      rcUnavailOff = api.onRemoteControlUnavailable(() => {
+        try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Controle remoto indisponivel neste Linux (Wayland ou sem xdotool) — voz e tela seguem normais' })) } catch { }
+      })
+    } catch { rcUnavailOff = null }
+  }
+  if (!controlledBy) {
+    if (rcUnavailOff) { try { rcUnavailOff() } catch { } rcUnavailOff = null }
+    return
+  }
+  if (!api?.onRemoteCursor) return
   cursorRelayOff = api.onRemoteCursor((data: { x: number; y: number; width: number; height: number; scaleFactor?: number }) => {
       void sendControlMessage(controlledBy, { type: 'cursor', ...data, visible: true })
   })
@@ -333,6 +347,14 @@ function closePeer(peerId: string) {
   screenTransceivers.delete(peerId)
   screenAudioTransceivers.delete(peerId)
   mediaSlots.delete(peerId)
+  peerProto.delete(peerId)
+  protoToasted.delete(peerId)
+  useCallStore.setState(state => {
+    if (!(peerId in state.peerProtos)) return state
+    const next = { ...state.peerProtos }
+    delete next[peerId]
+    return { peerProtos: next }
+  })
   // Para tracks de midia remota e limpa registros de sinal/candidato
   const streams = { ...useCallStore.getState().remoteStreams }
   const oldStream = streams[peerId]
@@ -482,7 +504,7 @@ export async function testTurnConnectivity(): Promise<TurnTestResult> {
 // DTLS travado com ICE ok: restartIce (preserva m-lines, sem glare) em vez de
 // recriar a PC. Recriar no meio do handshake reiniciava o ciclo para sempre.
 const iceRestartAt = new Map<string, number>()
-// Fallback relay (uma vez por peer por call): após 35s preso em
+// Fallback relay (uma vez por peer por call): após 18s preso em
 // connecting/disconnected, se EXISTE candidato relay coletado, força
 // iceTransportPolicy 'relay' + restartIce (salva 4G/CGNAT onde P2P falha).
 // Sem relay coletado, o problema são as credenciais — avisa 1x/2min.
@@ -503,7 +525,7 @@ function watchStuckDtls(peerId: string, pc: RTCPeerConnection) {
     iceRestartAt.set(peerId, Date.now() + 60000)
     try { pc.restartIce() } catch { }
   }
-  if (Date.now() - since > 35000 && !relayFallbackDone.has(peerId)) {
+  if (Date.now() - since > 18000 && !relayFallbackDone.has(peerId)) {
     relayFallbackDone.add(peerId)
     void (async () => {
       try {
@@ -518,8 +540,10 @@ function watchStuckDtls(peerId: string, pc: RTCPeerConnection) {
           try { pc.restartIce() } catch { }
           iceRestartAt.set(peerId, Date.now())
         } else if (Date.now() - relayToastAt > 120000) {
-          relayToastAt = Date.now()
-          try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Sem rota relay (TURN) — abra o Debug e toque em Testar TURN' })) } catch { }
+          try {
+            relayToastAt = Date.now()
+            diag('TURN-NOROUTE-04', 'Sem rota relay (TURN) — abra o Debug e toque em Testar TURN', 'call:ice')
+          } catch { }
         }
       } catch { }
     })()
@@ -564,6 +588,53 @@ async function sendSignal(signal: Omit<CallSignal, 'id' | 'createdAt'>) {
   }
 }
 
+// Trickle em LOTE: candidates chegam em rajada no gathering; 1 HTTP por
+// candidate multiplica o RTT (300ms x N no 4G). Junta por 350ms e manda de
+// uma vez via sendCallSignals. Fallback: um a um se o lote falhar.
+type OutSignal = Omit<CallSignal, 'id' | 'createdAt'>
+const candidateBatch: OutSignal[] = []
+let candidateFlushTimer: number | null = null
+function queueCandidate(signal: OutSignal) {
+  candidateBatch.push(signal)
+  if (candidateFlushTimer !== null) return
+  candidateFlushTimer = window.setTimeout(() => {
+    candidateFlushTimer = null
+    void flushCandidates().catch(() => { })
+  }, 350)
+}
+async function flushCandidates() {
+  if (candidateBatch.length === 0) return
+  const batch = candidateBatch.splice(0, candidateBatch.length)
+  // Atalho DC quando já conectado (rápido e de graça).
+  const viaBackend = batch.filter(s => {
+    const dc = dataChannels.get(s.toUserId)
+    const pc = peerConnections.get(s.toUserId)
+    if (dc && dc.readyState === 'open' && pc && pc.connectionState === 'connected') {
+      try { dc.send(JSON.stringify({ type: 'friends-space-signal', payload: s })); return false } catch { }
+    }
+    return true
+  })
+  if (viaBackend.length === 0) return
+  try {
+    if (viaBackend.length === 1) await sendSignal(viaBackend[0])
+    else await sendSignalBatch(viaBackend)
+  } catch {
+    // Lote falhou: reenfileira um a um pelo caminho com retry individual.
+    for (const s of viaBackend) void sendSignal(s).catch(() => { })
+  }
+}
+async function sendSignalBatch(signals: OutSignal[]) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      await requestBackend('sendCallSignals', { signals })
+      return
+    } catch (error) {
+      if (attempt >= 1) throw error
+      await new Promise(resolve => window.setTimeout(resolve, 300))
+    }
+  }
+}
+
 async function sendControlMessage(peerId: string, message: unknown) {
   try {
     const lk = await livekit()
@@ -578,11 +649,18 @@ async function sendControlMessage(peerId: string, message: unknown) {
   } catch { }
 }
 
+// Versão do protocolo de call (Fase 4): vai em toda offer/answer. Peer com
+// proto conhecido e diferente = build incompatível → update obrigatório
+// (banner bloqueante). Ausente = build velha (proto 0, tolerada).
+export const CALL_PROTO = 1
+const peerProto = new Map<string, number>()
+const protoToasted = new Set<string>()
+
 // Monta o payload de offer/renegotiate com a geração atual (fsGen). O
 // receptor usa para descartar ofertas de gerações velhas. Chaves extras no
 // payload são ignoradas pelo setRemoteDescription.
 function offerPayload(peerId: string, offer: RTCSessionDescriptionInit): Record<string, unknown> {
-  return { ...(offer as unknown as Record<string, unknown>), fsGen: peerGen.get(peerId) ?? 0, client: myClientType() }
+  return { ...(offer as unknown as Record<string, unknown>), fsGen: peerGen.get(peerId) ?? 0, client: myClientType(), proto: CALL_PROTO }
 }
 
 // 'web' | 'electron' deste client (para o downscale por peer no remoto).
@@ -595,33 +673,47 @@ function myClientType(): 'web' | 'electron' {
 }
 
 // Aprende o client do peer a partir de offer/answer/renegotiate e reaplica o
-// budget (pode ligar/desligar o downscale 720p na hora).
+// budget (pode ligar/desligar o downscale 720p na hora). Também aprende o
+// proto: conhecido e diferente do nosso = build incompatível (banner de
+// update obrigatório); ausente = build velha, tolerada.
 function learnPeerClient(peerId: string, payload: unknown): void {
   try {
-    const c = (payload as unknown as Record<string, unknown> | undefined)?.client
-    if (c !== 'web' && c !== 'electron') return
-    if (peerClient.get(peerId) === c) return
-    peerClient.set(peerId, c)
-    void applyPeerVideoBudget(peerId)
+    const rec = (payload as unknown as Record<string, unknown> | undefined)
+    const c = rec?.client
+    if (c === 'web' || c === 'electron') {
+      if (peerClient.get(peerId) !== c) {
+        peerClient.set(peerId, c)
+        void applyPeerVideoBudget(peerId)
+      }
+    }
+    const p = rec?.proto
+    if (typeof p === 'number') {
+      if (peerProto.get(peerId) !== p) {
+        peerProto.set(peerId, p)
+        useCallStore.setState(state => ({ peerProtos: { ...state.peerProtos, [peerId]: p } }))
+      }
+      if (p !== CALL_PROTO && !protoToasted.has(peerId)) {
+        protoToasted.add(peerId)
+        const nm = useCallStore.getState().participants.find(x => x.userId === peerId)?.userName || 'Um participante'
+        diag('APP-UPDATE-09', `${nm} está numa versão incompatível — peça para atualizar o app`, 'call:proto')
+      }
+    }
   } catch { }
 }
 
-function getElectronAPI(): { isElectron?: boolean; remoteControlInput?: (data: unknown) => void; remoteControlInfo?: () => Promise<{ scaleFactor?: number }>; remoteCursorFeed?: (enabled: boolean) => void; onRemoteCursor?: (cb: (data: { x: number; y: number; width: number; height: number; scaleFactor?: number }) => void) => () => void } | undefined {
-  return (window as unknown as { electronAPI?: { isElectron?: boolean; remoteControlInput?: (data: unknown) => void; remoteControlInfo?: () => Promise<{ scaleFactor?: number }>; remoteCursorFeed?: (enabled: boolean) => void; onRemoteCursor?: (cb: (data: { x: number; y: number; width: number; height: number; scaleFactor?: number }) => void) => () => void } }).electronAPI
+function getElectronAPI(): { isElectron?: boolean; remoteControlInput?: (data: unknown) => void; remoteControlInfo?: () => Promise<{ scaleFactor?: number }>; remoteCursorFeed?: (enabled: boolean) => void; onRemoteCursor?: (cb: (data: { x: number; y: number; width: number; height: number; scaleFactor?: number }) => void) => () => void; onRemoteControlUnavailable?: (cb: () => void) => () => void } | undefined {
+  return (window as unknown as { electronAPI?: { isElectron?: boolean; remoteControlInput?: (data: unknown) => void; remoteControlInfo?: () => Promise<{ scaleFactor?: number }>; remoteCursorFeed?: (enabled: boolean) => void; onRemoteCursor?: (cb: (data: { x: number; y: number; width: number; height: number; scaleFactor?: number }) => void) => () => void; onRemoteControlUnavailable?: (cb: () => void) => () => void } }).electronAPI
 }
 
 async function executeRemoteInput(input: { it: 'move' | 'button' | 'wheel' | 'key'; x?: number; y?: number; button?: string; down?: boolean; deltaY?: number; key?: string }) {
   const api = getElectronAPI()
   if (!api?.isElectron || !api.remoteControlInput) return
-  const track = useCallStore.getState().screenStream?.getVideoTracks()[0]
-  if (input.it !== 'key' && typeof input.x === 'number' && typeof input.y === 'number' && track) {
+  if (input.it !== 'key' && typeof input.x === 'number' && typeof input.y === 'number') {
+    // Normalizado 0..1 (relativo a captura): o main escala para o display
+    // de destino. ANTES multiplicava aqui pelos pixels da captura e o main
+    // multiplicava DE NOVO (mira gigante/errada, em especial no Linux).
     try {
-      const settings = track.getSettings()
-      if (settings.width && settings.height) {
-        const sx = Math.round(input.x * settings.width)
-        const sy = Math.round(input.y * settings.height)
-        api.remoteControlInput({ t: 'move', x: sx, y: sy })
-      }
+      api.remoteControlInput({ t: 'move', x: Math.min(1, Math.max(0, input.x)), y: Math.min(1, Math.max(0, input.y)) })
     } catch { }
   }
   if (input.it === 'button') {
@@ -690,7 +782,7 @@ function scheduleScreenRetry(peerId: string, attempt = 0) {
       if (!cur.activeCall || !cur.sharingPeers.includes(peerId)) return
       if (cur.remoteScreenStreams[peerId]) return
       if (attempt >= 5) {
-        try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Não foi possível carregar a tela — peça para parar e compartilhar de novo' })) } catch { }
+        try { diag('SHARE-FAILED-10', 'Não foi possível carregar a tela — peça para parar e compartilhar de novo', 'call:screen') } catch { }
         return
       }
       pokeScreenTurbo()
@@ -1149,16 +1241,21 @@ async function createPeerConnection(peerId: string, initiator: boolean) {
   peerConnections.set(peerId, pc)
   peerCreatedAt.set(peerId, Date.now())
   reconnectRetries.delete(peerId)
-  if (initiator) {
-    try {
-      const dc = pc.createDataChannel('friends-space-control', { ordered: true })
-      dataChannels.set(peerId, dc)
-      dc.onmessage = event => handleControlMessage(peerId, String(event.data))
-      dc.onclose = () => { if (dataChannels.get(peerId) === dc) dataChannels.delete(peerId) }
-    } catch { }
-  }
+  // Canal de controle PRÉ-NEGOCIADO (id 0) nos DOIS lados: o m=application
+  // (SCTP) fica idêntico em toda oferta/geração e some a classe "Failed to
+  // start SCTP transport" — antes só o initiator criava in-band e cada reset
+  // propunha outro SCTP. O ondatachannel abaixo fica como fallback para
+  // builds velhas (que ainda criam in-band).
+  try {
+    const dc = pc.createDataChannel('friends-space-control', { negotiated: true, id: 0, ordered: true })
+    dataChannels.set(peerId, dc)
+    dc.onmessage = event => handleControlMessage(peerId, String(event.data))
+    dc.onclose = () => { if (dataChannels.get(peerId) === dc) dataChannels.delete(peerId) }
+  } catch { }
   pc.ondatachannel = event => {
     const dc = event.channel
+    // Já temos o canal pré-negociado: ignora duplicata do handshake in-band.
+    try { if (dc.label === 'friends-space-control' && dataChannels.get(peerId)) { try { dc.close() } catch { } return } } catch { }
     dataChannels.set(peerId, dc)
     dc.onmessage = messageEvent => handleControlMessage(peerId, String(messageEvent.data))
     dc.onclose = () => { if (dataChannels.get(peerId) === dc) dataChannels.delete(peerId) }
@@ -1227,7 +1324,7 @@ async function createPeerConnection(peerId: string, initiator: boolean) {
     }
   } catch { /* segue o padrao */ }
   pc.onicecandidate = event => {
-    if (event.candidate) void sendSignal({ sessionId: state.sessionId!, fromUserId: currentUser.id, toUserId: peerId, type: 'candidate', payload: event.candidate.toJSON() }).catch(() => { })
+    if (event.candidate) queueCandidate({ sessionId: state.sessionId!, fromUserId: currentUser.id, toUserId: peerId, type: 'candidate', payload: event.candidate.toJSON() })
   }
   pc.ontrack = event => {
     const stream = event.streams[0] || new MediaStream([event.track])
@@ -1502,7 +1599,7 @@ async function applySignal(signal: CallSignal) {
         if (!me) return
         for (let a = 0; a < 3; a++) {
           try {
-            await sendSignal({ sessionId: signal.sessionId, fromUserId: me.id, toUserId: peerId, type: 'answer', payload: { ...(answer as unknown as Record<string, unknown>), client: myClientType() } })
+            await sendSignal({ sessionId: signal.sessionId, fromUserId: me.id, toUserId: peerId, type: 'answer', payload: { ...(answer as unknown as Record<string, unknown>), client: myClientType(), proto: CALL_PROTO } })
             return
           } catch {
             if (a < 2) await new Promise(r => setTimeout(r, 2000 * (a + 1)))
@@ -1548,27 +1645,44 @@ async function applySignal(signal: CallSignal) {
             mlineToasted.add(peerId)
             try {
               const nm = useCallStore.getState().participants.find(p => p.userId === peerId)?.userName || 'Usuário'
-              window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: `Falha ao sincronizar com ${nm} — peça para sair e entrar de novo na call` }))
+              diag('SIG-MLINE-01', `Falha ao sincronizar com ${nm} — peça para sair e entrar de novo na call`, 'call:offer')
             } catch { }
           }
           return
         }
         try { closePeer(peerId) } catch { }
         try { await createPeerConnection(peerId, false) } catch { }
-        // Se somos o iniciador canônico, re-oferta IMEDIATAMENTE (não espera
-        // o poll: a pc fresh existe, então o poll não re-oferta; e o resync
-        // abaixo só funciona se o remoto compartilhar tela). Sem isso a call
-        // só-voz ficava 0/2 presa para sempre após um reset. Glare eventual
-        // converge (quem recebe em have-local-offer faz rollback e cede).
+        // Se somos o iniciador canônico, re-oferta com JITTER (0.8–2.5s), não
+        // imediatamente: sem isso os dois lados re-ofertam juntos após resets
+        // simultâneos (glare eterno). Só oferta se a PC fresh continuar
+        // estável — se o remoto já ofertou nesse meio-tempo, processamos a
+        // oferta dele em vez de cruzar com a nossa.
         try {
           const me = useUserStore.getState().currentUser
           const fresh = peerConnections.get(peerId)
           if (me && me.id < peerId && fresh && fresh.signalingState === 'stable') {
-            const offer2 = await fresh.createOffer()
-            await fresh.setLocalDescription(offer2)
-            signalBackoffIndex = 0
-            void sendSignal({ sessionId: signal.sessionId, fromUserId: me.id, toUserId: peerId, type: 'offer', payload: offerPayload(peerId, offer2) }).catch(() => { })
-            void processCallSignals().catch(() => { })
+            const delay = 800 + Math.floor(Math.random() * 1700)
+            window.setTimeout(() => {
+              void (async () => {
+                try {
+                  const cur = peerConnections.get(peerId)
+                  const meNow = useUserStore.getState().currentUser
+                  const sess = useCallStore.getState().sessionId
+                  if (!cur || !meNow || !sess) return
+                  if (!useCallStore.getState().activeCall) return
+                  if (cur.signalingState !== 'stable') return
+                  const offer2 = await cur.createOffer()
+                  await cur.setLocalDescription(offer2)
+                  signalBackoffIndex = 0
+                  void sendSignal({ sessionId: sess, fromUserId: meNow.id, toUserId: peerId, type: 'offer', payload: offerPayload(peerId, offer2) }).catch(() => { })
+                  void processCallSignals().catch(() => { })
+                } catch (reOfferErr) {
+                  const m2 = reOfferErr instanceof Error ? reOfferErr.message : String(reOfferErr)
+                  lastSignalErrors.push({ type: 'offer-criacao', msg: m2, ts: Date.now() })
+                  if (lastSignalErrors.length > 20) lastSignalErrors.shift()
+                }
+              })()
+            }, delay)
           }
         } catch (reOfferErr) {
           const m2 = reOfferErr instanceof Error ? reOfferErr.message : String(reOfferErr)
@@ -1677,15 +1791,21 @@ async function processCallSignals() {
   // peerGen/remoteGen/mlineFails só valem na call ativa; poda por tamanho.
   if (peerGen.size > 50) peerGen.clear()
   if (remoteGen.size > 50) remoteGen.clear()
+  if (peerProto.size > 50) peerProto.clear()
   if (mlineFails.size > 50) mlineFails.clear()
   if (mlineToasted.size > 50) mlineToasted.clear()
   if (peerClient.size > 100) peerClient.clear()
   if (declinedSessions.size > 50) declinedSessions.clear()
   for (const participant of state.participants) {
     if (participant.userId === currentUser.id) continue
+    // Watchdogs proporcionais ao RTT: em rede lenta (4G, 300ms+) os limites
+    // fixos matavam a PC no meio do handshake. Com RTT alto, dobra a paciência.
+    const slowNet = (lastSignalRttMs ?? lastPresenceRttMs ?? 0) > 250
+    const newPcMs = slowNet ? 30000 : 15000
+    const stuckMs = slowNet ? 35000 : 20000
     const existing = peerConnections.get(participant.userId)
     if (existing && (existing.connectionState === 'failed' || existing.connectionState === 'closed'
-      || (existing.connectionState === 'new' && !existing.localDescription && Date.now() - (peerCreatedAt.get(participant.userId) || 0) > 15000))) {
+      || (existing.connectionState === 'new' && !existing.localDescription && Date.now() - (peerCreatedAt.get(participant.userId) || 0) > newPcMs))) {
       closePeer(participant.userId)
     }
     if (currentUser.id < participant.userId && !peerConnections.has(participant.userId)) {
@@ -1700,7 +1820,7 @@ async function processCallSignals() {
     const stuckOffer = peerConnections.get(participant.userId)
     if (stuckOffer && stuckOffer.connectionState === 'new'
       && stuckOffer.localDescription && !stuckOffer.remoteDescription
-      && Date.now() - (peerCreatedAt.get(participant.userId) || 0) > 20000) {
+      && Date.now() - (peerCreatedAt.get(participant.userId) || 0) > stuckMs) {
       closePeer(participant.userId)
       await createPeerConnection(participant.userId, true)
     }
@@ -1854,7 +1974,11 @@ function scheduleSignalLoop() {
   // precisa responder em <300ms (ida e volta) para a conexao parecer
   // instantanea como o Discord. Depois disso, volta ao backoff normal.
   const callStartedAt = state.createdAt || Date.now()
-  const inTurbo = !allConnected && Date.now() - callStartedAt < 10000
+  // Turbo não só nos primeiros 10s: enquanto QUALQUER peer estiver
+  // new/connecting/disconnected, o poll fica em 100ms — oferta/answer de quem
+  // está entrando não espera o backoff. Com tudo conectado, volta ao normal.
+  const anyUnstable = states.length === 0 || states.some(s => s !== 'connected')
+  const inTurbo = !allConnected && (anyUnstable || Date.now() - callStartedAt < 10000)
   // Turbo de tela: com tela recém-iniciada/recebida, o poll não desacelera
   // (mín 1s) — a oferta da tela chega junto da voz.
   const inScreenTurbo = Date.now() < screenTurboUntil
@@ -1924,7 +2048,7 @@ function stopSignalLoop() {  if (signalTimer !== null) window.clearTimeout(signa
   const { remoteStreams, remoteScreenStreams } = useCallStore.getState()
   for (const stream of Object.values(remoteStreams)) { try { stream.getTracks().forEach(t => t.stop()) } catch { } }
   for (const stream of Object.values(remoteScreenStreams)) { try { stream.getTracks().forEach(t => t.stop()) } catch { } }
-  useCallStore.setState({ remoteStreams: {}, remoteScreenStreams: {}, connectionStates: {}, speakingUsers: {} })
+  useCallStore.setState({ remoteStreams: {}, remoteScreenStreams: {}, connectionStates: {}, peerProtos: {}, speakingUsers: {} })
 }
 
 // Poller rapido de chamadas recebidas: enquanto o usuario nao esta em nenhuma
@@ -2244,6 +2368,7 @@ export const useCallStore = create<CallState>((set, get) => ({
   remoteStreams: {},
   remoteScreenStreams: {},
   connectionStates: {},
+  peerProtos: {},
   speakingUsers: {},
   screenMuted: false,
   volumes: {},
@@ -2516,6 +2641,7 @@ export const useCallStore = create<CallState>((set, get) => ({
       remoteStreams: {},
       remoteScreenStreams: {},
       connectionStates: {},
+      peerProtos: {},
       speakingUsers: {},
       screenMuted: false,
       volumes: {},
@@ -3201,7 +3327,10 @@ export const useCallStore = create<CallState>((set, get) => ({
       try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Controle remoto só no app desktop (EXE)' })) } catch { }
       return
     }
-    if ((peerClient.get(peerId) ?? 'electron') === 'web') {
+    // Peer desconhecido (build velha sem client): tenta mesmo assim — o
+    // receptor web nega sozinho com aviso, e EXE velho aceita. Só bloqueia
+    // quem se declarou 'web' (simétrico com o downscale do budget).
+    if (peerClient.get(peerId) === 'web') {
       try {
         const nm = get().participants.find(p => p.userId === peerId)?.userName || 'Usuário'
         window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: `${nm} está no navegador — controle remoto é EXE para EXE` }))

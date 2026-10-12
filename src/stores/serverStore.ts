@@ -82,7 +82,7 @@ interface ServerState {
     roles?: { name: string; color: string }[]
     events?: { title: string; description?: string; date?: number }[]
   }) => Promise<Server>
-  joinServer: (inviteCode: string, userId: string) => Promise<{ ok: boolean, error?: string }>
+  joinServer: (inviteCode: string, userId: string, serverId?: string) => Promise<{ ok: boolean, error?: string }>
   setCurrentServer: (server: Server | null) => void
   setCurrentChannel: (channel: Channel | null) => void
   updateServer: (serverId: string, data: Partial<Server>) => Promise<void>
@@ -394,11 +394,11 @@ export const useServerStore = create<ServerState>((set, get) => ({
       return server
     }
   },
-  joinServer: async (inviteCode, userId) => {
+  joinServer: async (inviteCode, userId, serverId) => {
     const blocked = assertServerLimitServers(get().servers)
     if (blocked) return { ok: false, error: blocked }
     try {
-      const result = await requestBackend<{ success: boolean, error?: string, server?: Server, servers: Server[] }>('joinServer', { inviteCode, userId })
+      const result = await requestBackend<{ success: boolean, error?: string, server?: Server, servers: Server[] }>('joinServer', { inviteCode, userId, serverId })
       if (!result.success) return { ok: false, error: result.error || 'Erro ao entrar no servidor' }
       set({
         servers: result.servers,

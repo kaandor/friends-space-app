@@ -33,7 +33,12 @@ export function RemoteControlOverlay({ onInput }: {
     let cy = rect.top
     let cw = rect.width
     let ch = rect.height
-    if (video && video.videoWidth && video.videoHeight) {
+    // A tela usa objectFit FILL durante o controle (estica) e CONTAIN fora
+    // dele: com fill nao ha letterbox — usar o rect cheio. Antes o calculo
+    // sempre descontava letterbox (contain) e a mira deslocava/travava.
+    let fill = false
+    try { fill = !!video && getComputedStyle(video).objectFit === 'fill' } catch { }
+    if (video && video.videoWidth && video.videoHeight && !fill) {
       const scale = Math.min(rect.width / video.videoWidth, rect.height / video.videoHeight)
       cw = video.videoWidth * scale
       ch = video.videoHeight * scale

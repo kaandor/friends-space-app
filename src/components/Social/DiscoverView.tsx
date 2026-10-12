@@ -152,11 +152,15 @@ export function DiscoverView({ onClose }: Props) {
     setEntering(server.id)
     void (async () => {
       try {
-        const r = await joinServer(server.inviteCode, currentUser.id)
+        // Público entra por ID (sem depender do código exposto); privado
+        // exige inviteCode.
+        const r = await joinServer(server.inviteCode || '', currentUser.id, server.id)
         if (r?.ok) {
           const updated = useServerStore.getState().servers.find(s => s.id === server.id) || server
           setCurrentServer(updated)
           onClose()
+        } else if (r?.error) {
+          showNotice(r.error)
         }
       } finally {
         setEntering(null)

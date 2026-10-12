@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('electronAPI', {
   isElectron: true,
+  platform: process.platform,
   remoteControlInput: (data) => ipcRenderer.send('remote-control-input', data),
   remoteControlInfo: () => ipcRenderer.invoke('remote-control-info'),
   remoteCursorFeed: (enabled) => ipcRenderer.send('remote-cursor-feed', { enabled }),
@@ -9,6 +10,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const listener = (_event, data) => cb(data)
     ipcRenderer.on('remote-cursor', listener)
     return () => ipcRenderer.removeListener('remote-cursor', listener)
+  },
+  onRemoteControlUnavailable: (cb) => {
+    const listener = () => cb()
+    ipcRenderer.on('remote-control-unavailable', listener)
+    return () => ipcRenderer.removeListener('remote-control-unavailable', listener)
   },
   windowControl: (action) => ipcRenderer.send('window-control', action),
   onWindowState: (cb) => {

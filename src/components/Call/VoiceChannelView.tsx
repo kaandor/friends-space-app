@@ -18,6 +18,7 @@ import { DriveRequiredModal } from '../Chat/DriveRequiredModal'
 import { CameraOverlay } from './CameraOverlay'
 import { CallChatPanel } from './CallChatPanel'
 import { getStreamPlanLabel, isQualityBlocked, getMaxStreamFps, getMaxBitrateKbps } from '../../utils/astro'
+import { requestBackend } from '../../services/backend'
 
 const clampVcVolume = (v?: number) => (typeof v === 'number' && !Number.isNaN(v) ? Math.min(1, Math.max(0, v)) : 1)
 
@@ -195,6 +196,32 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
 
   const joinCall = useCallback(async () => {
     if (joinedRef.current || activeCall) return
+    // Gate do servidor (staff/senha/membro): conta nova em público passa
+    // livre; privado/staff/senha nega com motivo em vez de falhar mudo.
+    if (currentUser) {
+      try {
+        const gate = await requestBackend<{ allowed: boolean; reason?: string; requiresPassword?: boolean }>('canJoinCall', { serverId: channel.serverId, userId: currentUser.id })
+        if (!gate?.allowed) {
+          let password: string | undefined
+          if (gate?.requiresPassword) {
+            try { password = window.prompt('Esta call tem senha:') || undefined } catch { password = undefined }
+            if (password === undefined) return
+            try {
+              const retry = await requestBackend<{ allowed: boolean; reason?: string }>('canJoinCall', { serverId: channel.serverId, userId: currentUser.id, password })
+              if (!retry?.allowed) {
+                window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: retry?.reason || 'Entrada negada nesta call' }))
+                return
+              }
+            } catch {
+              return
+            }
+          } else {
+            window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: gate?.reason || 'Entrada negada nesta call' }))
+            return
+          }
+        }
+      } catch { /* backend fora: segue o join local */ }
+    }
     joinedRef.current = true
     // Voz não exige Drive (só uploads/gravações) — nunca bloquear o join.
     try { unlockAudio() } catch { }
@@ -617,6 +644,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
                 )
               })}
             </div>
+            <div style={{ padding: '0 10px 8px', color: 'var(--text-muted)', fontSize: 11 }}>Pares no navegador recebem até 720p (limite do Chrome).</div>
             <div style={{ display: 'flex', gap: 8, padding: '0 10px 8px' }}>
               <select value={preferredFps} onChange={e => { void setPreferredFps(Number(e.target.value) as never) }} style={{ flex: 1, background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 6, padding: 6, fontSize: 12 }}>
                 {([30, 60] as const).map(f => <option key={f} value={f} disabled={currentUser ? f > getMaxStreamFps(currentUser) : false}>{f > (currentUser ? getMaxStreamFps(currentUser) : 30) ? `${f}fps · bloqueado` : `${f}fps`}</option>)}

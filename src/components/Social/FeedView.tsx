@@ -728,6 +728,25 @@ ${u}`.trim().slice(0, 500)
         {searchQuery && searchTab !== 'servidores' && searchTab !== 'pessoas' && posts.length === 0 && !loading && (
           <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: 24 }}>Nenhum post encontrado para “{searchQuery}”.</div>
         )}
+        {!searchQuery && posts.length === 0 && !loading && (
+          <div style={{ textAlign: 'center', padding: '36px 20px', border: '1px dashed var(--border)', borderRadius: 14, marginTop: 4 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>Feed tranquilo por aqui</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', margin: '6px 0 14px' }}>Entre num servidor público para ver movimento e chamar gente pra call.</div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button onClick={() => window.dispatchEvent(new CustomEvent('friends-space:open-discover'))} style={{ background: 'var(--accent)', color: '#04120a', border: 'none', borderRadius: 10, padding: '9px 16px', fontWeight: 800, fontSize: 13, cursor: 'pointer' }}>
+                Explorar servidores
+              </button>
+              <button onClick={() => {
+                const target = suggested.find(s => !s.member && s.inviteCode) || suggested[0]
+                if (!target || !currentUser) return
+                setJoiningId(target.id)
+                void joinServer(target.inviteCode || '', currentUser.id, target.id).finally(() => setJoiningId(null))
+              }} disabled={joiningId !== null} style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 10, padding: '9px 16px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                Entrar na Praça
+              </button>
+            </div>
+          </div>
+        )}
         {loading && <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, padding: 12 }}>Carregando...</div>}
         {hasMore && !loading && posts.length > 0 && !(searchQuery && searchTab === 'servidores') && (
           <button onClick={() => void refreshFeed(true, activeHashtag)} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 0', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%' }}>

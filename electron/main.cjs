@@ -76,23 +76,71 @@ function ensureInputProc() {
   return inputProc
 }
 
+// Controle remoto no Linux: Wayland nao tem xdotool util (o compositor
+// bloqueia injecao) — nesses casos avisa o renderer UMA vez por sessao e
+// ignora (voz/tela seguem 100%). X11 + xdotool funciona total.
+function isWaylandSession() {
+  try {
+    if (process.env.WAYLAND_DISPLAY) return true
+    return String(process.env.XDG_SESSION_TYPE || '').toLowerCase() === 'wayland'
+  } catch { return false }
+}
+let xdotoolChecked = null
+function hasXdotool() {
+  if (xdotoolChecked !== null) return xdotoolChecked
+  try {
+    const { spawnSync } = require('node:child_process')
+    const r = spawnSync('xdotool', ['--help'], { stdio: 'ignore' })
+    xdotoolChecked = !(r && r.error)
+  } catch { xdotoolChecked = false }
+  return xdotoolChecked
+}
+function linuxKeyName(key) {
+  if (!key) return null
+  const map = { Enter: 'Return', Escape: 'Escape', Tab: 'Tab', Backspace: 'BackSpace', Delete: 'Delete', Shift: 'Shift_L', Control: 'Control_L', Alt: 'Alt_L', CapsLock: 'Caps_Lock', ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right', Home: 'Home', End: 'End', PageUp: 'Page_Up', PageDown: 'Page_Down', ' ': 'space' }
+  if (map[key]) return map[key]
+  if (key.length === 1) return key
+  if (/^F([1-9]|1[0-9]|2[0-4])$/.test(key)) return key
+  return null
+}
+let rcUnavailNotified = false
+function notifyRemoteUnavailableOnce() {
+  if (rcUnavailNotified) return
+  rcUnavailNotified = true
+  try { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('remote-control-unavailable') } catch { }
+}
 ipcMain.on('remote-control-input', (_event, data) => {
   try {
+    const d = typeof data === 'string' ? JSON.parse(data) : data
+    const disp = mainWindow && !mainWindow.isDestroyed()
+      ? screen.getDisplayMatching(mainWindow.getBounds())
+      : screen.getPrimaryDisplay()
     if (process.platform === 'linux') {
       const { spawnSync } = require('node:child_process')
-      const d = typeof data === 'string' ? JSON.parse(data) : data
-      const disp = screen.getPrimaryDisplay()
+      if (isWaylandSession() || !hasXdotool()) { notifyRemoteUnavailableOnce(); return }
+      // d.x/d.y normalizados 0..1 (relativos a captura).
       const px = Math.round((d.x || 0) * disp.size.width)
       const py = Math.round((d.y || 0) * disp.size.height)
       if (d.it === 'move') spawnSync('xdotool', ['mousemove', String(px), String(py)])
       else if (d.it === 'button') spawnSync('xdotool', [d.down ? 'mousedown' : 'mouseup', d.button === 'right' ? '3' : d.button === 'middle' ? '2' : '1'])
       else if (d.it === 'wheel') spawnSync('xdotool', ['click', (d.deltaY || 0) > 0 ? '5' : '4'])
-      else if (d.it === 'key' && d.key && d.key.length <= 2) spawnSync('xdotool', [d.down ? 'keydown' : 'keyup', d.key])
+      else if (d.it === 'key' && d.key) {
+        const k = linuxKeyName(d.key)
+        if (k) spawnSync('xdotool', [d.down ? 'keydown' : 'keyup', k])
+      }
       return
+    }
+    // Windows: normalizado (0..1, client novo) -> pixels do display; valor
+    // >1 = client em transicao mandando pixels absolutos (passa direto).
+    const dd = d
+    if (dd && dd.t === 'move' && typeof dd.x === 'number' && typeof dd.y === 'number'
+      && dd.x <= 1.01 && dd.y <= 1.01 && dd.x >= 0 && dd.y >= 0) {
+      dd.x = Math.round(dd.x * disp.size.width)
+      dd.y = Math.round(dd.y * disp.size.height)
     }
     const proc = ensureInputProc()
     if (proc && proc.stdin && proc.stdin.writable) {
-      proc.stdin.write(JSON.stringify(data) + '\n')
+      proc.stdin.write(JSON.stringify(dd) + '\n')
     }
   } catch { }
 })
@@ -102,7 +150,7 @@ ipcMain.handle('remote-control-info', () => {
   const display = win
     ? screen.getDisplayMatching(win.getBounds())
     : screen.getPrimaryDisplay()
-  return { width: display.size.width, height: display.size.height, scaleFactor: display.scaleFactor }
+  return { width: display.size.width, height: display.size.height, scaleFactor: display.scaleFactor, wayland: isWaylandSession() }
 })
 
 // Deteccao do app/jogo em foco (Mensagem de Status automatica, estilo Discord).

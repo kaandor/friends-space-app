@@ -843,6 +843,11 @@ export function AdminPanel({ open, onClose, initialTab }: { open: boolean; onClo
                       <span style={{ fontSize: 10.5, fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: e.where === 'debug-window' ? 'var(--accent)' : 'var(--bg-secondary)', color: e.where === 'debug-window' ? '#04120a' : 'var(--accent)', textTransform: 'uppercase' }}>
                         {e.where === 'debug-window' ? '🐞 report' : e.where}
                       </span>
+                      {e.code && (
+                        <span style={{ fontSize: 10.5, fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: 'rgba(240,71,71,0.15)', color: '#f04747', fontFamily: 'monospace' }}>
+                          {e.code}
+                        </span>
+                      )}
                       <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>
                         {e.ts ? new Date(e.ts).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-'}
                       </span>

@@ -7,11 +7,12 @@ interface WelcomeModalProps {
   platform: 'site' | 'desktop'
   onClose: () => void
   onHelp?: () => void
+  onExplore?: () => void
 }
 
 // Tela de boas-vindas — aparece UMA vez para o usuario (first-run).
 // Exibe: logo, versao, aviso de primeira versao, e botoes Ajuda + Entendi.
-export function WelcomeModal({ open, platform, onClose, onHelp }: WelcomeModalProps) {
+export function WelcomeModal({ open, platform, onClose, onHelp, onExplore }: WelcomeModalProps) {
   if (!open) return null
   const isDesktop = platform === 'desktop'
   const title = isDesktop ? 'Friends Space Desktop' : 'Friends Space'
@@ -53,6 +54,14 @@ export function WelcomeModal({ open, platform, onClose, onHelp }: WelcomeModalPr
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
+          {onExplore && (
+            <button
+              onClick={() => { onClose(); onExplore() }}
+              style={{ flex: 1, padding: '11px 0', borderRadius: 9, border: 'none', cursor: 'pointer', background: 'var(--accent)', color: '#04120a', fontWeight: 800, fontSize: 14 }}
+            >
+              Explorar servidores
+            </button>
+          )}
           {onHelp && (
             <button
               onClick={() => { onClose(); onHelp() }}
@@ -63,7 +72,7 @@ export function WelcomeModal({ open, platform, onClose, onHelp }: WelcomeModalPr
           )}
           <button
             onClick={onClose}
-            style={{ flex: 1, padding: '11px 0', borderRadius: 9, border: 'none', cursor: 'pointer', background: 'var(--accent, #5865f2)', color: '#fff', fontWeight: 700, fontSize: 14 }}
+            style={{ flex: 1, padding: '11px 0', borderRadius: 9, border: onExplore ? '1px solid var(--border)' : 'none', cursor: 'pointer', background: onExplore ? 'var(--bg-hover)' : 'var(--accent, #5865f2)', color: onExplore ? 'var(--text-primary)' : '#fff', fontWeight: 700, fontSize: 14 }}
           >
             Entendi
           </button>

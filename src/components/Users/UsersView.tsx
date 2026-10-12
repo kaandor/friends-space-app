@@ -1,12 +1,25 @@
 import { Fa } from '../../utils/fa'
+import { useState } from 'react'
 import { useUserStore, isUserOnline } from '../../stores/userStore'
+import { useFriendStore } from '../../stores/friendStore'
 import { Avatar } from '../ui/Avatar'
 import { useUserMenuStore } from '../../stores/userMenuStore'
 
 export function UsersView() {
-  const { users } = useUserStore()
+  const { users, currentUser } = useUserStore()
   const { open: openUserMenu } = useUserMenuStore()
+  const addFriendById = useFriendStore(s => s.addFriendById)
+  const friends = useFriendStore(s => s.friends)
+  const [query, setQuery] = useState('')
+  const [addingId, setAddingId] = useState<string | null>(null)
   const onlineCount = users.filter(isUserOnline).length
+  const q = query.trim().toLowerCase()
+  // Conta oficial não aparece na lista de pessoas.
+  const visible = users.filter(u => !u.flags?.official)
+  const listed = q.length === 0
+    ? visible
+    : visible.filter(u => `${u.name || ''} ${u.friendCode || ''}`.toLowerCase().includes(q))
+  const friendIds = new Set((friends || []).map(f => f.friendId || f.id))
 
   const openMenu = (e: React.MouseEvent, user: typeof users[number]) => {
     e.preventDefault()
@@ -24,13 +37,21 @@ export function UsersView() {
             Usuarios Online
           </h2>
         </div>
-        <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '6px 0 0', paddingLeft: 36 }}>
-          {onlineCount} online · {users.length} usuario{users.length !== 1 ? 's' : ''} cadastrado{users.length !== 1 ? 's' : ''}
+        <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '6px 0 10px', paddingLeft: 36 }}>
+          {onlineCount} online · {visible.length} usuario{visible.length !== 1 ? 's' : ''} cadastrado{visible.length !== 1 ? 's' : ''}
         </p>
+        <input
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Buscar por nome ou código..."
+          style={{ marginLeft: 36, width: 'calc(100% - 36px)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 13, outline: 'none' }}
+        />
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px' }}>
-        {users.map(user => {
+        {listed.map(user => {
           const online = isUserOnline(user)
+          const isSelf = currentUser?.id === user.id
+          const isFriend = friendIds.has(user.id)
           return (
           <div
             key={user.id}
@@ -57,6 +78,25 @@ export function UsersView() {
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {!isSelf && !isFriend && currentUser && (
+                <button
+                  title="Pedir amizade"
+                  disabled={addingId === user.id}
+                  onClick={() => {
+                    setAddingId(user.id)
+                    void addFriendById(currentUser.id, user.id).then(r => {
+                      try {
+                        window.dispatchEvent(new CustomEvent('friends-space:toast', {
+                          detail: r.ok ? `Pedido enviado para ${user.name}` : (r.error || 'Falha ao pedir amizade'),
+                        }))
+                      } catch { }
+                    }).finally(() => setAddingId(null))
+                  }}
+                  style={{ background: 'var(--accent)', color: '#04120a', border: 'none', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
+                >
+                  <Fa name="user-plus" size={12} />
+                </button>
+              )}
               <span style={{
                 width: 10, height: 10, borderRadius: '50%',
                 background: online ? 'var(--accent)' : 'var(--text-muted)',
@@ -68,9 +108,9 @@ export function UsersView() {
           </div>
           )
         })}
-        {users.length === 0 && (
+        {listed.length === 0 && (
           <div style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: 40 }}>
-            Nenhum usuario cadastrado.
+            {q ? `Ninguém encontrado para “${query}”.` : 'Nenhum usuario cadastrado.'}
           </div>
         )}
       </div>
