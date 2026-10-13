@@ -952,6 +952,21 @@ const upsertGlobalUser = (store, user) => {
   store.directory.users = nextUsers
 }
 
+// ID fixo do usuário (friendCode): contas antigas nasceram sem código e nada
+// preenchia depois — busca por código e convite falhavam. Garante 1x e
+// persiste; depois disso o código nunca muda.
+const ensureFriendCode = (store, data, user) => {
+  if (!user || user.friendCode) return user
+  user.friendCode = makeCode(getAllUsers(store).concat(data.users || []), 'friendCode')
+  try {
+    const idx = (data.users || []).findIndex((u) => u && u.id === user.id)
+    if (idx !== -1) data.users[idx] = user
+  } catch { }
+  try { upsertGlobalUser(store, user) } catch { }
+  try { if (typeof writeUserEverywhere === 'function') writeUserEverywhere(store, data, user) } catch { }
+  return user
+}
+
 const upsertGlobalServer = (store, server) => {
   if (!store.directory) store.directory = { users: [], servers: [], friends: [] }
   const servers = Array.isArray(store.directory.servers) ? [...store.directory.servers] : []
@@ -1656,6 +1671,7 @@ const actions = {
       data.users.push(user)
     }
     upsertGlobalUser(store, user)
+    try { user = ensureFriendCode(store, data, user) || user } catch { }
     if (user.googleId) throw new Error('Esta conta usa login Google. Entre com o Google.')
     let lobbyByName = null
     try { lobbyByName = onboardNewUser(store, data, user) } catch { }
@@ -1794,6 +1810,7 @@ const actions = {
     // Onboarding: conta nova entra sozinha no lobby público (poder total:
     // públicos, amizades, calls) + garante seed do feed oficial.
     let lobby = null
+    try { user = ensureFriendCode(store, data, user) || user } catch { }
     try { lobby = onboardNewUser(store, data, user) } catch { }
     try { upsertGlobalUser(store, user) } catch { }
 

@@ -366,6 +366,9 @@ function closePeer(peerId: string) {
   delete screenStreams[peerId]
   useCallStore.setState({ remoteStreams: streams, remoteScreenStreams: screenStreams })
   pendingCandidates.delete(peerId)
+  for (let i = candidateBatch.length - 1; i >= 0; i--) {
+    if (candidateBatch[i] && candidateBatch[i].toUserId === peerId) candidateBatch.splice(i, 1)
+  }
   peerNetworkTier.delete(peerId)
   peerQualityTier.delete(peerId)
 }
@@ -1645,9 +1648,14 @@ async function applySignal(signal: CallSignal) {
             mlineToasted.add(peerId)
             try {
               const nm = useCallStore.getState().participants.find(p => p.userId === peerId)?.userName || 'Usuário'
-              diag('SIG-MLINE-01', `Falha ao sincronizar com ${nm} — peça para sair e entrar de novo na call`, 'call:offer')
+              diag('SIG-MLINE-01', `Falha ao sincronizar com ${nm} — peça para atualizar o app e entrar de novo`, 'call:offer')
             } catch { }
           }
+          // 5 falhas seguidas = quase certo build velha: marca proto 0 para o
+          // banner "Atualizar app" aparecer na call (se cura sozinho quando o
+          // peer atualizar, via learnPeerClient).
+          peerProto.delete(peerId)
+          try { useCallStore.setState(state => ({ peerProtos: { ...state.peerProtos, [peerId]: 0 } })) } catch { }
           return
         }
         try { closePeer(peerId) } catch { }
@@ -1735,11 +1743,21 @@ async function applySignal(signal: CallSignal) {
 }
 
 let lastSignalTs = 0
+let signalPollActive = false
 const signalFailCount = new Map<string, number>()
 let syncFailCount = 0
 let syncToastAt = 0
 let sessFailCount = 0
 async function processCallSignals() {
+  if (signalPollActive) return
+  signalPollActive = true
+  try {
+    await processCallSignalsInner()
+  } finally {
+    signalPollActive = false
+  }
+}
+async function processCallSignalsInner() {
   const state = useCallStore.getState()
   const currentUser = useUserStore.getState().currentUser
   if (!state.activeCall || !state.sessionId || !currentUser) return
@@ -2030,6 +2048,8 @@ function stopSignalLoop() {  if (signalTimer !== null) window.clearTimeout(signa
   for (const timer of screenRetryTimers.values()) window.clearTimeout(timer)
   screenRetryTimers.clear()
   lastFallbackRetry.clear()
+  candidateBatch.length = 0
+  if (candidateFlushTimer !== null) { try { window.clearTimeout(candidateFlushTimer) } catch { } candidateFlushTimer = null }
   statsSampleCache.clear()
   signalQueue.clear()
   pendingCandidates.clear()
@@ -2281,7 +2301,17 @@ async function applyCallSessions(sessions: CallSession[], _serverId?: string, us
       finalParticipants = state.participants
     } else if (backendParticipants.length > 0) {
       const merged = new Map<string, CallParticipant>()
-      for (const p of backendParticipants) merged.set(p.userId, p)
+      // Sessoes atualizadas ha pouco = gente entrando agora (sem PC ainda):
+      // mantem. Sessoes velhas sem PC = fantasma de quem ja saiu: descarta.
+      const freshWindow = relevantSessions.some(sess => Date.now() - ((sess as unknown as { updatedAt?: number; createdAt?: number }).updatedAt || (sess as unknown as { createdAt?: number }).createdAt || 0) < 20000)
+      for (const p of backendParticipants) {
+        const cur = state.participants.find(x => x.userId === p.userId)
+        // Preserva muted/deafened reais (vindos do media-state via DC): ANTES
+        // o reload recriava todos com muted:false e a borda de mute sumia
+        // segundos depois de aparecer.
+        if (cur) merged.set(p.userId, { ...p, muted: cur.muted, deafened: (cur as unknown as { deafened?: boolean }).deafened ?? (p as unknown as { deafened?: boolean }).deafened ?? false })
+        else if (peerConnections.has(p.userId) || freshWindow) merged.set(p.userId, p)
+      }
       for (const p of state.participants) {
         if (merged.has(p.userId)) continue
         if (currentUser && p.userId === currentUser.id) { merged.set(p.userId, p); continue }
@@ -2302,6 +2332,13 @@ async function applyCallSessions(sessions: CallSession[], _serverId?: string, us
       useCallStore.setState({ participants: finalParticipants })
       refreshLocalities(finalParticipants)
     }
+    // Re-anuncia meu mute/deafen: se algum peer perdeu o media-state (DC
+    // fechado na hora), converge em segundos em vez de ficar errado.
+    try {
+      const me = useCallStore.getState()
+      const self = useUserStore.getState().currentUser
+      if (self && me.activeCall) broadcastCallData({ t: 'media-state', userId: self.id, muted: me.muted, deafened: me.deafened })
+    } catch { }
     return sessions
   }
 
