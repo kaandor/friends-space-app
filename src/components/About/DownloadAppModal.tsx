@@ -1,6 +1,7 @@
 import { Fa } from '../../utils/fa'
 import { useEffect, useState } from 'react'
 import { getApiBaseUrl } from '../../services/config'
+import { CHANGELOG } from '../../config/changelog'
 
 interface DownloadAppModalProps {
   open: boolean
@@ -12,7 +13,7 @@ interface DownloadAppModalProps {
 // aponta para a página de releases. Segue o tema via var(--...).
 export function DownloadAppModal({ open, onClose }: DownloadAppModalProps) {
   const [downloaded, setDownloaded] = useState<string | null>(null)
-  const [links, setLinks] = useState<{ win: string; linux: string; mac: string; version: string }>({ win: '', linux: '', mac: '', version: '' })
+  const [links, setLinks] = useState<{ win: string; linux: string; mac: string; version: string; notes: string }>({ win: '', linux: '', mac: '', version: '', notes: '' })
 
   useEffect(() => {
     if (!open) return
@@ -32,6 +33,7 @@ export function DownloadAppModal({ open, onClose }: DownloadAppModalProps) {
             linux: r.downloadUrlLinux || r.releasePage || '',
             mac: r.downloadUrlMac || r.releasePage || '',
             version: r.latestVersion || '',
+            notes: typeof r.releaseNotes === 'string' ? r.releaseNotes.slice(0, 600) : '',
           })
         }
       } catch { /* silencioso — usa fallback da página de releases */ }
@@ -150,13 +152,40 @@ export function DownloadAppModal({ open, onClose }: DownloadAppModalProps) {
           ))}
         </div>
 
-        <footer style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 'clamp(24px, 2.5vw, 34px)', paddingTop: 'clamp(20px, 2vw, 28px)', borderTop: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 'clamp(13px, 1.2vw, 17px)' }}>
-          <div style={{ display: 'grid', flex: '0 0 auto', placeItems: 'center', width: 40, height: 40, color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '50%', background: 'var(--bg-secondary)' }}>
-            <Fa name="circle-info" size={14} />
+        <footer style={{ marginTop: 'clamp(24px, 2.5vw, 34px)', paddingTop: 'clamp(20px, 2vw, 28px)', borderTop: '1px solid var(--border)' }}>
+          {CHANGELOG.length > 0 && (
+            <div style={{ marginBottom: 20, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 14, padding: '16px 18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <Fa name="rocket" size={14} style={{ color: 'var(--accent)' }} />
+                <span style={{ fontWeight: 800, fontSize: 15 }}>Novidades da versão {CHANGELOG[0].version}</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>App desktop</div>
+                  <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+                    {CHANGELOG[0].app.map((item, i) => <li key={i}>{item}</li>)}
+                  </ul>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Site</div>
+                  <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+                    {CHANGELOG[0].site.map((item, i) => <li key={i}>{item}</li>)}
+                  </ul>
+                </div>
+              </div>
+              {links.notes && (
+                <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'pre-wrap' }}>{links.notes}</p>
+              )}
+            </div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, color: 'var(--text-secondary)', fontSize: 'clamp(13px, 1.2vw, 17px)' }}>
+            <div style={{ display: 'grid', flex: '0 0 auto', placeItems: 'center', width: 40, height: 40, color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '50%', background: 'var(--bg-secondary)' }}>
+              <Fa name="circle-info" size={14} />
+            </div>
+            <p style={{ margin: 0, lineHeight: 1.45 }}>
+              Precisa de ajuda? Consulte nossa <a href="#help" onClick={e => e.preventDefault()} style={{ color: 'var(--accent)' }}>Central de Ajuda</a> ou entre no nosso <a href="#community" onClick={e => e.preventDefault()} style={{ color: 'var(--accent)' }}>servidor no Friends Space.</a>
+            </p>
           </div>
-          <p style={{ margin: 0, lineHeight: 1.45 }}>
-            Precisa de ajuda? Consulte nossa <a href="#help" onClick={e => e.preventDefault()} style={{ color: 'var(--accent)' }}>Central de Ajuda</a> ou entre no nosso <a href="#community" onClick={e => e.preventDefault()} style={{ color: 'var(--accent)' }}>servidor no Friends Space.</a>
-          </p>
         </footer>
       </div>
 
