@@ -139,6 +139,26 @@ function App() {
     return false
   }
 
+  // Novidade de update no historico de notificacoes (1x por versao).
+  const announceUpdateNews = (version: string, notes: string) => {
+    try {
+      const key = 'friends-space:update-news-seen'
+      let seen = ''
+      try { seen = localStorage.getItem(key) || '' } catch { /* silencioso */ }
+      if (seen === version) return
+      try { localStorage.setItem(key, version) } catch { /* silencioso */ }
+      const me = useUserStore.getState().currentUser
+      if (!me) return
+      void requestBackend('pushSystemNotification', {
+        userId: me.id,
+        type: 'update-news',
+        title: `Friends Space ${version} disponível`,
+        body: notes ? String(notes).slice(0, 180) : 'Abra Baixar app para atualizar.',
+        data: { version },
+      }).catch(() => { })
+    } catch { /* silencioso */ }
+  }
+
   useEffect(() => {
     // Atualização automática no Electron: 1º electron-updater (GitHub
     // Releases, baixa em segundo plano), 2º fallback checkUpdate do backend
@@ -180,6 +200,7 @@ function App() {
         try { current = (await api.appVersion?.()) || current } catch { /* silencioso */ }
         if (result.latestVersion && isNewerVersion(result.latestVersion, current)) {
           setUpdateAvailable(result)
+          announceUpdateNews(result.latestVersion, result.releaseNotes || '')
         }
       } catch { /* silencioso — nao mostrar erro se falhar */ }
     }
@@ -202,7 +223,10 @@ function App() {
         setDesktopRelease(v)
         let seen = ''
         try { seen = localStorage.getItem('friends-space:desktop-seen') || '' } catch { /* silencioso */ }
-        if (seen !== v) setToast(`Nova versão do app disponível (${v})! Abra Baixar app.`)
+        if (seen !== v) {
+          setToast(`Nova versão do app disponível (${v})! Abra Baixar app.`)
+          announceUpdateNews(v, '')
+        }
       } catch { /* silencioso */ }
     }
     const timer = window.setTimeout(check, 8000)

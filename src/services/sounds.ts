@@ -90,6 +90,8 @@ export type SoundName =
   | 'friend-request'
   | 'call-invite'
   | 'astro'
+  | 'mute'
+  | 'unmute'
 
 export function playSound(name: SoundName) {
   try {
@@ -143,6 +145,12 @@ export function playSound(name: SoundName) {
         tone({ freq: 220, glideTo: 1320, dur: 0.5, gain: 0.13 })
         shimmer(2640, 0.1, 0.6, 0.05)
         shimmer(1760, 0.3, 0.5, 0.03)
+        break
+      case 'mute':
+        tone({ freq: 660, glideTo: 330, dur: 0.16, gain: 0.13, type: 'triangle' })
+        break
+      case 'unmute':
+        tone({ freq: 330, glideTo: 660, dur: 0.16, gain: 0.13, type: 'triangle' })
         break
     }
   } catch {

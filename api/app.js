@@ -1129,6 +1129,42 @@ const makeCode = (items, field, size = 8) => {
   return code
 }
 
+// Vigia da call (o servidor enxerga a saude): a partir das visoes que cada
+// participante envia no sync (peerViews), calcula quem esta demorando para
+// conectar, se a call esta ruim e para quem a tela nao esta chegando.
+// Tudo best-effort e barato (mapas pequenos, sem I/O extra).
+const sessionWatch = (session) => {
+  const watch = { slowPeerIds: [], screenMissingFor: [], unhealthy: false, at: 0 }
+  try {
+    const t = now()
+    watch.at = t
+    const views = (session && session.peerViews) || {}
+    const stamps = (session && session.participantLastSync) || {}
+    const ids = (session && session.participantIds) || []
+    const sharer = String((session && session.screenSharingUserId) || '')
+    for (const id of ids) {
+      const last = Number(stamps[id] || 0)
+      const joinedAgo = t - last
+      // Sem sync ha >20s mas ainda listado: demorando para conectar (ou caiu
+      // e o stamp de 35s ainda nao o removeu). Recem-chegados (<8s) nao contam.
+      if (last > 0 && joinedAgo > 20000) watch.slowPeerIds.push(id)
+    }
+    if (sharer) {
+      for (const id of ids) {
+        if (id === sharer) continue
+        const v = views[id]
+        if (!v || t - Number(v.at || 0) > 30000) continue
+        const stats = v.stats || {}
+        // Visao fresca mas sem trilha da tela do sharer = tela nao entregue.
+        const gotScreen = Object.entries(stats).some(([pid, st]) => String(pid) === String(sharer) && st && (st.screen === true || Number(st.screenTracks || 0) > 0))
+        if (!gotScreen) watch.screenMissingFor.push(id)
+      }
+    }
+    watch.unhealthy = watch.slowPeerIds.length > 0 || watch.screenMissingFor.length > 0
+  } catch { }
+  return watch
+}
+
 const acceptedFriendUsers = (store, data, userId) => {
   const friendIds = getAllFriends(store)
     .filter((friend) => friend.status === 'accepted' && (friend.userId === userId || friend.friendId === userId))
@@ -2117,6 +2153,21 @@ const actions = {
         await tursoFetch('DELETE FROM client_errors WHERE ts < ?', [now() - 86400000])
       }
     } catch {}
+    return { ok: true }
+  },
+  pushSystemNotification: async (store, data, body) => {
+    const userId = String(body.userId || body.__actor || '')
+    if (!userId) throw new Error('userId obrigatorio')
+    addNotification(store, {
+      toUserId: userId,
+      fromUserId: 'system',
+      fromName: 'Friends Space',
+      fromPhoto: '',
+      type: String(body.type || 'update-news'),
+      title: String(body.title || 'Novidade').slice(0, 120),
+      body: String(body.body || '').slice(0, 200),
+      data: (body.data && typeof body.data === 'object' ? body.data : {}),
+    })
     return { ok: true }
   },
   listClientErrors: async (store, data, body) => {
@@ -4181,6 +4232,27 @@ const actions = {
     const parentId = String(body.parentId || '')
     if (parentId && !post.comments.some((c) => c && c.id === parentId && !c.parentId)) throw new Error('Comentario original nao encontrado')
     post.comments.push({ id: id(), userId, content, imageUrl, parentId: parentId || '', likes: [], dislikes: [], createdAt: now() })
+    try {
+      const commenter = getAllUsers(store).find((u) => u && u.id === userId)
+      const targets = new Set()
+      if (post.authorId && post.authorId !== userId) targets.add(post.authorId)
+      if (parentId) {
+        const parent = post.comments.find((c) => c && c.id === parentId)
+        if (parent && parent.userId && parent.userId !== userId) targets.add(parent.userId)
+      }
+      for (const tid of targets) {
+        addNotification(store, {
+          toUserId: tid,
+          fromUserId: userId,
+          fromName: (commenter && commenter.name) || 'Alguem',
+          fromPhoto: (commenter && commenter.photoUrl) || '',
+          type: 'feed-comment',
+          title: `${(commenter && commenter.name) || 'Alguem'} comentou no seu post`,
+          body: content.slice(0, 90),
+          data: { postId },
+        })
+      }
+    } catch { }
     for (const c of post.comments) {
       if (!c) continue
       if (!Array.isArray(c.likes)) c.likes = []
@@ -4655,6 +4727,11 @@ const actions = {
         })
       }
     }
+    const views = { ...((existing && existing.peerViews) || {}) }
+    if (selfId) views[selfId] = { stats: (incoming.connectionStats && typeof incoming.connectionStats === 'object' ? incoming.connectionStats : {}), at: now() }
+    for (const rid of Object.keys(views)) {
+      try { if (!views[rid] || now() - Number(views[rid].at || 0) > 45000) delete views[rid] } catch { }
+    }
     const session = {
       id: canonicalId,
       serverId: String(incoming.serverId || existing?.serverId || ''),
@@ -4665,6 +4742,7 @@ const actions = {
       screenSharingUserId: String(incoming.screenSharingUserId || existing?.screenSharingUserId || ''),
       connectionStats: incoming.connectionStats || existing?.connectionStats || {},
       participantLastSync: stamps,
+      peerViews: views,
       updatedAt: now(),
       createdAt: existing ? Number(existing.createdAt || now()) : Number(incoming.createdAt || now()),
     }
@@ -4672,6 +4750,7 @@ const actions = {
       session.participantIds = session.participantIds.filter((id) => id !== body.leaveUserId)
       if (session.hostUserId === body.leaveUserId) session.hostUserId = session.participantIds[0] || ''
     }
+    session.watch = sessionWatch(session)
     upsertGlobalCallSession(store, session)
     if (canonicalId !== incomingId) {
       const orphans = getAllCallSessions(store).filter((item) =>
@@ -4723,6 +4802,7 @@ const actions = {
       && (!serverId || session.serverId === serverId)
       && (!userId || session.participantIds.includes(userId))
       && ((session.participantIds || []).includes(body.__actor) || isServerMember(store, body.__actor, session.serverId)))
+      .map((session) => ({ ...session, watch: sessionWatch(session) }))
   },
   migrateData: async (store, data, body) => {
     requireFlags(store, body, 'dev')

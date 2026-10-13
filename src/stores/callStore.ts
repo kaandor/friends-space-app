@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { CallParticipant, CallSession, CallSignal, User } from '../types'
+import type { CallParticipant, CallSession, CallSessionWatch, CallSignal, User } from '../types'
 import { requestBackend } from '../services/backend'
 import { useUserStore } from './userStore'
 import { clampStreamQuality, clampStreamFps, getMaxBitrateKbps, getAstroTier } from '../utils/astro'
@@ -27,6 +27,7 @@ interface CallState {
   remoteScreenStreams: Record<string, MediaStream>
   connectionStates: Record<string, string>
   peerProtos: Record<string, number>
+  sessionWatch: CallSessionWatch | null
   speakingUsers: Record<string, boolean>
   screenMuted: boolean
   volumes: Record<string, number>
@@ -858,11 +859,21 @@ function handleControlMessage(peerId: string, raw: string) {
     // indicadores vermelhos acenderem (tiles, strip, sidebar) em todos.
     const m = message as unknown as { userId?: unknown; muted?: unknown; deafened?: unknown }
     if (typeof m.userId === 'string' && m.userId) {
+      const prev = useCallStore.getState().participants.find(p => p.userId === m.userId)
       useCallStore.setState(state => ({
         participants: state.participants.map(p => p.userId === m.userId
           ? { ...p, muted: m.muted === true ? true : m.muted === false ? false : p.muted, deafened: m.deafened === true ? true : m.deafened === false ? false : p.deafened }
           : p),
       }))
+      // Efeito para TODOS: so toca quando o estado MUDOU de verdade (eco ou
+      // repeticao nao repetem o som).
+      try {
+        const nowMuted = m.muted === true ? true : m.muted === false ? false : prev?.muted
+        const nowDeaf = m.deafened === true ? true : m.deafened === false ? false : (prev as unknown as { deafened?: boolean } | undefined)?.deafened
+        const prevDeaf = (prev as unknown as { deafened?: boolean } | undefined)?.deafened
+        if (prev && typeof nowMuted === 'boolean' && prev.muted !== nowMuted) playSound(nowMuted ? 'mute' : 'unmute')
+        else if (prev && typeof nowDeaf === 'boolean' && prevDeaf !== nowDeaf) playSound(nowDeaf ? 'mute' : 'unmute')
+      } catch { }
     }
     return
   }
@@ -2068,7 +2079,7 @@ function stopSignalLoop() {  if (signalTimer !== null) window.clearTimeout(signa
   const { remoteStreams, remoteScreenStreams } = useCallStore.getState()
   for (const stream of Object.values(remoteStreams)) { try { stream.getTracks().forEach(t => t.stop()) } catch { } }
   for (const stream of Object.values(remoteScreenStreams)) { try { stream.getTracks().forEach(t => t.stop()) } catch { } }
-  useCallStore.setState({ remoteStreams: {}, remoteScreenStreams: {}, connectionStates: {}, peerProtos: {}, speakingUsers: {} })
+  useCallStore.setState({ remoteStreams: {}, remoteScreenStreams: {}, connectionStates: {}, peerProtos: {}, sessionWatch: null, speakingUsers: {} })
 }
 
 // Poller rapido de chamadas recebidas: enquanto o usuario nao esta em nenhuma
@@ -2141,9 +2152,18 @@ function participantsEqual(a: CallParticipant[], b: CallParticipant[]) {
 export async function syncSession(state: Pick<CallState, 'sessionId' | 'activeCall' | 'channelId' | 'serverId' | 'participants' | 'screenSharing' | 'screenStream' | 'preferredQuality' | 'preferredFps' | 'preferredBitrate' | 'callMode' | 'createdAt'>, leaveUserId?: string) {
   if (!state.sessionId || !state.channelId || !state.serverId) return
   const currentUser = useUserStore.getState().currentUser
-  const connectionStats: Record<string, { state: string; tracks: number }> = {}
+  const connectionStats: Record<string, { state: string; tracks: number; screen: boolean; screenTracks: number; dc: boolean; ice: string }> = {}
   for (const [peerId, pc] of peerConnections) {
-    connectionStats[peerId] = { state: pc.connectionState, tracks: useCallStore.getState().remoteStreams[peerId]?.getTracks().length || 0 }
+    const st = useCallStore.getState()
+    const dc = dataChannels.get(peerId)
+    connectionStats[peerId] = {
+      state: pc.connectionState,
+      tracks: st.remoteStreams[peerId]?.getTracks().length || 0,
+      screen: Boolean(st.remoteScreenStreams[peerId]),
+      screenTracks: st.remoteScreenStreams[peerId]?.getTracks().length || 0,
+      dc: Boolean(dc && dc.readyState === 'open'),
+      ice: pc.iceConnectionState,
+    }
   }
   // Sem poda explícita: ela causava guerras (um lado podava o outro por PC
   // ainda conectando, derrubando quem estava vivo). Fantasma morre pelo
@@ -2179,6 +2199,12 @@ export async function syncSession(state: Pick<CallState, 'sessionId' | 'activeCa
       if (canonical?.id && canonical.id !== current.sessionId && current.activeCall) {
         useCallStore.setState({ sessionId: canonical.id })
       }
+      try {
+        const mine = (result?.callSessions || []).find(s => s && (s.id === useCallStore.getState().sessionId || (s.channelId === current.channelId && s.serverId === current.serverId)))
+        if (mine && (mine as unknown as { watch?: unknown }).watch !== undefined) {
+          useCallStore.setState({ sessionWatch: (mine as unknown as { watch: CallSessionWatch }).watch })
+        }
+      } catch { }
       return result?.callSessions || null
     } catch (syncErr) {
       if (attempt >= 2) {
@@ -2406,6 +2432,7 @@ export const useCallStore = create<CallState>((set, get) => ({
   remoteScreenStreams: {},
   connectionStates: {},
   peerProtos: {},
+  sessionWatch: null,
   speakingUsers: {},
   screenMuted: false,
   volumes: {},
@@ -2679,6 +2706,7 @@ export const useCallStore = create<CallState>((set, get) => ({
       remoteScreenStreams: {},
       connectionStates: {},
       peerProtos: {},
+      sessionWatch: null,
       speakingUsers: {},
       screenMuted: false,
       volumes: {},
@@ -2748,6 +2776,7 @@ export const useCallStore = create<CallState>((set, get) => ({
       localStream.getAudioTracks().forEach(t => { t.enabled = !newMuted })
     }
     set({ muted: newMuted, deafened: false })
+    try { playSound(newMuted ? 'mute' : 'unmute') } catch { }
     if (get().livekitActive) {
       void import('../services/livekitCall').then(m => m.livekitSetMicEnabled(!newMuted)).catch(() => {})
     }
@@ -2777,6 +2806,7 @@ export const useCallStore = create<CallState>((set, get) => ({
       localStream.getAudioTracks().forEach(t => { t.enabled = !newDeafened })
     }
     set({ deafened: newDeafened, muted: newDeafened })
+    try { playSound(newDeafened ? 'mute' : 'unmute') } catch { }
     const currentUser = useUserStore.getState().currentUser
     if (currentUser) {
       const participants = get().participants.map(p =>

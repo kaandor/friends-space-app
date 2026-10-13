@@ -380,6 +380,18 @@ export interface CallSession {
     latencyMs?: number
     packetLoss?: number
   }
+  peerViews?: Record<string, {
+    stats: Record<string, { state?: string; tracks?: number; screen?: boolean; screenTracks?: number; dc?: boolean; ice?: string }>
+    at: number
+  }>
+  watch?: CallSessionWatch
+}
+
+export interface CallSessionWatch {
+  slowPeerIds: string[]
+  screenMissingFor: string[]
+  unhealthy: boolean
+  at: number
 }
 
 export interface CallSignal {
