@@ -9,7 +9,7 @@ export interface ChangelogEntry {
 // a primeira entrada. App = Electron; Site = web.
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '1.4.5',
+    version: '1.2.5',
     date: '2026-10-13',
     app: [
       'Controle remoto com mira corrigida (acabou o mouse travado/deslocado)',
