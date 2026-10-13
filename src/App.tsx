@@ -48,7 +48,7 @@ import { connectDrive, disconnectDrive, isDriveConnected, uploadProfileImage, cr
 import { DriveRequiredModal } from './components/Chat/DriveRequiredModal'
 import { startRingtone, stopRingtone, resumeRingtoneAudio } from './services/ringtone'
 import { unlockAudio } from './services/audioUnlock'
-import { startIncomingCallPoll, stopIncomingCallPoll, upgradeLocalMedia } from './stores/callStore'
+import { startIncomingCallPoll, stopIncomingCallPoll, upgradeLocalMedia, prewarmServer } from './stores/callStore'
 import { startCallOverlay } from './services/callOverlayService'
 import { startAutoActivity } from './services/activityService'
 import { DesktopChrome } from './components/Desktop/DesktopChrome'
@@ -515,6 +515,12 @@ function App() {
     window.addEventListener('friends-space:open-download', onOpenDownload)
     return () => { window.removeEventListener('friends-space:toast', onToast); window.removeEventListener('friends-space:open-discover', onOpenDiscover); window.removeEventListener('friends-space:open-download', onOpenDownload) }
   }, [])
+
+  // Pre-conexao: entrou no servidor = pre-aquece ICE + sessoes + usuarios.
+  const prewarmServerId = currentServer?.id
+  useEffect(() => {
+    if (prewarmServerId) prewarmServer(prewarmServerId)
+  }, [prewarmServerId])
 
   useEffect(() => {
     if (!currentUser) return

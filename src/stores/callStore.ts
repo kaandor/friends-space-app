@@ -452,6 +452,31 @@ export function warmIceServers() {
     }).catch(() => { })
   } catch { }
 }
+// Fila de espera + pre-conexao ("mente colmeia"): ao ENTRAR no servidor,
+// ICE + sessoes + usuarios ja ficam quentes (sem midia: sem gesto, sem
+// permissao). Ao SAIR da call, fica o carimbo standby — o rejoin reaproveita
+// tudo que ainda vale. Cada entrada e UM usuario a menos para descobrir do
+// zero: sem atraso, sem kick por timeout frio, sem fantasma.
+const standbyByServer = new Map<string, number>()
+const prewarmAt = new Map<string, number>()
+export function prewarmServer(serverId: string) {
+  try {
+    if (!serverId) return
+    const now = Date.now()
+    if (now - (prewarmAt.get(serverId) || 0) < 30000) return
+    prewarmAt.set(serverId, now)
+    warmIceServers()
+    const me = useUserStore.getState().currentUser
+    void useCallStore.getState().loadCallSessions(serverId, me?.id).catch(() => { })
+    void useUserStore.getState().loadUsers().catch(() => { })
+  } catch { }
+}
+export function standbyFresh(serverId: string): boolean {
+  try {
+    if (!serverId) return false
+    return Date.now() - (standbyByServer.get(serverId) || 0) < 5 * 60 * 1000
+  } catch { return false }
+}
 // Diagnóstico real de TURN na máquina/rede do usuário: cria uma PC
 // temporária, coleta candidatos e diz se há relay/srflx/host. Usado pelo
 // botão "Testar TURN" do Debug — testa o caminho de verdade (não adivinha).
@@ -1755,6 +1780,7 @@ async function applySignal(signal: CallSignal) {
 
 let lastSignalTs = 0
 let signalPollActive = false
+const watchResyncAt = new Map<string, number>()
 const signalFailCount = new Map<string, number>()
 let syncFailCount = 0
 let syncToastAt = 0
@@ -2203,6 +2229,22 @@ export async function syncSession(state: Pick<CallState, 'sessionId' | 'activeCa
         const mine = (result?.callSessions || []).find(s => s && (s.id === useCallStore.getState().sessionId || (s.channelId === current.channelId && s.serverId === current.serverId)))
         if (mine && (mine as unknown as { watch?: unknown }).watch !== undefined) {
           useCallStore.setState({ sessionWatch: (mine as unknown as { watch: CallSessionWatch }).watch })
+        }
+      } catch { }
+      // Sou o sharer e a tela nao chega em alguem: renegocia direto com ele
+      // (1x/25s por peer). Nao espera o usuario perceber.
+      try {
+        const cur = useCallStore.getState()
+        const w = cur.sessionWatch
+        if (cur.activeCall && cur.screenSharing && w && w.screenMissingFor.length) {
+          for (const pid of w.screenMissingFor) {
+            const last = watchResyncAt.get(pid) || 0
+            if (Date.now() - last < 25000) continue
+            const pc = peerConnections.get(pid)
+            if (!pc || (pc.connectionState !== 'connected' && pc.connectionState !== 'connecting')) continue
+            watchResyncAt.set(pid, Date.now())
+            try { triggerMediaRenegotiation(pid) } catch { }
+          }
         }
       } catch { }
       return result?.callSessions || null
@@ -2689,6 +2731,10 @@ export const useCallStore = create<CallState>((set, get) => ({
     try { earlyScreen?.getTracks().forEach(x => x.stop()) } catch { }
     try { stopMediaStream(earlyLocal) } catch { }
     {
+    try {
+      const preState = get()
+      if (preState.serverId) standbyByServer.set(preState.serverId, Date.now())
+    } catch { }
     const currentUser = earlyUser
     set({
       activeCall: false,
@@ -2762,6 +2808,23 @@ export const useCallStore = create<CallState>((set, get) => ({
   },
   removeParticipant: (userId) => {
     set({ participants: get().participants.filter(p => p.userId !== userId) })
+    // Purga total do peer (anti-fantasma): falante, controle e cursor nao
+    // podem sobreviver a quem saiu.
+    try {
+      useCallStore.setState(st => {
+        if (!(userId in st.speakingUsers)) return st
+        const next = { ...st.speakingUsers }
+        delete next[userId]
+        return { speakingUsers: next }
+      })
+    } catch { }
+    try { if (get().controlling === userId) get().stopControlling() } catch { }
+    try {
+      if (get().controlledBy === userId) {
+        set({ controlledBy: null, controlRequests: get().controlRequests.filter(r => r.peerId !== userId) })
+        stopCursorFeed()
+      }
+    } catch { }
     // Fecha o peer connection e para as tracks da midia remota: sem isso o
     // PC ficava aberto e a stream vazava depois que alguem saia da call.
     if (peerConnections.has(userId)) closePeer(userId)

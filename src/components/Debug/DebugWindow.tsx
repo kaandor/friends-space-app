@@ -317,6 +317,7 @@ export default function DebugWindow({ onClose }: { onClose: () => void }) {
   })()
   const nameOf = (peerId: string) => participants.find(p => p.userId === peerId)?.userName || `${peerId.slice(0, 8)}…`
   const elapsed = activeCall && createdAt && createdAt > 0 ? formatElapsed(now - createdAt) : '--:--'
+  const watch = useCallStore(s => s.sessionWatch)
   const lastDown = downHist.length > 0 ? downHist[downHist.length - 1] : null
 
   return (
@@ -418,6 +419,17 @@ export default function DebugWindow({ onClose }: { onClose: () => void }) {
             </div>
           </section>
 
+          {watch && (watch.slowPeerIds.length > 0 || watch.screenMissingFor.length > 0) && (
+            <div style={{ background: 'rgba(240,178,50,0.08)', border: '1px solid rgba(240,178,50,0.35)', borderRadius: 10, padding: '8px 12px', fontSize: 12 }}>
+              <div style={{ color: '#f0b232', fontWeight: 800, marginBottom: 4 }}>Vigia do servidor</div>
+              {watch.slowPeerIds.map(pid => (
+                <div key={'s' + pid} style={{ color: 'var(--text-secondary)', fontFamily: 'monospace' }}>conectando devagar: {nameOf(pid)}</div>
+              ))}
+              {watch.screenMissingFor.map(pid => (
+                <div key={'v' + pid} style={{ color: 'var(--text-secondary)', fontFamily: 'monospace' }}>tela nao chega em {nameOf(pid)} — ressincronizando</div>
+              ))}
+            </div>
+          )}
           <section>
             <SectionTitle>Voz e vídeo · {e2e ? <b style={{ color: '#23a55a' }}>ponta a ponta ativa</b> : <b style={{ color: '#f0b232' }}>sincronizando</b>}</SectionTitle>
             <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px' }}>
