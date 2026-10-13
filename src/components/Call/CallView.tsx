@@ -637,7 +637,7 @@ export function CallView() {
               </>
             )}
 
-            {controlling !== screenUserId && (
+            {!controlling && (
             <div className="vc-bottom">
               <div className="vc-controls">
                 <div className="vc-ctrl-group">

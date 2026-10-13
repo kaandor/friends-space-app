@@ -29,6 +29,8 @@ export function RemoteControlOverlay({ onInput, onExit, onFullscreen }: {
   const remoteCursor = useCallStore(s => s.remoteCursor)
   const controlEndsAt = useCallStore(s => s.controlEndsAt)
   const controlGrants = useCallStore(s => s.controlGrants)
+  const controlLinkOk = useCallStore(s => s.controlLinkOk)
+  const lastInputAckAt = useCallStore(s => s.lastInputAckAt)
   const [gameMode, setGameMode] = useState(false)
   const [locked, setLocked] = useState(false)
   const [muted, setMuted] = useState(false)
@@ -261,6 +263,11 @@ export function RemoteControlOverlay({ onInput, onExit, onFullscreen }: {
       <div style={{ position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.6)', borderRadius: 8, padding: '5px 12px', color: 'var(--text-secondary)', fontSize: 10.5, pointerEvents: 'none', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 10 }}>
         <span><b style={{ color: '#fff' }}>Ctrl+Shift+C</b> parar controle</span>
         <span><b style={{ color: '#fff' }}>Ctrl+Shift+Z</b> sair do remoto</span>
+        <span title={controlLinkOk === false ? 'PC remoto sem resposta' : lastInputAckAt && Date.now() - lastInputAckAt < 8000 ? 'Comandos chegando no PC remoto' : 'Enlace com o PC remoto'}>
+          <b style={{ color: controlLinkOk === false ? '#f04747' : lastInputAckAt && Date.now() - lastInputAckAt < 8000 ? '#00ff88' : '#f0b232' }}>
+            {controlLinkOk === false ? 'sem resposta' : lastInputAckAt && Date.now() - lastInputAckAt < 8000 ? 'controlando' : 'ligando…'}
+          </b>
+        </span>
         <span title="Tempo concedido pelo dono">⏱ <b style={{ color: controlEndsAt && remaining !== null && remaining < 60000 ? '#f0b232' : '#fff' }}>{remainingLabel}</b></span>
         {controlGrants && (!controlGrants.mouse || !controlGrants.keyboard) && (
           <span title="Permissões do dono">

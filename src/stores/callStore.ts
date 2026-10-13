@@ -95,6 +95,8 @@ interface CallState {
   setControlSettings: (patch: Partial<ControlSettings>) => void
   controlEndsAt: number | null
   controlGrants: ControlGrant | null
+  controlLinkOk: boolean | null
+  lastInputAckAt: number | null
   stopControlling: () => void
   revokeControl: () => void
   setAnydeskMode: (enabled: boolean) => void
@@ -751,6 +753,16 @@ function getElectronAPI(): { isElectron?: boolean; remoteControlInput?: (data: u
 async function executeRemoteInput(input: { it: 'move' | 'moveRel' | 'button' | 'wheel' | 'key'; x?: number; y?: number; dx?: number; dy?: number; button?: string; down?: boolean; deltaY?: number; key?: string }) {
   const api = getElectronAPI()
   if (!api?.isElectron || !api.remoteControlInput) return
+  try {
+    const by = useCallStore.getState().controlledBy
+    if (by) {
+      const last = lastInputAckSent.get(by) || 0
+      if (Date.now() - last > 3000) {
+        lastInputAckSent.set(by, Date.now())
+        sendControlMessage(by, { type: 'input-ack' })
+      }
+    }
+  } catch { }
   // Permissoes do dono: mouse bloqueado derruba move/moveRel/button/wheel,
   // teclado bloqueado derruba key. Sem registro (build velha) permite tudo.
   try {
@@ -980,8 +992,23 @@ function handleControlMessage(peerId: string, raw: string) {
       const gm = grant.mouse !== false
       const gk = grant.keyboard !== false
       useCallStore.setState(state => state.controlPending === peerId
-        ? { controlling: peerId, controlPending: null, controlEndsAt: minutes > 0 ? Date.now() + minutes * 60000 : null, controlGrants: { mouse: gm, keyboard: gk } }
+        ? { controlling: peerId, controlPending: null, controlEndsAt: minutes > 0 ? Date.now() + minutes * 60000 : null, controlGrants: { mouse: gm, keyboard: gk }, controlLinkOk: null, lastInputAckAt: null }
         : {})
+      // Handshake de enlace: ping imediato; sem pong em 4s = PC remoto mudo.
+      try {
+        if (useCallStore.getState().controlling === peerId) {
+          sendControlMessage(peerId, { type: 'control-ping' })
+          window.setTimeout(() => {
+            try {
+              const st = useCallStore.getState()
+              if (st.controlling === peerId && st.controlLinkOk === null) {
+                useCallStore.setState({ controlLinkOk: false })
+                try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'PC remoto sem resposta — confira se ele atualizou o app' })) } catch { }
+              }
+            } catch { }
+          }, 4000)
+        }
+      } catch { }
       break
     }
       // Controle ativo: pede bitrate máximo ao sharer (não trava o mouse).
@@ -1062,6 +1089,21 @@ function handleControlMessage(peerId: string, raw: string) {
         const c = message as unknown as { x: number; y: number; width: number; height: number; scaleFactor?: number; visible?: boolean }
         useCallStore.setState({ remoteCursor: { ...c, visible: c.visible !== false } })
       }
+      break
+    case 'control-ping':
+      try { sendControlMessage(peerId, { type: 'control-pong' }) } catch { }
+      break
+    case 'control-pong':
+      try {
+        if (useCallStore.getState().controlling === peerId) useCallStore.setState({ controlLinkOk: true })
+      } catch { }
+      break
+    case 'input-ack':
+      try {
+        if (useCallStore.getState().controlling === peerId) {
+          useCallStore.setState({ controlLinkOk: true, lastInputAckAt: Date.now() })
+        }
+      } catch { }
       break
     case 'input':
       void executeRemoteInput(message as unknown as { it: 'move' | 'moveRel' | 'button' | 'wheel' | 'key'; x?: number; y?: number; dx?: number; dy?: number; button?: string; down?: boolean; deltaY?: number; key?: string })
@@ -1903,6 +1945,7 @@ function clearControlTimer() {
   controlTimer.id = null
 }
 const controlGrantsByPeer = new Map<string, { mouse: boolean; keyboard: boolean; clipboard: boolean }>()
+const lastInputAckSent = new Map<string, number>()
 let controlSavedMuted: boolean | null = null
 let controlSavedScreenAudio: boolean | null = null
 let gameBoostSavedFps: number | null = null
@@ -2231,7 +2274,7 @@ function stopSignalLoop() {  if (signalTimer !== null) window.clearTimeout(signa
   for (const stream of Object.values(remoteStreams)) { try { stream.getTracks().forEach(t => t.stop()) } catch { } }
   for (const stream of Object.values(remoteScreenStreams)) { try { stream.getTracks().forEach(t => t.stop()) } catch { } }
   clearControlTimer()
-  useCallStore.setState({ remoteStreams: {}, remoteScreenStreams: {}, connectionStates: {}, peerProtos: {}, sessionWatch: null, controlEndsAt: null, controlGrants: null, speakingUsers: {} })
+  useCallStore.setState({ remoteStreams: {}, remoteScreenStreams: {}, connectionStates: {}, peerProtos: {}, sessionWatch: null, controlEndsAt: null, controlGrants: null, controlLinkOk: null, lastInputAckAt: null, speakingUsers: {} })
 }
 
 // Poller rapido de chamadas recebidas: enquanto o usuario nao esta em nenhuma
@@ -2604,6 +2647,8 @@ export const useCallStore = create<CallState>((set, get) => ({
   controlSettings: loadControlSettings(),
   controlEndsAt: null,
   controlGrants: null,
+  controlLinkOk: null,
+  lastInputAckAt: null,
   speakingUsers: {},
   screenMuted: false,
   volumes: {},
@@ -2884,6 +2929,8 @@ export const useCallStore = create<CallState>((set, get) => ({
       sessionWatch: null,
       controlEndsAt: null,
       controlGrants: null,
+      controlLinkOk: null,
+      lastInputAckAt: null,
       speakingUsers: {},
       screenMuted: false,
       volumes: {},
@@ -3600,7 +3647,26 @@ export const useCallStore = create<CallState>((set, get) => ({
     }
     const currentUser = useUserStore.getState().currentUser
     set({ controlPending: peerId })
-    sendControlMessage(peerId, { type: 'request-control', userName: currentUser?.name || '' })
+    const reqPayload = { type: 'request-control', userName: currentUser?.name || '' }
+    sendControlMessage(peerId, reqPayload)
+    // Retry: pedido perdido (DC fechado na hora) nao pode falhar mudo.
+    for (const ms of [2000, 4500]) {
+      window.setTimeout(() => {
+        try {
+          const st = useCallStore.getState()
+          if (st.controlPending === peerId && !st.controlling) sendControlMessage(peerId, reqPayload)
+        } catch { }
+      }, ms)
+    }
+    window.setTimeout(() => {
+      try {
+        const st = useCallStore.getState()
+        if (st.controlPending === peerId && !st.controlling) {
+          useCallStore.setState({ controlPending: null })
+          try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Sem resposta ao pedido de controle — peça para aceitar' })) } catch { }
+        }
+      } catch { }
+    }, 12000)
   },
   acceptControlRequest: (peerId) => {
     const s = get().controlSettings
@@ -3609,7 +3675,15 @@ export const useCallStore = create<CallState>((set, get) => ({
       controlRequests: state.controlRequests.filter(r => r.peerId !== peerId),
     }))
     setupCursorRelay(peerId)
-    sendControlMessage(peerId, { type: 'control-accepted', minutes: s.minutes, mouse: s.mouse, keyboard: s.keyboard })
+    const acceptedPayload = { type: 'control-accepted', minutes: s.minutes, mouse: s.mouse, keyboard: s.keyboard }
+    sendControlMessage(peerId, acceptedPayload)
+    for (const ms of [1200, 2800]) {
+      window.setTimeout(() => {
+        try {
+          if (useCallStore.getState().controlledBy === peerId) sendControlMessage(peerId, acceptedPayload)
+        } catch { }
+      }, ms)
+    }
     controlGrantsByPeer.set(peerId, { mouse: s.mouse, keyboard: s.keyboard, clipboard: s.clipboard })
     // Microfone fechado: muta durante o controle, restaura ao revogar.
     controlSavedMuted = get().muted

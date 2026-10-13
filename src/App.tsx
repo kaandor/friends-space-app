@@ -111,6 +111,7 @@ function App() {
   const { loadCallSessions, incomingCall, setIncomingCall, callingUser, endCall, declineIncomingCall, callRejectedBy, callUser, dismissRejectedCall, callWaiting } = useCallStore()
   const callChannelId = useCallStore(s => s.channelId)
   const callServerId = useCallStore(s => s.serverId)
+  const controllingCall = useCallStore(s => s.controlling)
   const ringing = Boolean(callingUser) || Boolean(incomingCall)
   const [updateAvailable, setUpdateAvailable] = useState<{ latestVersion: string; downloadUrl: string; downloadUrlLinux: string; downloadUrlMac: string; releaseNotes: string } | null>(null)
   const [updateDownloadedVersion, setUpdateDownloadedVersion] = useState('')
@@ -1546,7 +1547,7 @@ function App() {
               </div>
             </div>
             <div className="fs-main-col" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0, minWidth: 0 }}>
-            <TopBar
+            {!controllingCall && (<TopBar
               activeUser={activeUser}
               onShowPrivacy={() => setShowPrivacy(true)}
               onShowEditProfile={() => setShowEditProfile(true)}
@@ -1571,7 +1572,7 @@ function App() {
               }}
               onJoinServer={() => setShowJoinServer(true)}
               backendOnline={backendOnline}
-            />
+            />)}
             <div className="fs-content-row" style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
             {currentServer ? (
               <ChannelSidebar server={currentServer} onOpenSettings={openEditServer} />
