@@ -118,14 +118,25 @@ ipcMain.on('remote-control-input', (_event, data) => {
     if (process.platform === 'linux') {
       const { spawnSync } = require('node:child_process')
       if (isWaylandSession() || !hasXdotool()) { notifyRemoteUnavailableOnce(); return }
-      // d.x/d.y normalizados 0..1 (relativos a captura).
-      const px = Math.round((d.x || 0) * disp.size.width)
-      const py = Math.round((d.y || 0) * disp.size.height)
-      if (d.it === 'move') spawnSync('xdotool', ['mousemove', String(px), String(py)])
-      else if (d.it === 'button') spawnSync('xdotool', [d.down ? 'mousedown' : 'mouseup', d.button === 'right' ? '3' : d.button === 'middle' ? '2' : '1'])
-      else if (d.it === 'wheel') spawnSync('xdotool', ['click', (d.deltaY || 0) > 0 ? '5' : '4'])
-      else if (d.it === 'key' && d.key) {
-        const k = linuxKeyName(d.key)
+      // Protocolo real usa d.t (o ramo antigo lia d.it e NUNCA disparava:
+      // controle no Linux nao funcionava). d.x/d.y normalizados 0..1.
+      const t = d.t || d.it
+      if (t === 'move' && typeof d.x === 'number') {
+        const px = Math.round((d.x || 0) * disp.size.width)
+        const py = Math.round((d.y || 0) * disp.size.height)
+        spawnSync('xdotool', ['mousemove', String(px), String(py)])
+      }
+      else if (t === 'moveRel') spawnSync('xdotool', ['mousemove_relative', '--', String(Math.round(d.dx || 0)), String(Math.round(d.dy || 0))])
+      else if (t === 'button') {
+        const b = d.b || d.button
+        spawnSync('xdotool', [d.down ? 'mousedown' : 'mouseup', b === 'right' ? '3' : b === 'middle' ? '2' : '1'])
+      }
+      else if (t === 'wheel') {
+        const delta = typeof d.d === 'number' ? d.d : (d.deltaY || 0)
+        spawnSync('xdotool', ['click', delta > 0 ? '5' : '4'])
+      }
+      else if (t === 'key') {
+        const k = linuxKeyName(d.k || d.key)
         if (k) spawnSync('xdotool', [d.down ? 'keydown' : 'keyup', k])
       }
       return
@@ -133,6 +144,11 @@ ipcMain.on('remote-control-input', (_event, data) => {
     // Windows: normalizado (0..1, client novo) -> pixels do display; valor
     // >1 = client em transicao mandando pixels absolutos (passa direto).
     const dd = d
+    if (dd && dd.t === 'moveRel' && typeof dd.dx === 'number' && typeof dd.dy === 'number') {
+      dd.t = 'moverel'
+      dd.dx = Math.max(-5000, Math.min(5000, Math.round(dd.dx)))
+      dd.dy = Math.max(-5000, Math.min(5000, Math.round(dd.dy)))
+    }
     if (dd && dd.t === 'move' && typeof dd.x === 'number' && typeof dd.y === 'number'
       && dd.x <= 1.01 && dd.y <= 1.01 && dd.x >= 0 && dd.y >= 0) {
       dd.x = Math.round(dd.x * disp.size.width)

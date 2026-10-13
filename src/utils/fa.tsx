@@ -7,7 +7,7 @@ import {
   DoorOpen, Download, Ellipsis, Expand, ExternalLink, FileSignature, FileText,
   Flag, Folder, FolderOpen, FolderPlus, Gamepad2, Gauge, Gavel, Globe, Grid2x2,
   Handshake, HardDrive, Hash, Headphones, Headset, Heart, House, Image, Inbox, Info,
-  Key, Lightbulb, Link, ListChecks, LoaderCircle, Lock, LogIn, LogOut, Mail, MailOpen,
+  Key, Keyboard, Lightbulb, Link, ListChecks, LoaderCircle, Lock, LogIn, LogOut, Mail, MailOpen,
   Maximize2, Mic, MicOff, Minimize2, Monitor, MousePointer2, MoveDiagonal, MoveRight, Music,
   Nfc, Paperclip, Pause, Pencil, Phone, PhoneOff, Play, Plug, Plus, Pointer, QrCode,
   RadioTower, Reply, Rocket, RotateCcw, RotateCw, SatelliteDish, Save, Scale,
@@ -90,7 +90,8 @@ const MAP: Record<string, LucideComp> = {
   // Aliases vindos de classes fa-* dinâmicas antigas
   'cloud-arrow-up': CloudUpload, 'cloud-upload': CloudUpload, upload: Upload,
   'folder-blank': Folder, 'chevron-left': ChevronRight, heart: Heart,
-  pause: Pause, play: Play, key: Key, briefcase: Briefcase, maximize: Maximize2,
+    pause: Pause,
+  keyboard: Keyboard, play: Play, key: Key, briefcase: Briefcase, maximize: Maximize2,
   'fa-user': User, 'fa-briefcase': Briefcase, 'fa-maximize': Maximize2,
 }
 

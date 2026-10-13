@@ -20,6 +20,9 @@ while ($true) {
     if ($t -eq 'move') {
       [FS]::SetCursorPos([int]$cmd.x, [int]$cmd.y) | Out-Null
     }
+    elseif ($t -eq 'moverel') {
+      [FS]::mouse_event(0x0001, [int]$cmd.dx, [int]$cmd.dy, 0, [UIntPtr]::Zero) | Out-Null
+    }
     elseif ($t -eq 'button') {
       $down = [bool]$cmd.down
       $b = [string]$cmd.b

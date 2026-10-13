@@ -77,7 +77,7 @@ export function CallView() {
     remoteStreams, remoteScreenStreams, volumes, screenError,
     toggleMute, toggleDeafen, toggleScreenShare, setVolume, endCall, switchMicDevice, setPreferredQuality, setPreferredFps, setPreferredBitrate, clearScreenError, setCleanAudioEnabled,
     toggleRecording,
-    controlRequests, controlling, controlledBy,
+    controlRequests, controlling, controlledBy, controlSettings, setControlSettings,
     requestControl, acceptControlRequest, denyControlRequest, sendControlInput, stopControlling, revokeControl,
     inviteToCall, setAnydeskMode,
   } = useCallStore()
@@ -490,7 +490,11 @@ export function CallView() {
               <div id={`call-fs-${fsKey}`} className="vc-main-screen" onContextMenu={e => { e.preventDefault(); setScreenMenu({ x: e.clientX, y: e.clientY, userId: screenUserId }) }}>
                 <video id={stageVideoId} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: controlling === screenUserId ? 'fill' : 'contain', background: '#000' }} />
                 {controlling && controlling === screenUserId && (
-                  <RemoteControlOverlay onInput={sendControlInput} />
+                  <RemoteControlOverlay
+                    onInput={sendControlInput}
+                    onExit={stopControlling}
+                    onFullscreen={() => { void toggleFullscreen(screenUserId ? `screen:${screenUserId}` : 'screen', controlling ? 'remote' : 'normal') }}
+                  />
                 )}
                 {isFullscreen && fullscreenMode === 'normal' && (
                   <button onClick={() => exitCallFullscreen()} title="Minimizar (sair da tela cheia)" className="vc-fs-exit"><Fa name="minimize" size={14} /></button>
@@ -792,7 +796,11 @@ export function CallView() {
           <div style={{ flex: 1, position: 'relative', background: '#000' }}>
             <video id={popoutVideoId} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: controlling === screenUserId ? 'fill' : 'contain' }} />
             {controlling && controlling === screenUserId && (
-              <RemoteControlOverlay onInput={sendControlInput} />
+              <RemoteControlOverlay
+                onInput={sendControlInput}
+                onExit={stopControlling}
+                onFullscreen={() => { void toggleFullscreen(screenUserId ? `screen:${screenUserId}` : 'screen', controlling ? 'remote' : 'normal') }}
+              />
             )}
           </div>
         </div>
@@ -1121,7 +1129,7 @@ export function CallView() {
       {controlledBy && (
         <div style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 210, background: '#f0b232', color: '#000', padding: '10px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', gap: 12 }}>
           <Fa name="hand-pointer" size={14} />
-          <span>Alguem esta controlando seu PC</span>
+          <span>Alguem esta controlando seu PC{controlSettings.minutes > 0 ? ` · ${controlSettings.minutes} min` : ' · ilimitado'}</span>
           <button onClick={revokeControl} style={{ background: '#ed4245', color: 'var(--text-primary)', border: 'none', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>
             Revogar agora
           </button>
@@ -1132,7 +1140,34 @@ export function CallView() {
         <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 230, width: 'min(380px, calc(100vw - 32px))', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 12, padding: 24, textAlign: 'center', color: 'var(--text-primary)', boxShadow: '0 16px 48px rgba(0,0,0,0.6)' }}>
           <Fa name="hand-pointer" size={28} style={{  color: 'var(--accent)', marginBottom: 10 }} />
           <h3 style={{ margin: '0 0 8px', fontSize: 17 }}>{controlRequests[0].userName || 'Alguem'} quer controlar seu PC</h3>
-          <p style={{ margin: '0 0 18px', fontSize: 13, color: 'var(--text-secondary)' }}>Aceitar permite que a pessoa mova o mouse e digite no seu computador durante a chamada.</p>
+          <p style={{ margin: '0 0 14px', fontSize: 13, color: 'var(--text-secondary)' }}>Aceitar permite o acesso abaixo, pelo tempo escolhido.</p>
+<div style={{ textAlign: 'left', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', margin: '0 0 16px' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Permissões do controle</div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '4px 0' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Tempo máximo:</span>
+              <select value={controlSettings.minutes} onChange={e => setControlSettings({ minutes: Number(e.target.value) })} style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', fontSize: 13 }}>
+                <option value={1}>1 minuto</option>
+                <option value={5}>5 minutos</option>
+                <option value={15}>15 minutos</option>
+                <option value={0}>Ilimitado</option>
+              </select>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '4px 0', cursor: 'pointer' }}>
+              <input type="checkbox" checked={controlSettings.audio} onChange={e => setControlSettings({ audio: e.target.checked })} /> Ouvir o áudio do meu computador
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '4px 0', cursor: 'pointer' }}>
+              <input type="checkbox" checked={controlSettings.mouse} onChange={e => setControlSettings({ mouse: e.target.checked })} /> Controlar o mouse
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '4px 0', cursor: 'pointer' }}>
+              <input type="checkbox" checked={controlSettings.keyboard} onChange={e => setControlSettings({ keyboard: e.target.checked })} /> Controlar o teclado
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '4px 0', cursor: 'pointer' }}>
+              <input type="checkbox" checked={controlSettings.clipboard} onChange={e => setControlSettings({ clipboard: e.target.checked })} /> Área de transferência
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '4px 0', cursor: 'pointer' }}>
+              <input type="checkbox" checked={controlSettings.mic} onChange={e => setControlSettings({ mic: e.target.checked })} /> Microfone aberto durante o controle
+            </label>
+          </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
             <button onClick={() => acceptControlRequest(controlRequests[0].peerId)} style={{ background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 8, padding: '10px 22px', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Aceitar</button>
             <button onClick={() => denyControlRequest(controlRequests[0].peerId)} style={{ background: '#f23f43', color: 'var(--text-primary)', border: 'none', borderRadius: 8, padding: '10px 22px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Recusar</button>

@@ -46,7 +46,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
     startCall, endCall, toggleMute, toggleDeafen, toggleScreenShare, addParticipant, removeParticipant, setSpeaking, clearScreenError,
     preferredQuality, preferredFps, preferredBitrate, setVolume,
     setPreferredQuality, setPreferredFps, setPreferredBitrate, switchMicDevice,
-    controlRequests, controlling, controlledBy, controlPending,
+    controlRequests, controlling, controlledBy, controlPending, controlSettings, setControlSettings,
     requestControl, acceptControlRequest, denyControlRequest, sendControlInput, stopControlling, revokeControl,
   } = useCallStore()
   const { currentUser } = useUserStore()
@@ -489,6 +489,8 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
               {controlling && (
                 <RemoteControlOverlay
                   onInput={sendControlInput}
+                  onExit={stopControlling}
+                  onFullscreen={() => { void toggleFullscreen(controlling ? 'remote' : 'normal') }}
                 />
               )}
               </div>
@@ -683,7 +685,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
       {controlledBy && (
         <div style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 140, background: '#ed4245', color: '#fff', padding: '10px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', gap: 12 }}>
           <Fa name="mouse-pointer" size={12} />
-          <span>Alguem esta controlando seu PC</span>
+          <span>Alguem esta controlando seu PC{controlSettings.minutes > 0 ? ` · ${controlSettings.minutes} min` : ' · ilimitado'}</span>
           <button onClick={revokeControl} style={{ background: '#fff', color: '#ed4245', border: 'none', borderRadius: 6, padding: '6px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>Revogar agora</button>
         </div>
       )}
@@ -694,7 +696,34 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 151, width: 'min(380px, calc(100vw - 32px))', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 12, padding: 24, textAlign: 'center', color: 'var(--text-primary)' }}>
             <Fa name="mouse-pointer" size={26} style={{  color: 'var(--accent)', marginBottom: 12 }} />
             <h3 style={{ margin: '0 0 8px', fontSize: 17 }}>{controlRequests[0].userName || 'Alguem'}</h3>
-            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, margin: '0 0 20px' }}>quer controlar seu PC. So aceite se confiar nesta pessoa.</p>
+            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, margin: '0 0 14px' }}>quer controlar seu PC. So aceite se confiar nesta pessoa.</p>
+<div style={{ textAlign: 'left', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', margin: '0 0 16px' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Permissões do controle</div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '4px 0' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Tempo máximo:</span>
+              <select value={controlSettings.minutes} onChange={e => setControlSettings({ minutes: Number(e.target.value) })} style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', fontSize: 13 }}>
+                <option value={1}>1 minuto</option>
+                <option value={5}>5 minutos</option>
+                <option value={15}>15 minutos</option>
+                <option value={0}>Ilimitado</option>
+              </select>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '4px 0', cursor: 'pointer' }}>
+              <input type="checkbox" checked={controlSettings.audio} onChange={e => setControlSettings({ audio: e.target.checked })} /> Ouvir o áudio do meu computador
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '4px 0', cursor: 'pointer' }}>
+              <input type="checkbox" checked={controlSettings.mouse} onChange={e => setControlSettings({ mouse: e.target.checked })} /> Controlar o mouse
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '4px 0', cursor: 'pointer' }}>
+              <input type="checkbox" checked={controlSettings.keyboard} onChange={e => setControlSettings({ keyboard: e.target.checked })} /> Controlar o teclado
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '4px 0', cursor: 'pointer' }}>
+              <input type="checkbox" checked={controlSettings.clipboard} onChange={e => setControlSettings({ clipboard: e.target.checked })} /> Área de transferência
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '4px 0', cursor: 'pointer' }}>
+              <input type="checkbox" checked={controlSettings.mic} onChange={e => setControlSettings({ mic: e.target.checked })} /> Microfone aberto durante o controle
+            </label>
+          </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button onClick={() => acceptControlRequest(controlRequests[0].peerId)} style={{ background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 8, padding: '10px 22px', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Aceitar</button>
               <button onClick={() => denyControlRequest(controlRequests[0].peerId)} style={{ background: '#f23f43', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 22px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Recusar</button>

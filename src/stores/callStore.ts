@@ -2,13 +2,22 @@ import { create } from 'zustand'
 import type { CallParticipant, CallSession, CallSessionWatch, CallSignal, User } from '../types'
 import { requestBackend } from '../services/backend'
 import { useUserStore } from './userStore'
-import { clampStreamQuality, clampStreamFps, getMaxBitrateKbps, getAstroTier } from '../utils/astro'
+import { clampStreamQuality, clampStreamFps, getMaxBitrateKbps, getMaxStreamFps, getAstroTier } from '../utils/astro'
 import { stopMediaStream, QUALITY_BITRATE_KBPS } from '../services/antiloud'
 import type { CallMode, CallQuality, CallFps } from '../services/antiloud'
 import { startCallRecording, refreshCallRecording, stopCallRecording } from '../services/callRecording'
 import { playSound } from '../services/sounds'
 import { diag } from '../utils/diagCodes'
 
+export interface ControlSettings {
+  minutes: number
+  mouse: boolean
+  keyboard: boolean
+  audio: boolean
+  clipboard: boolean
+  mic: boolean
+}
+export interface ControlGrant { mouse: boolean; keyboard: boolean }
 interface CallState {
   activeCall: boolean
   channelId: string | null
@@ -80,7 +89,12 @@ interface CallState {
   requestControl: (peerId: string) => void
   acceptControlRequest: (peerId: string) => void
   denyControlRequest: (peerId: string) => void
-  sendControlInput: (input: { it: 'move' | 'button' | 'wheel' | 'key'; x?: number; y?: number; button?: string; down?: boolean; deltaY?: number; key?: string }) => void
+  sendControlInput: (input: { it: 'move' | 'moveRel' | 'button' | 'wheel' | 'key'; x?: number; y?: number; dx?: number; dy?: number; button?: string; down?: boolean; deltaY?: number; key?: string }) => void
+  sendClipboard: (text: string) => void
+  controlSettings: ControlSettings
+  setControlSettings: (patch: Partial<ControlSettings>) => void
+  controlEndsAt: number | null
+  controlGrants: ControlGrant | null
   stopControlling: () => void
   revokeControl: () => void
   setAnydeskMode: (enabled: boolean) => void
@@ -734,9 +748,20 @@ function getElectronAPI(): { isElectron?: boolean; remoteControlInput?: (data: u
   return (window as unknown as { electronAPI?: { isElectron?: boolean; remoteControlInput?: (data: unknown) => void; remoteControlInfo?: () => Promise<{ scaleFactor?: number }>; remoteCursorFeed?: (enabled: boolean) => void; onRemoteCursor?: (cb: (data: { x: number; y: number; width: number; height: number; scaleFactor?: number }) => void) => () => void; onRemoteControlUnavailable?: (cb: () => void) => () => void } }).electronAPI
 }
 
-async function executeRemoteInput(input: { it: 'move' | 'button' | 'wheel' | 'key'; x?: number; y?: number; button?: string; down?: boolean; deltaY?: number; key?: string }) {
+async function executeRemoteInput(input: { it: 'move' | 'moveRel' | 'button' | 'wheel' | 'key'; x?: number; y?: number; dx?: number; dy?: number; button?: string; down?: boolean; deltaY?: number; key?: string }) {
   const api = getElectronAPI()
   if (!api?.isElectron || !api.remoteControlInput) return
+  // Permissoes do dono: mouse bloqueado derruba move/moveRel/button/wheel,
+  // teclado bloqueado derruba key. Sem registro (build velha) permite tudo.
+  try {
+    const by = useCallStore.getState().controlledBy
+    const g = by ? controlGrantsByPeer.get(by) : undefined
+    if (g) {
+      const isMouse = input.it === 'move' || input.it === 'moveRel' || input.it === 'button' || input.it === 'wheel'
+      if (isMouse && !g.mouse) return
+      if (input.it === 'key' && !g.keyboard) return
+    }
+  } catch { }
   if (input.it !== 'key' && typeof input.x === 'number' && typeof input.y === 'number') {
     // Normalizado 0..1 (relativo a captura): o main escala para o display
     // de destino. ANTES multiplicava aqui pelos pixels da captura e o main
@@ -744,6 +769,10 @@ async function executeRemoteInput(input: { it: 'move' | 'button' | 'wheel' | 'ke
     try {
       api.remoteControlInput({ t: 'move', x: Math.min(1, Math.max(0, input.x)), y: Math.min(1, Math.max(0, input.y)) })
     } catch { }
+  }
+  if (input.it === 'moveRel' && typeof input.dx === 'number' && typeof input.dy === 'number') {
+    try { api.remoteControlInput({ t: 'moveRel', dx: Math.round(input.dx), dy: Math.round(input.dy) }) } catch { }
+    return
   }
   if (input.it === 'button') {
     api.remoteControlInput({ t: 'button', b: input.button === 'right' ? 'right' : input.button === 'middle' ? 'middle' : 'left', down: Boolean(input.down) })
@@ -945,8 +974,16 @@ function handleControlMessage(peerId: string, raw: string) {
       playSound('call-invite')
       break
     }
-    case 'control-accepted':
-      useCallStore.setState(state => state.controlPending === peerId ? { controlling: peerId, controlPending: null } : {})
+    case 'control-accepted': {
+      const grant = message as unknown as { minutes?: unknown; mouse?: unknown; keyboard?: unknown }
+      const minutes = typeof grant.minutes === 'number' ? grant.minutes : 0
+      const gm = grant.mouse !== false
+      const gk = grant.keyboard !== false
+      useCallStore.setState(state => state.controlPending === peerId
+        ? { controlling: peerId, controlPending: null, controlEndsAt: minutes > 0 ? Date.now() + minutes * 60000 : null, controlGrants: { mouse: gm, keyboard: gk } }
+        : {})
+      break
+    }
       // Controle ativo: pede bitrate máximo ao sharer (não trava o mouse).
       try { sendControlMessage(peerId, { type: 'control-boost', on: true }) } catch { }
       break
@@ -962,6 +999,10 @@ function handleControlMessage(peerId: string, raw: string) {
           controlledBy: wasControlled ? null : state.controlledBy,
         }
       })
+      useCallStore.setState(state => (state.controlling === peerId || state.controlPending === peerId)
+        ? { controlEndsAt: null, controlGrants: null }
+        : {})
+      try { document.exitPointerLock?.() } catch { }
       // Quem controlava saiu: volta o bitrate normal desse peer.
       if (controlBoosted.delete(peerId)) void applyPeerVideoBudget(peerId)
       break
@@ -973,6 +1014,47 @@ function handleControlMessage(peerId: string, raw: string) {
       if (on) controlBoosted.add(peerId)
       else controlBoosted.delete(peerId)
       void applyPeerVideoBudget(peerId)
+      // Modo game: 60fps cravados na tela enquanto controla (se o plano
+      // permite), restaurando ao soltar. Sem renegociacao: so o teto do
+      // encoder via setParameters.
+      try {
+        const st = useCallStore.getState()
+        const me = useUserStore.getState().currentUser
+        if (on && st.screenSharing) {
+          const maxFps = getMaxStreamFps(me as never)
+          if (maxFps >= 60) {
+            if (gameBoostSavedFps === null) gameBoostSavedFps = st.preferredFps === 60 ? 60 : 30
+            for (const [, pc] of peerConnections) {
+              for (const sender of pc.getSenders()) {
+                const tr = sender.track
+                if (tr && tr.kind === 'video' && st.screenStream?.getVideoTracks().includes(tr)) {
+                  try {
+                    const par = sender.getParameters()
+                    par.encodings = (par.encodings && par.encodings.length ? par.encodings : [{}]).map(e => ({ ...e, maxFramerate: 60 }))
+                    void sender.setParameters(par).catch(() => { })
+                  } catch { }
+                }
+              }
+            }
+          }
+        } else if (!on && gameBoostSavedFps !== null) {
+          const back = gameBoostSavedFps
+          gameBoostSavedFps = null
+          const st2 = useCallStore.getState()
+          for (const [, pc2] of peerConnections) {
+            for (const sender of pc2.getSenders()) {
+              const tr = sender.track
+              if (tr && tr.kind === 'video' && st2.screenStream?.getVideoTracks().includes(tr)) {
+                try {
+                  const par = sender.getParameters()
+                  par.encodings = (par.encodings && par.encodings.length ? par.encodings : [{}]).map(e => ({ ...e, maxFramerate: back }))
+                  void sender.setParameters(par).catch(() => { })
+                } catch { }
+              }
+            }
+          }
+        }
+      } catch { }
       break
     }
     case 'cursor':
@@ -982,8 +1064,25 @@ function handleControlMessage(peerId: string, raw: string) {
       }
       break
     case 'input':
-      void executeRemoteInput(message as unknown as { it: 'move' | 'button' | 'wheel' | 'key'; x?: number; y?: number; button?: string; down?: boolean; deltaY?: number; key?: string })
+      void executeRemoteInput(message as unknown as { it: 'move' | 'moveRel' | 'button' | 'wheel' | 'key'; x?: number; y?: number; dx?: number; dy?: number; button?: string; down?: boolean; deltaY?: number; key?: string })
       break
+    case 'clipboard': {
+      // Area de transferencia do controlador -> nosso PC (permissao do dono).
+      const by = useCallStore.getState().controlledBy
+      const g = by ? controlGrantsByPeer.get(by) : undefined
+      if (g && !g.clipboard) break
+      const text = (message as unknown as { text?: unknown }).text
+      if (typeof text === 'string' && text.length > 0 && text.length < 100000) {
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            void navigator.clipboard.writeText(text).then(() => {
+              try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Texto recebido na área de transferência' })) } catch { }
+            }).catch(() => { })
+          }
+        } catch { }
+      }
+      break
+    }
   }
 }
 
@@ -1781,6 +1880,32 @@ async function applySignal(signal: CallSignal) {
 let lastSignalTs = 0
 let signalPollActive = false
 const watchResyncAt = new Map<string, number>()
+const CONTROL_SETTINGS_KEY = 'friends-space:control-settings'
+function loadControlSettings(): ControlSettings {
+  const fallback: ControlSettings = { minutes: 5, mouse: true, keyboard: true, audio: true, clipboard: true, mic: true }
+  try {
+    const raw = typeof window !== 'undefined' ? window.localStorage.getItem(CONTROL_SETTINGS_KEY) : null
+    if (!raw) return fallback
+    const p = JSON.parse(raw) as Partial<ControlSettings>
+    return {
+      minutes: typeof p.minutes === 'number' ? p.minutes : fallback.minutes,
+      mouse: p.mouse !== false,
+      keyboard: p.keyboard !== false,
+      audio: p.audio !== false,
+      clipboard: p.clipboard !== false,
+      mic: p.mic !== false,
+    }
+  } catch { return fallback }
+}
+const controlTimer: { id: number | null } = { id: null }
+function clearControlTimer() {
+  try { if (controlTimer.id !== null) window.clearTimeout(controlTimer.id) } catch { }
+  controlTimer.id = null
+}
+const controlGrantsByPeer = new Map<string, { mouse: boolean; keyboard: boolean; clipboard: boolean }>()
+let controlSavedMuted: boolean | null = null
+let controlSavedScreenAudio: boolean | null = null
+let gameBoostSavedFps: number | null = null
 const signalFailCount = new Map<string, number>()
 let syncFailCount = 0
 let syncToastAt = 0
@@ -2105,7 +2230,8 @@ function stopSignalLoop() {  if (signalTimer !== null) window.clearTimeout(signa
   const { remoteStreams, remoteScreenStreams } = useCallStore.getState()
   for (const stream of Object.values(remoteStreams)) { try { stream.getTracks().forEach(t => t.stop()) } catch { } }
   for (const stream of Object.values(remoteScreenStreams)) { try { stream.getTracks().forEach(t => t.stop()) } catch { } }
-  useCallStore.setState({ remoteStreams: {}, remoteScreenStreams: {}, connectionStates: {}, peerProtos: {}, sessionWatch: null, speakingUsers: {} })
+  clearControlTimer()
+  useCallStore.setState({ remoteStreams: {}, remoteScreenStreams: {}, connectionStates: {}, peerProtos: {}, sessionWatch: null, controlEndsAt: null, controlGrants: null, speakingUsers: {} })
 }
 
 // Poller rapido de chamadas recebidas: enquanto o usuario nao esta em nenhuma
@@ -2475,6 +2601,9 @@ export const useCallStore = create<CallState>((set, get) => ({
   connectionStates: {},
   peerProtos: {},
   sessionWatch: null,
+  controlSettings: loadControlSettings(),
+  controlEndsAt: null,
+  controlGrants: null,
   speakingUsers: {},
   screenMuted: false,
   volumes: {},
@@ -2753,6 +2882,8 @@ export const useCallStore = create<CallState>((set, get) => ({
       connectionStates: {},
       peerProtos: {},
       sessionWatch: null,
+      controlEndsAt: null,
+      controlGrants: null,
       speakingUsers: {},
       screenMuted: false,
       volumes: {},
@@ -3472,12 +3603,37 @@ export const useCallStore = create<CallState>((set, get) => ({
     sendControlMessage(peerId, { type: 'request-control', userName: currentUser?.name || '' })
   },
   acceptControlRequest: (peerId) => {
+    const s = get().controlSettings
     set(state => ({
       controlledBy: peerId,
       controlRequests: state.controlRequests.filter(r => r.peerId !== peerId),
     }))
     setupCursorRelay(peerId)
-    sendControlMessage(peerId, { type: 'control-accepted' })
+    sendControlMessage(peerId, { type: 'control-accepted', minutes: s.minutes, mouse: s.mouse, keyboard: s.keyboard })
+    controlGrantsByPeer.set(peerId, { mouse: s.mouse, keyboard: s.keyboard, clipboard: s.clipboard })
+    // Microfone fechado: muta durante o controle, restaura ao revogar.
+    controlSavedMuted = get().muted
+    if (!s.mic && !get().muted) {
+      try { get().toggleMute() } catch { }
+    }
+    // Audio da tela fechado: corta na hora, restaura ao revogar.
+    try { controlSavedScreenAudio = window.localStorage.getItem('friends-space:screen-audio') !== '0' } catch { controlSavedScreenAudio = true }
+    if (!s.audio) {
+      try { get().setScreenAudioEnabled(false) } catch { }
+    }
+    // Tempo escolhido pelo dono: expirou = revoga sozinho.
+    clearControlTimer()
+    if (s.minutes > 0) {
+      const endsAt = Date.now() + s.minutes * 60000
+      set({ controlEndsAt: endsAt })
+      controlTimer.id = window.setTimeout(() => {
+        controlTimer.id = null
+        try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Tempo de controle esgotado' })) } catch { }
+        try { get().revokeControl() } catch { }
+      }, s.minutes * 60000)
+    } else {
+      set({ controlEndsAt: null })
+    }
   },
   denyControlRequest: (peerId) => {
     set(state => ({ controlRequests: state.controlRequests.filter(r => r.peerId !== peerId) }))
@@ -3487,9 +3643,15 @@ export const useCallStore = create<CallState>((set, get) => ({
     const peerId = get().controlling
     if (peerId) sendControlMessage(peerId, { type: 'input', ...input })
   },
+  sendClipboard: (text) => {
+    const peerId = get().controlling
+    if (!peerId || !text) return
+    sendControlMessage(peerId, { type: 'clipboard', text: text.slice(0, 100000) })
+  },
   stopControlling: () => {
     const peerId = get().controlling
-    set({ controlling: null, remoteCursor: null })
+    set({ controlling: null, remoteCursor: null, controlEndsAt: null, controlGrants: null })
+    try { document.exitPointerLock?.() } catch { }
     if (peerId) {
       try { sendControlMessage(peerId, { type: 'control-boost', on: false }) } catch { }
       sendControlMessage(peerId, { type: 'control-revoked' })
@@ -3497,12 +3659,28 @@ export const useCallStore = create<CallState>((set, get) => ({
   },
   revokeControl: () => {
     const peerId = get().controlledBy
-    set({ controlledBy: null })
+    clearControlTimer()
+    controlGrantsByPeer.delete(peerId || '')
+    set({ controlledBy: null, controlEndsAt: null })
     setupCursorRelay(null)
     if (peerId) sendControlMessage(peerId, { type: 'control-revoked' })
+    // Restaura mic e audio da tela se foram fechados para o controle.
+    try {
+      if (controlSavedMuted === false && get().muted) get().toggleMute()
+    } catch { }
+    try {
+      if (controlSavedScreenAudio === true) get().setScreenAudioEnabled(true)
+    } catch { }
+    controlSavedMuted = null
+    controlSavedScreenAudio = null
   },
   setAnydeskMode: (enabled) => {
     set({ anydeskMode: enabled })
+  },
+  setControlSettings: (patch) => {
+    const next = { ...get().controlSettings, ...patch }
+    set({ controlSettings: next })
+    try { window.localStorage.setItem(CONTROL_SETTINGS_KEY, JSON.stringify(next)) } catch { }
   },
 }))
 

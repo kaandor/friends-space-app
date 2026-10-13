@@ -90,6 +90,7 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Friends Space",
       "installerIcon": "build/icon.ico",
+      "installerSidebar": "build/installer-sidebar.bmp",
       "uninstallerIcon": "build/icon.ico",
       "installerHeaderIcon": "build/icon.ico",
       "artifactName": "Friends-Space-Setup-${version}.exe",
