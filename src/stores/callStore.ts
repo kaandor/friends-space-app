@@ -817,7 +817,28 @@ async function executeRemoteInput(input: { it: 'move' | 'moveRel' | 'button' | '
 export function receiveCallData(identity: string, raw: string) {
   try { handleControlMessage(identity, raw) } catch { }
 }
+const screenAnnounceTimers = new Map<string, number>()
 function broadcastCallData(obj: unknown) {
+  try {
+    const t = (obj as { t?: unknown }).t
+    if (t === 'screen-started' || t === 'screen-stopped') {
+      const key = String(t)
+      const prev = screenAnnounceTimers.get(key)
+      if (prev !== undefined) { try { window.clearTimeout(prev) } catch { } }
+      screenAnnounceTimers.set(key, window.setTimeout(() => {
+        screenAnnounceTimers.delete(key)
+        try {
+          const st = useCallStore.getState()
+          // So reenvia se o estado continua o mesmo (evita resgatar morto).
+          if (t === 'screen-started' && !st.screenSharing) return
+          if (t === 'screen-stopped' && st.screenSharing) return
+          for (const pid of peerConnections.keys()) {
+            try { sendControlMessage(pid, obj) } catch { }
+          }
+        } catch { }
+      }, 2500))
+    }
+  } catch { }
   // DCs primeiro, de forma SINCRONA: o corpo async abaixo cede o event loop
   // no primeiro await e o endCall limpa dataChannels logo em seguida — o
   // call-leave/recording-stopped nunca chegava (fantasmas na call).
@@ -907,10 +928,13 @@ function handleControlMessage(peerId: string, raw: string) {
   }
   if (message.t === 'screen-stopped') {
     const st = useCallStore.getState()
+    const wasSharing = st.sharingPeers.includes(peerId) || Boolean(st.remoteScreenStreams[peerId])
     const { [peerId]: _s, ...rest } = st.remoteScreenStreams
     useCallStore.setState({ remoteScreenStreams: rest, sharingPeers: st.sharingPeers.filter(id => id !== peerId) })
-    try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Transmissão encerrada' })) } catch { }
-    playSound('screen-stop')
+    if (wasSharing) {
+      try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Transmissão encerrada' })) } catch { }
+      try { playSound('screen-stop') } catch { }
+    }
     return
   }
   if (message.t === 'recording-started') {
