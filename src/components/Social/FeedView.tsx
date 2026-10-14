@@ -157,11 +157,15 @@ export function FeedView({ onDriveRequired }: Props) {
     })()
   }, [currentUser])
   const handleFollow = async (s: { id: string; inviteCode: string }) => {
-    if (!currentUser || !s.inviteCode || joiningId) return
+    if (!currentUser || joiningId) return
     setJoiningId(s.id)
     try {
-      const r = await joinServer(s.inviteCode, currentUser.id)
-      if (r?.ok) setSuggested(list => list.map(x => x.id === s.id ? { ...x, member: true, members: x.members + 1 } : x))
+      const r = await joinServer(s.inviteCode || '', currentUser.id, s.id)
+      if (r?.ok) {
+        setSuggested(list => list.map(x => x.id === s.id ? { ...x, member: true, members: x.members + 1 } : x))
+      } else if (r?.error) {
+        try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: r.error })) } catch { }
+      }
     } finally { setJoiningId(null) }
   }
   const [sharePost, setSharePost] = useState<Post | null>(null)
@@ -613,11 +617,14 @@ ${u}`.trim().slice(0, 500)
                   <span style={{ padding: '6px 14px', borderRadius: 999, border: '1px solid var(--border)', color: 'var(--text-muted)', fontWeight: 800, fontSize: 12 }}>Seguindo</span>
                 ) : (
                   <button onClick={() => void (async () => {
-                    if (!currentUser || !s.inviteCode || joiningId) return
+                    if (!currentUser || joiningId) return
                     setJoiningId(s.id)
                     try {
-                      const r = await joinServer(s.inviteCode, currentUser.id)
+                      const r = await joinServer(s.inviteCode || '', currentUser.id, s.id)
                       if (r?.ok) setFoundServers(list => list.map(x => x.id === s.id ? { ...x, member: true, members: x.members + 1 } : x))
+                      else if (r?.error) {
+                        try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: r.error })) } catch { }
+                      }
                     } finally { setJoiningId(null) }
                   })()} disabled={joiningId === s.id}
                     style={{ padding: '6px 14px', borderRadius: 999, border: 'none', background: 'var(--text-primary)', color: 'var(--bg-primary)', fontWeight: 800, fontSize: 12, cursor: 'pointer', opacity: joiningId === s.id ? 0.5 : 1 }}>
