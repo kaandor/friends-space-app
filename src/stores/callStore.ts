@@ -680,18 +680,37 @@ async function sendSignalBatch(signals: OutSignal[]) {
   }
 }
 
-async function sendControlMessage(peerId: string, message: unknown) {
-  try {
-    const lk = await livekit()
-    if (lk) {
-      await lk.sendLivekitData(message, peerId)
-      return
-    }
-  } catch { }
-  try {
-    const dc = dataChannels.get(peerId)
-    if (dc && dc.readyState === 'open' && dc.bufferedAmount < 262144) dc.send(JSON.stringify(message))
-  } catch { }
+// Transporte UNICO de controle: so DataChannel (uma so programacao).
+// ANTES havia dois caminhos (LiveKit primeiro, DC depois): com room
+// semi-aberto as mensagens iam para o vazio e o controle morria mudo.
+// Agora: 'input'/'cursor' sao lossy (1 tentativa); o resto e confiavel
+// (3 tentativas em ~5s cobrem o DC abrindo).
+const IMPORTANT_CONTROL = new Set(['request-control', 'control-accepted', 'control-denied', 'control-revoked', 'control-ping', 'control-pong', 'input-ack', 'clipboard', 'screen-started', 'screen-stopped', 'media-state'])
+function sendControlMessage(peerId: string, message: unknown) {
+  let kind = ''
+  try { kind = String((message as Record<string, unknown>).type || '') } catch { }
+  const reliable = IMPORTANT_CONTROL.has(kind)
+  const deliver = (): boolean => {
+    try {
+      const dc = dataChannels.get(peerId)
+      if (dc && dc.readyState === 'open' && dc.bufferedAmount < 262144) {
+        dc.send(JSON.stringify(message))
+        return true
+      }
+    } catch { }
+    return false
+  }
+  if (deliver()) return
+  if (!reliable) return
+  let tries = 0
+  const tick = () => {
+    tries++
+    try {
+      if (deliver()) return
+      if (tries < 3) window.setTimeout(tick, tries === 1 ? 1500 : 3000)
+    } catch { }
+  }
+  window.setTimeout(tick, 1200)
 }
 
 // Versão do protocolo de call (Fase 4): vai em toda offer/answer. Peer com
@@ -795,14 +814,6 @@ async function executeRemoteInput(input: { it: 'move' | 'moveRel' | 'button' | '
   }
 }
 
-let livekitMod: typeof import('../services/livekitCall') | null = null
-async function livekit() {
-  try {
-    if (!livekitMod) livekitMod = await import('../services/livekitCall')
-    if (livekitMod.isLivekitActive()) return livekitMod
-  } catch { }
-  return null
-}
 export function receiveCallData(identity: string, raw: string) {
   try { handleControlMessage(identity, raw) } catch { }
 }
@@ -816,13 +827,8 @@ function broadcastCallData(obj: unknown) {
       try { if (dc.readyState === 'open' && dc.bufferedAmount < 262144) dc.send(payload) } catch { }
     }
   } catch { }
-  void (async () => {
-    try {
-      const lk = await livekit()
-      if (lk) { await lk.sendLivekitData(obj); return }
-    } catch { }
-  })()
 }
+// (Unificado: sem cauda LiveKit — entrega duplicada gerava toast duplo.)
 const screenRetryTimers = new Map<string, number>()
 // Turbo de tela: até este instante o poll HTTP não desacelera (mín 1s mesmo
 // com tudo conectado). Ligado ao iniciar/receber tela — tela tem que chegar
@@ -3656,16 +3662,22 @@ export const useCallStore = create<CallState>((set, get) => ({
       try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Controle remoto só no app desktop (EXE)' })) } catch { }
       return
     }
-    // Peer desconhecido (build velha sem client): tenta mesmo assim — o
-    // receptor web nega sozinho com aviso, e EXE velho aceita. Só bloqueia
-    // quem se declarou 'web' (simétrico com o downscale do budget).
-    if (peerClient.get(peerId) === 'web') {
-      try {
-        const nm = get().participants.find(p => p.userId === peerId)?.userName || 'Usuário'
+    // UMA SÓ programação: controle exige mesmo protocolo nos dois lados.
+    // Build velha (sem proto) ou navegador = falha muda garantida, então
+    // bloqueia com orientação em vez de falhar silencioso.
+    try {
+      const nm = get().participants.find(p => p.userId === peerId)?.userName || 'Usuário'
+      if (peerClient.get(peerId) === 'web') {
         window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: `${nm} está no navegador — controle remoto é EXE para EXE` }))
-      } catch { }
-      return
-    }
+        return
+      }
+      const proto = peerProto.get(peerId)
+      if (proto !== CALL_PROTO) {
+        window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: `${nm} está com o app desatualizado — peça para atualizar e tentar de novo` }))
+        try { useCallStore.setState(state => ({ peerProtos: { ...state.peerProtos, [peerId]: proto ?? 0 } })) } catch { }
+        return
+      }
+    } catch { }
     const currentUser = useUserStore.getState().currentUser
     set({ controlPending: peerId })
     const reqPayload = { type: 'request-control', userName: currentUser?.name || '' }
