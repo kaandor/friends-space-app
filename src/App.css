@@ -801,6 +801,50 @@
   html, body, #root {
     overscroll-behavior: none;
   }
+  /* Navegador mobile: sem delay de toque, scroll com momentum, altura real
+     (dvh ignora a barra do navegador), respeito ao notch e inputs sem
+     zoom brusco ao focar. */
+  html, body {
+    touch-action: manipulation;
+  }
+  #root, .fs-app-shell {
+    height: 100vh;
+    height: 100dvh;
+  }
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+  .fs-topbar {
+    padding-top: env(safe-area-inset-top);
+  }
+  .vc-bottom {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+  /* Emoji vira bottom-sheet: nunca estoura a tela nem some atrás do teclado */
+  .fs-emoji-picker {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    max-width: none !important;
+    z-index: 300 !important;
+  }
+  /* Chat respira: sidebar nunca esmaga o chat em 360px */
+  .fs-chat-card {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+  .fs-side-card {
+    max-width: 62vw !important;
+  }
+  /* Mosaico da call aproveita a altura (barra do navegador descontada) */
+  .vc-screen {
+    min-height: 0 !important;
+  }
 
   .fs-topbar-menu {
     display: flex;
@@ -1411,8 +1455,8 @@
   display: grid;
   grid-template-columns: 236px minmax(0, 1fr);
   width: min(1150px, 100%);
-  height: min(860px, calc(100vh - 24px));
-  max-height: calc(100vh - 24px);
+  height: min(860px, calc(100dvh - 24px));
+  max-height: calc(100dvh - 24px);
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 9px;
@@ -1611,7 +1655,7 @@
   display: grid;
   grid-template-columns: 254px minmax(0, 1fr);
   width: min(1180px, 100%);
-  height: min(760px, calc(100vh - 40px));
+  height: min(760px, calc(100dvh - 40px));
   margin: auto;
   overflow: hidden;
   border: 1px solid var(--border);
