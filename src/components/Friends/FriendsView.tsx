@@ -41,6 +41,7 @@ export function FriendsView() {
   const [addResults, setAddResults] = useState<User[]>([])
   const [addLoading, setAddLoading] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
+  const [showAddInline, setShowAddInline] = useState(false)
   const [addInput, setAddInput] = useState('')
   const [addMessage, setAddMessage] = useState<{ type: 'ok' | 'err', text: string } | null>(null)
   const [dmInput, setDmInput] = useState('')
@@ -246,6 +247,15 @@ export function FriendsView() {
     <div className="fs-friends-root fs-chat-card" style={{ flex: 1, display: isMobile ? 'block' : 'flex', height: '100%', minHeight: 0 }}>
       <div className="fs-friends-panel" style={{ width: 350, borderRight: '1px solid var(--border)', display: isMobile && currentDMUser ? 'none' : 'flex', flexDirection: 'column', background: 'var(--bg-secondary)', flexShrink: 0 }}>
         <div style={{ padding: '20px 16px', borderBottom: '1px solid var(--border)' }}>
+          {isMobile && (
+            <button onClick={() => setShowAddInline(v => !v)}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0 10px' }}>
+              <Plus size={15} strokeWidth={2.4} color="var(--accent)" />
+              <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', flex: 1, textAlign: 'left' }}>Adicionar amigo</span>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{showAddInline ? '▲' : '▼'}</span>
+            </button>
+          )}
+          {(!isMobile || showAddInline) && (<>
           <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>Adicionar amigo</h3>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8, lineHeight: 1.4 }}>
             Voce pode adicionar amigos com o nome de usuario deles.
@@ -307,6 +317,7 @@ export function FriendsView() {
               {addMessage.text}
             </p>
           )}
+          </>)}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-primary)', borderRadius: 12, padding: '10px 15px', margin: '16px 20px', gap: 10, border: '1px solid var(--border)' }}>
           <Search size={14} strokeWidth={2} color="var(--text-secondary)" />

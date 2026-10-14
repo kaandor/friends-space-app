@@ -845,6 +845,24 @@
   .vc-screen {
     min-height: 0 !important;
   }
+  /* Dropdowns e menus: bottom-sheet no mobile, nunca estouram a tela */
+  .fs-dropdown {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    top: auto !important;
+    bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    max-height: 70dvh !important;
+    overflow-y: auto !important;
+    z-index: 400 !important;
+  }
+  /* Grade do mosaico: 2 colunas cabem em 360px */
+  .vc-mosaic-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
+    padding: 8px !important;
+  }
 
   .fs-topbar-menu {
     display: flex;

@@ -3120,6 +3120,26 @@ export const useCallStore = create<CallState>((set, get) => ({
       kickSignalPoll()
     } else {
       try {
+        // Mobile: sem getDisplayMedia nao ha transmissao (iOS = limite da
+        // Apple). Android abre o seletor do sistema direto, sem picker desktop.
+        try {
+          const md = (navigator as unknown as { mediaDevices?: { getDisplayMedia?: unknown } } | undefined)?.mediaDevices
+          if (!md || typeof md.getDisplayMedia !== 'function') {
+            const ua = (navigator as unknown as { userAgent?: string } | undefined)?.userAgent || ''
+            const ios = /iPad|iPhone|iPod/.test(ua)
+            try {
+              window.dispatchEvent(new CustomEvent('friends-space:toast', {
+                detail: ios
+                  ? 'iPhone/iPad não permite transmitir a tela (limite da Apple) — use a câmera'
+                  : 'Este aparelho não permite transmitir a tela — use a câmera',
+              }))
+            } catch { }
+            return
+          }
+        } catch { return }
+        const coarseMobile = (() => {
+          try { return Boolean(window.matchMedia && window.matchMedia('(pointer: coarse)').matches) && Math.min(window.innerWidth, window.innerHeight) < 820 } catch { return false }
+        })()
         const { preferredQuality, preferredFps, preferredBitrate } = get()
         // Captura na resolucao escolhida: 4k captura 3840x2160 e 2k 2560x1440
         // de verdade (se o SO/driver nao suportar, o fallback OverconstrainedError
@@ -3135,6 +3155,14 @@ export const useCallStore = create<CallState>((set, get) => ({
           ...targetDim,
           frameRate: { ideal: preferredFps, max: preferredFps },
         }
+        // Mobile: trava captura em 720p30 (bateria/CPU; 1080p+ trava o celular).
+        try {
+          if (coarseMobile) {
+            (videoConstraints as { width: unknown; height: unknown; frameRate: unknown }).width = { ideal: 1280, max: 1280 }
+            ;(videoConstraints as { width: unknown; height: unknown; frameRate: unknown }).height = { ideal: 720, max: 720 }
+            ;(videoConstraints as { width: unknown; height: unknown; frameRate: unknown }).frameRate = { ideal: 30, max: 30 }
+          }
+        } catch { }
         let stream: MediaStream
         try {
           stream = await navigator.mediaDevices.getDisplayMedia({ video: videoConstraints })

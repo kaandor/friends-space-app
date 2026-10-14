@@ -5,8 +5,8 @@ import { ChannelSidebar } from '../Layout/ChannelSidebar'
 import { ChatView } from '../Chat/ChatView'
 import { VoiceChannelView } from '../Call/VoiceChannelView'
 import { FriendsView } from '../Friends/FriendsView'
+import { MobileDiscover } from '../Social/MobileDiscover'
 import { FeedView } from '../Social/FeedView'
-import { VerifiedServers } from '../Home/VerifiedServers'
 import { Compass, Plus, Mail, MessageCircle, CircleUser, Pen, Settings, LogOut, Newspaper } from 'lucide-react'
 import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
@@ -146,11 +146,7 @@ export function MobileLayout({
             <div className="fs-mobile-tab-content">
               {mobileTab === 'feed' && <FeedView onDriveRequired={onDriveRequired} />}
               {mobileTab === 'friends' && <FriendsView />}
-              {mobileTab === 'explore' && (
-                <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-                  <VerifiedServers />
-                </div>
-              )}
+              {mobileTab === 'explore' && <MobileDiscover />}
               {mobileTab === 'me' && (
                 <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, padding: 28 }}>
                   <div style={{ width: 96, height: 96, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--accent)' }}>

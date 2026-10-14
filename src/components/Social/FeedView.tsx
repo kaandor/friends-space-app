@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import { Avatar } from '../ui/Avatar'
 import { useUserStore } from '../../stores/userStore'
 import { useServerStore } from '../../stores/serverStore'
@@ -147,6 +148,7 @@ export function FeedView({ onDriveRequired }: Props) {
   const [suggested, setSuggested] = useState<Array<{ id: string; name: string; photoUrl: string; members: number; inviteCode: string; verified: boolean; member: boolean; category: string; tags: string[]; description: string }>>([])
   const [showAllSug, setShowAllSug] = useState(false)
   const [joiningId, setJoiningId] = useState<string | null>(null)
+  const isMobileFeed = useIsMobile(900)
   useEffect(() => {
     if (!currentUser) return
     void (async () => {
@@ -432,6 +434,50 @@ ${u}`.trim().slice(0, 500)
                 {s === 'global' ? 'Global' : 'Amigos'}
               </button>
             ))}
+          </div>
+        )}
+        {!searchQuery && isMobileFeed && (
+          <div style={{ background: 'var(--bg-primary)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' }}>
+            <div style={{ padding: '12px 14px 8px', fontWeight: 800, fontSize: 15, color: 'var(--text-primary)' }}>O que está acontecendo</div>
+            {visibleNews.slice(0, 3).map(n => (
+              <button key={n.link || n.title} onClick={() => { if (n.link) window.open(n.link, '_blank', 'noopener') }}
+                style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: n.link ? 'pointer' : 'default', padding: '8px 14px' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{n.source || n.category || 'Notícias'}</div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.35 }}>{n.title}</div>
+              </button>
+            ))}
+            {trending.slice(0, 3).map(t => (
+              <button key={t.tag} onClick={() => setActiveHashtag(activeHashtag === t.tag ? '' : t.tag)}
+                style={{ display: 'flex', width: '100%', alignItems: 'baseline', gap: 8, background: 'none', border: 'none', cursor: 'pointer', padding: '8px 14px', textAlign: 'left' }}>
+                <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 13 }}>{t.tag}</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{t.count} posts</span>
+              </button>
+            ))}
+            {visibleNews.length === 0 && trending.length === 0 && (
+              <div style={{ padding: '4px 14px 12px', fontSize: 12, color: 'var(--text-muted)' }}>Nenhum assunto em alta ainda.</div>
+            )}
+          </div>
+        )}
+        {!searchQuery && isMobileFeed && (
+          <div style={{ background: 'var(--bg-primary)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' }}>
+            <div style={{ padding: '12px 14px 4px', fontWeight: 800, fontSize: 15, color: 'var(--text-primary)' }}>Quem seguir</div>
+            {suggested.filter(s => !s.member).slice(0, 3).map(s => (
+              <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px' }}>
+                <Avatar src={s.photoUrl} name={s.name} size={36} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.members} membros</div>
+                </div>
+                <button onClick={() => void handleFollow(s)} disabled={joiningId === s.id}
+                  style={{ padding: '6px 14px', borderRadius: 999, border: 'none', background: 'var(--text-primary)', color: 'var(--bg-primary)', fontWeight: 800, fontSize: 12, cursor: 'pointer', opacity: joiningId === s.id ? 0.5 : 1 }}>
+                  {joiningId === s.id ? '...' : 'Seguir'}
+                </button>
+              </div>
+            ))}
+            {suggested.filter(s => !s.member).length === 0 && (
+              <div style={{ padding: '4px 14px 12px', fontSize: 12, color: 'var(--text-muted)' }}>Você já segue tudo por aqui.</div>
+            )}
+            <div style={{ height: 8 }} />
           </div>
         )}
         {!searchQuery && (

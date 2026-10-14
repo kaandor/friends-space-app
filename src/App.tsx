@@ -225,7 +225,8 @@ function App() {
         setDesktopRelease(v)
         let seen = ''
         try { seen = localStorage.getItem('friends-space:desktop-seen') || '' } catch { /* silencioso */ }
-        if (seen !== v) {
+        // Sem aviso de download no mobile (largura <= 768): app é desktop-only.
+        if (seen !== v && window.innerWidth > 768) {
           setToast(`Nova versão do app disponível (${v})! Abra Baixar app.`)
           announceUpdateNews(v, '')
         }
@@ -511,9 +512,15 @@ function App() {
       setToast(message)
     }
     window.addEventListener('friends-space:toast', onToast)
-    const onOpenDiscover = () => setShowDiscover(true)
+    const onOpenDiscover = () => { if (isMobile) setMobileTab('explore'); else setShowDiscover(true) }
     window.addEventListener('friends-space:open-discover', onOpenDiscover)
-    const onOpenDownload = () => setShowDownloadApp(true)
+    const onOpenDownload = () => {
+      if (isMobile) {
+        try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Baixe o app em um computador (Windows ou Linux)' })) } catch { }
+        return
+      }
+      setShowDownloadApp(true)
+    }
     window.addEventListener('friends-space:open-download', onOpenDownload)
     return () => { window.removeEventListener('friends-space:toast', onToast); window.removeEventListener('friends-space:open-discover', onOpenDiscover); window.removeEventListener('friends-space:open-download', onOpenDownload) }
   }, [])
@@ -1535,8 +1542,8 @@ function App() {
                 }} title="Criar servidor">
                   <Fa name="plus" size={14} />
                 </button>
-                {/* Botao de download do app — só no site (web), nao no desktop */}
-                {!isElectron && (
+                {/* Botao de download do app — só no site DESKTOP (web), nunca no desktop nem no mobile */}
+                {!isElectron && !isMobile && (
                   <button className="fs-nav-item fs-add-btn" style={{ position: 'relative' }} onClick={() => {
                     try { if (desktopRelease) localStorage.setItem('friends-space:desktop-seen', desktopRelease) } catch { /* silencioso */ }
                     setDesktopSeen(desktopRelease)
