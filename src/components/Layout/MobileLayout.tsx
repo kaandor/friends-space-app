@@ -5,8 +5,9 @@ import { ChannelSidebar } from '../Layout/ChannelSidebar'
 import { ChatView } from '../Chat/ChatView'
 import { VoiceChannelView } from '../Call/VoiceChannelView'
 import { FriendsView } from '../Friends/FriendsView'
+import { FeedView } from '../Social/FeedView'
 import { VerifiedServers } from '../Home/VerifiedServers'
-import { Compass, Plus, Mail, MessageCircle, CircleUser, Pen, Settings, LogOut } from 'lucide-react'
+import { Compass, Plus, Mail, MessageCircle, CircleUser, Pen, Settings, LogOut, Newspaper } from 'lucide-react'
 import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
 
@@ -15,10 +16,10 @@ interface MobileLayoutProps {
   currentServer: Server | null
   currentChannel: Channel | null
   servers: Server[]
-  mobileTab: 'friends' | 'explore' | 'me'
+  mobileTab: 'feed' | 'friends' | 'explore' | 'me'
   topbarHidden: boolean
   mobileContentRef: React.RefObject<HTMLDivElement | null>
-  onMobileTabChange: (t: 'friends' | 'explore' | 'me') => void
+  onMobileTabChange: (t: 'feed' | 'friends' | 'explore' | 'me') => void
   onSelectServer: (s: Server | null) => void
   onSetCurrentChannel: (c: Channel | null) => void
   onShowProfile: (tab?: ProfileTab) => void
@@ -30,6 +31,7 @@ interface MobileLayoutProps {
   onToast: (msg: string) => void
   onCreateServer: () => void
   onJoinServer: () => void
+  onDriveRequired: () => void
   backendOnline: boolean
   totalUnread: number
   theme: 'dark' | 'light'
@@ -41,7 +43,7 @@ export function MobileLayout({
   topbarHidden, mobileContentRef, onMobileTabChange,
   onSelectServer, onSetCurrentChannel, onShowProfile, onShowPrivacy, onShowEditProfile,
   onSignOut, onShowAbout, onShowHelp, onToast,
-  onCreateServer, onJoinServer, backendOnline, totalUnread, theme, onToggleTheme,
+  onCreateServer, onJoinServer, onDriveRequired, backendOnline, totalUnread, theme, onToggleTheme,
 }: MobileLayoutProps) {
   const homeActive = !currentServer && !currentChannel
   const channelActive = !!currentChannel
@@ -142,6 +144,7 @@ export function MobileLayout({
           /* Home: Amigos / Explorar / Voce */
           <>
             <div className="fs-mobile-tab-content">
+              {mobileTab === 'feed' && <FeedView onDriveRequired={onDriveRequired} />}
               {mobileTab === 'friends' && <FriendsView />}
               {mobileTab === 'explore' && (
                 <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
@@ -166,6 +169,9 @@ export function MobileLayout({
               )}
             </div>
             <div className="fs-mobile-tabbar">
+              <button className={mobileTab === 'feed' ? 'active' : ''} onClick={() => onMobileTabChange('feed')}>
+                <Newspaper size={16} strokeWidth={2} /><span>Início</span>
+              </button>
               <button className={mobileTab === 'friends' ? 'active' : ''} onClick={() => onMobileTabChange('friends')}>
                 <MessageCircle size={16} strokeWidth={2} /><span>Amigos</span>
               </button>

@@ -389,7 +389,7 @@ function App() {
     return () => { cancelled = true; window.clearTimeout(t1); window.clearInterval(t2) }
   }, [isElectron])
   // Aba ativa da navegacao inferior estilo Discord mobile (Amigos/Explorar/Voce)
-  const [mobileTab, setMobileTab] = useState<'friends' | 'explore' | 'me'>('friends')
+  const [mobileTab, setMobileTab] = useState<'feed' | 'friends' | 'explore' | 'me'>('feed')
   // Esquema de interface por scroll (mobile): rolar para BAIXO esconde a barra
   // superior (mais espaco pra conversa), rolar para CIMA mostra de novo.
   const [topbarHidden, setTopbarHidden] = useState(false)
@@ -1420,6 +1420,7 @@ function App() {
               onShowAbout={() => setShowAbout(true)}
               onShowHelp={() => setShowHelpReport(true)}
               onToast={setToast}
+              onDriveRequired={() => setDriveGateOpen(true)}
               onCreateServer={() => {
                 if (!isDriveConnected()) {
                   setPendingDriveAction(() => () => { setShowCreateServer(true) })
