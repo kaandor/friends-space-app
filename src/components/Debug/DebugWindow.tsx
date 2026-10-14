@@ -312,7 +312,7 @@ export default function DebugWindow({ onClose }: { onClose: () => void }) {
   })()
   const buildId = (() => {
     try {
-      return typeof __BUILD_ID__ !== 'undefined' ? String(__BUILD_ID__).slice(0, 12) : 'dev'
+      return typeof __BUILD_ID__ !== 'undefined' ? String(__BUILD_ID__).slice(0, 16) : 'dev'
     } catch { return 'dev' }
   })()
   const nameOf = (peerId: string) => participants.find(p => p.userId === peerId)?.userName || `${peerId.slice(0, 8)}…`

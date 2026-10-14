@@ -1519,7 +1519,14 @@ async function createPeerConnection(peerId: string, initiator: boolean) {
     const hasDisplaySurface = stream.getVideoTracks().some(track => {
       try { return Boolean((track.getSettings() as MediaTrackSettings & { displaySurface?: string }).displaySurface) } catch { return false }
     })
-    const isScreenStream = hasDisplaySurface || stream.getAudioTracks().length === 0 || Boolean(sameScreenAsBefore)
+    // Tolerante: no Electron/desktopCapturer o displaySurface vem vazio e a
+    // stream pode trazer audio do sistema — sem isso a tela caia em
+    // remoteStreams (invisivel) embora o video estivesse chegando. Se o peer
+    // anunciou screen-started E o rotulo parece tela (Screen/Window/Monitor),
+    // trata como tela. Camera ("FaceTime", etc.) continua indo pra voz.
+    const announcedSharing = useCallStore.getState().sharingPeers.includes(peerId)
+    const looksLikeScreen = stream.getVideoTracks().some(t => /screen|window|monitor|display|entire|tela|pantalla|ecran|bildschirm/i.test(t.label || ''))
+    const isScreenStream = hasDisplaySurface || stream.getAudioTracks().length === 0 || Boolean(sameScreenAsBefore) || (announcedSharing && looksLikeScreen)
     if (isScreenStream) {
       const hadScreenBefore = Boolean(useCallStore.getState().remoteScreenStreams[peerId])
       useCallStore.setState(state => {
@@ -3178,6 +3185,20 @@ export const useCallStore = create<CallState>((set, get) => ({
         // esperar ate 8s com a tela preta do outro lado.
         pokeScreenTurbo()
         kickSignalPoll()
+        // Confirma que a tela entrou nos senders: attach mudo = tela preta
+        // para todos sem nenhum erro visivel.
+        try {
+          let attached = 0
+          for (const [, pc] of peerConnections) {
+            for (const sender of pc.getSenders()) {
+              const tr = sender.track
+              if (tr && tr.kind === 'video' && stream.getVideoTracks().includes(tr)) attached++
+            }
+          }
+          if (peerConnections.size > 0 && attached === 0) {
+            diag('SHARE-FAILED-10', 'Tela não entrou na call — pare e compartilhe de novo', 'call:screen')
+          }
+        } catch { }
         videoTrack.onended = () => {
           set({ screenSharing: false, screenStream: null })
       broadcastCallData({ t: 'screen-stopped', userId: useUserStore.getState().currentUser?.id })

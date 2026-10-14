@@ -290,8 +290,8 @@
   cursor: pointer;
 }
 
-/* Logo unico (foguete + texto): foto com fundo preto — envolve em pílula
-   escura com borda para combinar com o cabeçalho claro/escuro. */
+/* Logo unico (foguete + texto, fundo transparente): sem pílula, com sombra
+   para assentar no claro/escuro. */
 .fs-topbar-logo-full {
   height: 40px;
   width: auto;
@@ -300,10 +300,11 @@
   object-position: left center;
   cursor: pointer;
   flex-shrink: 0;
-  background: #050807;
-  border: 1px solid rgba(0, 255, 136, .22);
-  border-radius: 10px;
-  padding: 3px 10px 3px 4px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.45));
 }
 
 .fs-topbar-title {

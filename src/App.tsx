@@ -1306,7 +1306,7 @@ function App() {
       {staleBuild && !isElectron && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, maxWidth: 400, width: '100%', textAlign: 'center', background: 'var(--bg-secondary)', border: '1px solid color-mix(in srgb, var(--accent) 30%, var(--border))', borderRadius: 22, padding: '32px 28px 26px', boxShadow: '0 30px 80px rgba(0,0,0,0.55)' }}>
-            <img src={assetUrl('friends-space-logo.png')} alt="Friends Space" style={{ height: 44, width: 'auto', maxWidth: '100%', objectFit: 'contain', background: '#050807', border: '1px solid rgba(0, 255, 136, .22)', borderRadius: 10, padding: '4px 10px 4px 6px' }} />
+            <img src={assetUrl('friends-space-logo.png')} alt="Friends Space" style={{ height: 44, width: 'auto', maxWidth: '100%', objectFit: 'contain', background: 'transparent', border: 'none', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.45))' }} />
             <div style={{ width: 64, height: 64, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in srgb, var(--accent) 12%, var(--bg-tertiary))', border: '2px solid var(--accent)', boxShadow: '0 0 24px color-mix(in srgb, var(--accent) 25%, transparent)' }}>
               <Fa name="rotate" size={26} style={{ color: 'var(--accent)' }} />
             </div>
