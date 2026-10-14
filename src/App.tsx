@@ -17,6 +17,7 @@ import { ChatView } from './components/Chat/ChatView'
 import { CallView } from './components/Call/CallView'
 import { CallAudioLayer } from './components/Call/CallAudioLayer'
 import { FriendsView } from './components/Friends/FriendsView'
+import { FeedView } from './components/Social/FeedView'
 import { MobileLayout } from './components/Layout/MobileLayout'
 import { ProfileView, type ProfileTab } from './components/Profile/ProfileView'
 import { AstroWindow } from './components/Profile/AstroWindow'
@@ -1578,6 +1579,8 @@ function App() {
               <ChannelSidebar server={currentServer} onOpenSettings={openEditServer} />
             ) : showUsers ? (
               <UsersView />
+            ) : isMobile ? (
+              <FeedView onDriveRequired={() => setDriveGateOpen(true)} />
             ) : (
               <FriendsView />
             )}
