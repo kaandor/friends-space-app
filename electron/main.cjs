@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, ipcMain, screen, Tray, Menu, nativeImage, Notification, desktopCapturer, session } = require('electron')
+const { app, BrowserWindow, shell, ipcMain, screen, Tray, Menu, nativeImage, Notification, desktopCapturer, session, dialog } = require('electron')
 const path = require('node:path')
 const http = require('node:http')
 const { spawn } = require('node:child_process')
@@ -572,6 +572,86 @@ function trayIconPath() {
   return undefined
 }
 
+function cmpVersions(a, b) {
+  const norm = (v) => String(v || '').trim().replace(/^[v=\s]+/, '').split('.').map(p => {
+    const n = parseInt(p, 10)
+    return Number.isFinite(n) ? n : 0
+  })
+  const x = norm(a)
+  const y = norm(b)
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    const d = (x[i] || 0) - (y[i] || 0)
+    if (d !== 0) return d > 0 ? 1 : -1
+  }
+  return 0
+}
+function backendCheckUpdate() {
+  // Fallback sem electron-updater: pergunta ao backend (mesma fonte do site).
+  return new Promise((resolve) => {
+    try {
+      const https = require('node:https')
+      const body = JSON.stringify({ action: 'checkUpdate' })
+      const req = https.request('https://friends-space.pages.dev/api/app', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+      }, (res) => {
+        let raw = ''
+        res.on('data', (c) => { raw += c })
+        res.on('end', () => {
+          try { resolve(JSON.parse(raw)) } catch { resolve(null) }
+        })
+      })
+      req.on('error', () => resolve(null))
+      req.setTimeout(15000, () => { try { req.destroy() } catch { } resolve(null) })
+      req.write(body)
+      req.end()
+    } catch { resolve(null) }
+  })
+}
+async function manualCheckForUpdates() {
+  // Botao do tray SEMPRE responde: updater, backend ou erro explicado.
+  const current = (() => { try { return app.getVersion() } catch { return '' } })()
+  try {
+    if (updater && app.isPackaged) {
+      const result = await updater.checkForUpdates()
+      const info = result && result.updateInfo ? result.updateInfo : null
+      const latest = info && info.version ? String(info.version) : ''
+      if (latest && cmpVersions(latest, current) > 0) {
+        notifyUpdate('Friends Space', 'Nova versão ' + latest + ' baixando em segundo plano.')
+        dialog.showMessageBoxSync({
+          type: 'info', title: 'Friends Space',
+          message: 'Nova versão disponível: ' + latest + ' (atual: ' + (current || '?') + '). Baixando em segundo plano.',
+        })
+      } else {
+        dialog.showMessageBoxSync({
+          type: 'info', title: 'Friends Space',
+          message: 'Você está na versão mais recente' + (current ? ' (' + current + ').' : '.'),
+        })
+      }
+      return
+    }
+  } catch (e) {
+    // cai para o fallback do backend
+  }
+  try {
+    const r = await backendCheckUpdate()
+    const latest = r && r.latestVersion ? String(r.latestVersion) : ''
+    if (latest && cmpVersions(latest, current) > 0) {
+      const url = r.downloadUrl || 'https://github.com/kaandor/update-electro/releases/latest'
+      const btn = dialog.showMessageBoxSync({
+        type: 'info', title: 'Friends Space', buttons: ['Baixar agora', 'Depois'], defaultId: 0,
+        message: 'Nova versão disponível: ' + latest + ' (atual: ' + (current || '?') + ').',
+      })
+      if (btn === 0) { try { shell.openExternal(url) } catch { } }
+    } else if (latest) {
+      dialog.showMessageBoxSync({ type: 'info', title: 'Friends Space', message: 'Você está na versão mais recente' + (current ? ' (' + current + ').' : '.') })
+    } else {
+      dialog.showMessageBoxSync({ type: 'warning', title: 'Friends Space', message: 'Não foi possível verificar agora. Tente de novo em instantes.' })
+    }
+  } catch {
+    try { dialog.showMessageBoxSync({ type: 'warning', title: 'Friends Space', message: 'Não foi possível verificar agora. Tente de novo em instantes.' }) } catch { }
+  }
+}
 function buildTray() {
   const trayIcon = trayIconPath()
   try {
@@ -592,7 +672,7 @@ function buildTray() {
       },
     },
     { type: 'separator' },
-    { label: 'Verificar atualizações', click: () => { try { if (updater && app.isPackaged) updater.checkForUpdates() } catch { } } },
+    { label: 'Verificar atualizações', click: () => { void manualCheckForUpdates() } },
     { type: 'separator' },
     { label: 'Sair', click: () => { isQuitting = true; app.quit() } },
   ])

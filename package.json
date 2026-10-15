@@ -1,7 +1,7 @@
 {
   "name": "friends-space",
   "private": true,
-  "version": "1.2.5",
+  "version": "1.2.6",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -47,6 +47,11 @@
     "wrangler": "^4.119.0"
   },
   "build": {
+    "publish": {
+      "provider": "github",
+      "owner": "kaandor",
+      "repo": "update-electro"
+    },
     "appId": "com.friends-space.app",
     "productName": "Friends Space",
     "directories": {

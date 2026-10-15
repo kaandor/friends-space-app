@@ -9,6 +9,19 @@ export interface ChangelogEntry {
 // a primeira entrada. App = Electron; Site = web.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.2.6',
+    date: '2026-10-15',
+    app: [
+      'Atualização pelo tray funcionando (com aviso do resultado)',
+      'Controle remoto unificado e verificado de ponta a ponta',
+      'Tela cheia automática ao aceitar o controle',
+    ],
+    site: [
+      'Diagnóstico com prova de entrega do controle',
+      'Feed estilo X no mobile + Descubra com busca',
+    ],
+  },
+  {
     version: '1.2.5',
     date: '2026-10-13',
     app: [

@@ -780,6 +780,13 @@ async function executeRemoteInput(input: { it: 'move' | 'moveRel' | 'button' | '
         lastInputAckSent.set(by, Date.now())
         sendControlMessage(by, { type: 'input-ack' })
       }
+      if (lastInputAckSent.get(by + ':toast') !== 1) {
+        lastInputAckSent.set(by + ':toast', 1)
+        try {
+          const nm = useCallStore.getState().participants.find(p => p.userId === by)?.userName || 'Alguém'
+          window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: `${nm} está controlando — comandos chegando` }))
+        } catch { }
+      }
     }
   } catch { }
   // Permissoes do dono: mouse bloqueado derruba move/moveRel/button/wheel,
@@ -1053,6 +1060,7 @@ function handleControlMessage(peerId: string, raw: string) {
       useCallStore.setState(state => state.controlPending === peerId ? { controlPending: null } : {})
       break
     case 'control-revoked':
+      try { lastInputAckSent.delete(peerId); lastInputAckSent.delete(peerId + ':toast') } catch { }
       useCallStore.setState(state => {
         const wasControlled = state.controlledBy === peerId
         if (wasControlled) setupCursorRelay(null)
