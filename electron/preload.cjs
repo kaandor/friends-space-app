@@ -12,7 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('remote-cursor', listener)
   },
   onRemoteControlUnavailable: (cb) => {
-    const listener = () => cb()
+    const listener = (_event, data) => cb(data && data.reason ? data.reason : 'generic')
     ipcRenderer.on('remote-control-unavailable', listener)
     return () => ipcRenderer.removeListener('remote-control-unavailable', listener)
   },

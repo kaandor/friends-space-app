@@ -829,19 +829,8 @@ const runMaintenance = (store, at = now()) => {
   if (isDegenerateStore(store)) return { ...results, skipped: true }
   const users = getAllUsers(store)
   const userMap = new Map(users.map((u) => [u.id, u]))
-  // 0) Pendentes com +7 dias: purga automática (contas dormentes de invasor).
-  // Aprovadas ou sem flag nunca entram aqui. Dev/support nunca são tocados.
-  {
-    const weekAgo = at - 7 * 86400000
-    for (const user of [...users]) {
-      if (!user || !user.id) continue
-      if (user.flags && (user.flags.dev || user.flags.support)) continue
-      if (user.approved === false && (user.createdAt || 0) < weekAgo) {
-        removeUserEverywhere(store, user.id)
-        results.removedInactiveUsers.push(user.id + ':nao-aprovado')
-      }
-    }
-  }
+  // 0) SEM PURGE de nao-aprovados: conta de gente de verdade nao se apaga
+  // sozinha. Remocao apenas manual (banUser/rejectUser) pelos devs.
   // 1) Contas sem login ha mais de 90 dias (nunca apaga dev/support/guest).
   const inactiveCutoff = at - ACCOUNT_INACTIVE_MS
   for (const user of users) {
@@ -1408,11 +1397,36 @@ const tursoRows = (res) => {
 }
 async function isIpBanned(ip) {
   if (!ip) return false
-  if (memIpBans.has(ip)) return true
+  // Auto-cura: bans automaticos antigos (CGNAT/inocentes) sao perdoados no
+  // proximo request — so ban MANUAL continua valendo. Nao ha mais trava
+  // automatica em nenhum lugar.
+  const forgiveAuto = async (reason) => {
+    if (typeof reason === 'string' && reason.startsWith('auto:')) {
+      try {
+        memIpBans.delete(ip)
+        if (isTurso()) { try { await tursoFetch('DELETE FROM ip_bans WHERE ip = ?', [ip]) } catch {} }
+      } catch {}
+      return true
+    }
+    return false
+  }
+  if (memIpBans.has(ip)) {
+    if (isTurso()) {
+      try {
+        const rows = tursoRows(await tursoFetch('SELECT reason FROM ip_bans WHERE ip = ?', [ip]))
+        if (rows.length && await forgiveAuto(rows[0] && rows[0][0])) return false
+      } catch {}
+    }
+    return true
+  }
   if (!isTurso()) return false
   try {
-    const rows = tursoRows(await tursoFetch('SELECT ip FROM ip_bans WHERE ip = ?', [ip]))
-    if (rows.length) { memIpBans.set(ip, 1); return true }
+    const rows = tursoRows(await tursoFetch('SELECT reason FROM ip_bans WHERE ip = ?', [ip]))
+    if (rows.length) {
+      if (await forgiveAuto(rows[0] && rows[0][0])) return false
+      memIpBans.set(ip, 1)
+      return true
+    }
   } catch {}
   return false
 }
@@ -1773,33 +1787,23 @@ const actions = {
           const dayAgo = now() - 86400000
           const sameIp = getAllUsers(store).filter((x) => x && x.signupIp && x.signupIp === user.signupIp && (x.createdAt || 0) >= dayAgo)
           if (user.signupIp && sameIp.length >= 5) {
-            try { await banIp(user.signupIp, 'auto: flood de contas') } catch {}
-            throw new Error('Muitas contas criadas. Tente mais tarde.')
+            // SEM TRAVA AUTOMATICA: IP compartilhado (CGNAT) e normal no Brasil.
+            // So avisa os devs; a conta entra normalmente.
+            try {
+              for (const dev of getAllUsers(store).filter((x) => x && x.flags && (x.flags.dev || x.flags.support))) {
+                addNotification(store, { toUserId: dev.id, fromUserId: user.id, fromName: user.name, fromPhoto: user.photoUrl || '', type: 'pending-user', title: `Volume alto no IP: ${user.name}`, body: `${sameIp.length} contas hoje`, data: { userId: user.id } })
+              }
+            } catch {}
           }
           const risk = scoreNewUser(store, user)
-          if (risk.score >= 70) {
-            try { if (user.signupIp) await banIp(user.signupIp, 'auto: risco ' + risk.score) } catch {}
-            removeUserEverywhere(store, user.id)
-            for (const dev of getAllUsers(store).filter((x) => x && x.flags && (x.flags.dev || x.flags.support))) {
-              addNotification(store, {
-                toUserId: dev.id,
-                fromUserId: user.id,
-                fromName: user.name,
-                fromPhoto: user.photoUrl || '',
-                type: 'pending-user',
-                title: `RECUSADA auto (risco ${risk.score}): ${user.name}`,
-                body: risk.reasons.join(', '),
-                data: { userId: user.id },
-              })
-              pushQuiet(dev.id, `RECUSADA auto (risco ${risk.score}): ${user.name}`, risk.reasons.join(', '), { url: '/' })
-            }
-            throw new Error('Conta recusada automaticamente. Fale com um dev.')
-          }
-          if (risk.score <= 0) {
-            user.approved = true
+          // SEM TRAVA AUTOMATICA: todo mundo entra (chinês, angolano, carioca,
+          // IP compartilhado). O score vira so SINAL para os devs moderarem
+          // manualmente se preciso. Nenhum ban, delete ou recusa aqui.
+          user.approved = true
+          try {
             writeUserEverywhere(store, data, user)
             upsertGlobalUser(store, user)
-          }
+          } catch {}
           for (const dev of getAllUsers(store).filter((x) => x && x.flags && (x.flags.dev || x.flags.support))) {
             addNotification(store, {
               toUserId: dev.id,
@@ -1807,11 +1811,11 @@ const actions = {
               fromName: user.name,
               fromPhoto: user.photoUrl || '',
               type: 'pending-user',
-              title: risk.score <= 0 ? `APROVADA auto (risco ${risk.score}): ${user.name}` : `Nova conta aguardando (risco ${risk.score}): ${user.name}`,
-              body: risk.score <= 0 ? 'Perfil completo e limpo.' : ('Sinais: ' + (risk.reasons.join(', ') || 'nenhum') + '. Aprove no painel dev.'),
+              title: `Nova conta (risco ${risk.score}): ${user.name}`,
+              body: 'Sinais: ' + (risk.reasons.join(', ') || 'nenhum') + '.',
               data: { userId: user.id },
             })
-            pushQuiet(dev.id, `Nova conta: ${user.name} (risco ${risk.score})`, risk.reasons.join(', ') || 'aguardando', { url: '/' })
+            pushQuiet(dev.id, `Nova conta: ${user.name} (risco ${risk.score})`, risk.reasons.join(', ') || 'ok', { url: '/' })
           }
         }
       } else {

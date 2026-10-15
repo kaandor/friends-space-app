@@ -103,11 +103,13 @@ function linuxKeyName(key) {
   if (/^F([1-9]|1[0-9]|2[0-4])$/.test(key)) return key
   return null
 }
-let rcUnavailNotified = false
-function notifyRemoteUnavailableOnce() {
-  if (rcUnavailNotified) return
-  rcUnavailNotified = true
-  try { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('remote-control-unavailable') } catch { }
+function notifyRemoteUnavailableOnce(reason) {
+  notifyRemoteUnavailableOnce._sent = notifyRemoteUnavailableOnce._sent || {}
+  const key = reason || 'generic'
+  if (notifyRemoteUnavailableOnce._sent[key]) return
+  notifyRemoteUnavailableOnce._sent[key] = true
+  try { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('remote-control-unavailable', { reason: key }) } catch { }
+  return
 }
 ipcMain.on('remote-control-input', (_event, data) => {
   try {
@@ -117,7 +119,8 @@ ipcMain.on('remote-control-input', (_event, data) => {
       : screen.getPrimaryDisplay()
     if (process.platform === 'linux') {
       const { spawnSync } = require('node:child_process')
-      if (isWaylandSession() || !hasXdotool()) { notifyRemoteUnavailableOnce(); return }
+      if (isWaylandSession()) { notifyRemoteUnavailableOnce('wayland'); return }
+      if (!hasXdotool()) { notifyRemoteUnavailableOnce('no-xdotool'); return }
       // Protocolo real usa d.t (o ramo antigo lia d.it e NUNCA disparava:
       // controle no Linux nao funcionava). d.x/d.y normalizados 0..1.
       const t = d.t || d.it

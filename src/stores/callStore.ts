@@ -260,10 +260,15 @@ function setupCursorRelay(controlledBy: string | null) {
   startCursorFeed(controlledBy)
   if (api?.onRemoteControlUnavailable && !rcUnavailOff) {
     try {
-      rcUnavailOff = api.onRemoteControlUnavailable(() => {
-        try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Controle remoto indisponivel neste Linux (Wayland ou sem xdotool) — voz e tela seguem normais' })) } catch { }
-      })
-    } catch { rcUnavailOff = null }
+      rcUnavailOff = api.onRemoteControlUnavailable((reason) => {
+        try {
+          window.dispatchEvent(new CustomEvent('friends-space:toast', {
+            detail: reason === 'no-xdotool'
+              ? 'Controle remoto precisa do pacote xdotool - instale com: sudo apt install xdotool'
+              : 'Controle remoto indisponivel nesta sessao (Wayland) - voz e tela seguem normais',
+          }))
+        } catch { }
+      })    } catch { rcUnavailOff = null }
   }
   if (!controlledBy) {
     if (rcUnavailOff) { try { rcUnavailOff() } catch { } rcUnavailOff = null }
@@ -765,8 +770,8 @@ function learnPeerClient(peerId: string, payload: unknown): void {
   } catch { }
 }
 
-function getElectronAPI(): { isElectron?: boolean; remoteControlInput?: (data: unknown) => void; remoteControlInfo?: () => Promise<{ scaleFactor?: number }>; remoteCursorFeed?: (enabled: boolean) => void; onRemoteCursor?: (cb: (data: { x: number; y: number; width: number; height: number; scaleFactor?: number }) => void) => () => void; onRemoteControlUnavailable?: (cb: () => void) => () => void } | undefined {
-  return (window as unknown as { electronAPI?: { isElectron?: boolean; remoteControlInput?: (data: unknown) => void; remoteControlInfo?: () => Promise<{ scaleFactor?: number }>; remoteCursorFeed?: (enabled: boolean) => void; onRemoteCursor?: (cb: (data: { x: number; y: number; width: number; height: number; scaleFactor?: number }) => void) => () => void; onRemoteControlUnavailable?: (cb: () => void) => () => void } }).electronAPI
+function getElectronAPI(): { isElectron?: boolean; remoteControlInput?: (data: unknown) => void; remoteControlInfo?: () => Promise<{ scaleFactor?: number }>; remoteCursorFeed?: (enabled: boolean) => void; onRemoteCursor?: (cb: (data: { x: number; y: number; width: number; height: number; scaleFactor?: number }) => void) => () => void; onRemoteControlUnavailable?: (cb: (reason: string) => void) => () => void } | undefined {
+  return (window as unknown as { electronAPI?: { isElectron?: boolean; remoteControlInput?: (data: unknown) => void; remoteControlInfo?: () => Promise<{ scaleFactor?: number }>; remoteCursorFeed?: (enabled: boolean) => void; onRemoteCursor?: (cb: (data: { x: number; y: number; width: number; height: number; scaleFactor?: number }) => void) => () => void; onRemoteControlUnavailable?: (cb: (reason: string) => void) => () => void } }).electronAPI
 }
 
 async function executeRemoteInput(input: { it: 'move' | 'moveRel' | 'button' | 'wheel' | 'key'; x?: number; y?: number; dx?: number; dy?: number; button?: string; down?: boolean; deltaY?: number; key?: string }) {
