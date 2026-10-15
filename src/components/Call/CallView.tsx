@@ -1,4 +1,5 @@
 import { Fa } from '../../utils/fa'
+import { WatchPartyBar } from './WatchPartyBar'
 import { useState, useEffect, useRef, type CSSProperties } from 'react'
 import { IconScreenShare, IconVolume, IconClose } from '../../utils/icons'
 import { useCallStore, CALL_PROTO } from '../../stores/callStore'
@@ -504,7 +505,8 @@ export function CallView() {
           ))}
           <div className={`vc-bg ${hasActiveScreen ? 'has-screenshare' : ''}`}>
             {hasActiveScreen && !popout && !showMosaic && (
-              <div id={`call-fs-${fsKey}`} className="vc-main-screen" onContextMenu={e => { e.preventDefault(); setScreenMenu({ x: e.clientX, y: e.clientY, userId: screenUserId }) }}>
+            <div id={`call-fs-${fsKey}`} className="vc-main-screen" onContextMenu={e => { e.preventDefault(); setScreenMenu({ x: e.clientX, y: e.clientY, userId: screenUserId }) }}>
+                <WatchPartyBar />
                 <video id={stageVideoId} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: controlling === screenUserId ? 'fill' : 'contain', background: '#000' }} />
                 {controlling && controlling === screenUserId && (
                   <RemoteControlOverlay

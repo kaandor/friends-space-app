@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import type { Server, Channel, ServerCategory, CallSession } from '../../types'
 import { Hash, Volume2, Headphones, Megaphone, CalendarDays, ChevronRight, ChevronDown, Pen, Folder, Trash2 } from 'lucide-react'
 import { Avatar } from '../ui/Avatar'
+import { VoicePanel } from '../Call/VoicePanel'
 import { IconAdd, IconSettings, IconMic, IconMute, IconHeadphone, IconDeafen, IconHome } from '../../utils/icons'
 import { useServerStore } from '../../stores/serverStore'
 import { useUserStore } from '../../stores/userStore'
@@ -394,6 +395,7 @@ export function ChannelSidebar({ server, onOpenSettings, onChannelSelect }: Chan
         {uncategorizedVoice.map(renderChannelRow)}
       </div>
 
+      <VoicePanel />
       <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', gap: 8 }}>
         <Avatar src={currentUser?.photoUrl || ''} name={currentUser?.name || ''} size={32} />
         <div style={{ flex: 1, minWidth: 0 }}>

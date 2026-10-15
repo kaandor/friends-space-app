@@ -19,6 +19,10 @@ export interface ControlSettings {
 }
 export interface ControlGrant { mouse: boolean; keyboard: boolean }
 export interface ControlSelftest { at: number; peer: string; dc: string; ping: string; inject: string }
+export interface WatchPartyState { videoId: string; title: string; byUserId: string; byName: string; playing: boolean; position: number; updatedAt: number }
+export interface WatchPartyState { videoId: string; title: string; byUserId: string; byName: string; playing: boolean; position: number; updatedAt: number }
+export interface WatchPartyState { videoId: string; title: string; byUserId: string; byName: string; playing: boolean; position: number; updatedAt: number }
+export interface WatchPartyState { videoId: string; title: string; byUserId: string; byName: string; playing: boolean; position: number; updatedAt: number }
 interface CallState {
   activeCall: boolean
   channelId: string | null
@@ -100,6 +104,16 @@ interface CallState {
   lastInputAckAt: number | null
   selftestResult: ControlSelftest | null
   runControlSelftest: (peerId?: string) => Promise<void>
+  cameraOn: boolean
+  cameraDevices: MediaDeviceInfo[]
+  selectedCamera: string
+  toggleCamera: (deviceId?: string) => Promise<void>
+  refreshCameraDevices: () => Promise<void>
+  watchParty: WatchPartyState | null
+  startWatchParty: (videoId: string, title?: string) => void
+  stopWatchParty: () => void
+  syncWatchParty: (patch: Partial<WatchPartyState>) => void
+  playSoundboard: (name: string) => void
   stopControlling: () => void
   revokeControl: () => void
   setAnydeskMode: (enabled: boolean) => void
@@ -693,7 +707,7 @@ async function sendSignalBatch(signals: OutSignal[]) {
 // semi-aberto as mensagens iam para o vazio e o controle morria mudo.
 // Agora: 'input'/'cursor' sao lossy (1 tentativa); o resto e confiavel
 // (3 tentativas em ~5s cobrem o DC abrindo).
-const IMPORTANT_CONTROL = new Set(['request-control', 'control-accepted', 'control-denied', 'control-revoked', 'control-ping', 'control-pong', 'input-ack', 'clipboard', 'screen-started', 'screen-stopped', 'media-state'])
+const IMPORTANT_CONTROL = new Set(['request-control', 'control-accepted', 'control-denied', 'control-revoked', 'control-ping', 'control-pong', 'input-ack', 'clipboard', 'screen-started', 'screen-stopped', 'media-state', 'watch-party', 'soundboard'])
 function sendControlMessage(peerId: string, message: unknown) {
   let kind = ''
   try { kind = String((message as Record<string, unknown>).type || '') } catch { }
@@ -1160,6 +1174,42 @@ function handleControlMessage(peerId: string, raw: string) {
     case 'input':
       void executeRemoteInput(message as unknown as { it: 'move' | 'moveRel' | 'button' | 'wheel' | 'key'; x?: number; y?: number; dx?: number; dy?: number; button?: string; down?: boolean; deltaY?: number; key?: string })
       break
+    case 'watch-party': {
+      try {
+        const w = message as unknown as { action?: string; videoId?: string; title?: string; byName?: string; playing?: boolean; position?: number }
+        if (w.action === 'stop') {
+          useCallStore.setState({ watchParty: null })
+        } else if (w.action === 'start' && typeof w.videoId === 'string' && w.videoId) {
+          const me = useCallStore.getState()
+          if (!me.watchParty || me.watchParty.videoId !== w.videoId) {
+            try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: `${w.byName || 'Alguém'} iniciou Assistir junto (YouTube)` })) } catch { }
+          }
+          useCallStore.setState({
+            watchParty: { videoId: w.videoId, title: typeof w.title === 'string' ? w.title : 'YouTube', byUserId: peerId, byName: typeof w.byName === 'string' ? w.byName : '', playing: true, position: 0, updatedAt: Date.now() },
+          })
+        } else if (w.action === 'sync') {
+          const cur = useCallStore.getState().watchParty
+          if (cur && typeof w.videoId === 'string' && cur.videoId === w.videoId) {
+            useCallStore.setState({
+              watchParty: { ...cur, playing: w.playing !== false, position: typeof w.position === 'number' ? w.position : cur.position, updatedAt: Date.now() },
+            })
+          }
+        }
+      } catch { }
+      break
+    }
+    case 'soundboard': {
+      try {
+        const n = (message as unknown as { name?: unknown }).name
+        if (typeof n === 'string' && n.length > 0 && n.length < 32) {
+          const st = useCallStore.getState()
+          if (!st.deafened) {
+            try { playSound(n as import('../services/sounds').SoundName) } catch { }
+          }
+        }
+      } catch { }
+      break
+    }
     case 'clipboard': {
       // Area de transferencia do controlador -> nosso PC (permissao do dono).
       const by = useCallStore.getState().controlledBy
@@ -2010,6 +2060,7 @@ function clearControlTimer() {
 const controlGrantsByPeer = new Map<string, { mouse: boolean; keyboard: boolean; clipboard: boolean }>()
 const lastInputAckSent = new Map<string, number>()
 let lastPongAt = 0
+const localCameraTracks = new Set<MediaStreamTrack>()
 let controlSavedMuted: boolean | null = null
 let controlSavedScreenAudio: boolean | null = null
 let gameBoostSavedFps: number | null = null
@@ -2714,6 +2765,10 @@ export const useCallStore = create<CallState>((set, get) => ({
   controlLinkOk: null,
   lastInputAckAt: null,
   selftestResult: null,
+  cameraOn: false,
+  cameraDevices: [],
+  selectedCamera: '',
+  watchParty: null,
   speakingUsers: {},
   screenMuted: false,
   volumes: {},
@@ -2974,6 +3029,10 @@ export const useCallStore = create<CallState>((set, get) => ({
       const preState = get()
       if (preState.serverId) standbyByServer.set(preState.serverId, Date.now())
     } catch { }
+    try {
+      for (const t of localCameraTracks) { try { t.stop() } catch { } }
+      localCameraTracks.clear()
+    } catch { }
     const currentUser = earlyUser
     set({
       activeCall: false,
@@ -2997,6 +3056,8 @@ export const useCallStore = create<CallState>((set, get) => ({
       controlLinkOk: null,
       lastInputAckAt: null,
       selftestResult: null,
+      cameraOn: false,
+      watchParty: null,
       speakingUsers: {},
       screenMuted: false,
       volumes: {},
@@ -3882,6 +3943,83 @@ export const useCallStore = create<CallState>((set, get) => ({
       } catch { inject = 'erro' }
       set({ selftestResult: { at: Date.now(), peer: target || '-', dc: dcState, ping, inject } })
     } catch { }
+  },
+  refreshCameraDevices: async () => {
+    try {
+      const devs = await navigator.mediaDevices.enumerateDevices()
+      set({ cameraDevices: devs.filter(d => d.kind === 'videoinput') })
+    } catch { }
+  },
+  toggleCamera: async (deviceId) => {
+    const st = get()
+    try {
+      if (st.cameraOn) {
+        // Desliga: tira a track do slot e para a captura.
+        for (const [, pc] of peerConnections) {
+          for (const sender of pc.getSenders()) {
+            const tr = sender.track
+            if (tr && tr.kind === 'video' && localCameraTracks.has(tr)) {
+              try { await sender.replaceTrack(null) } catch { }
+              try { tr.stop() } catch { }
+              localCameraTracks.delete(tr)
+            }
+          }
+        }
+        set({ cameraOn: false })
+        return
+      }
+      const constraints: MediaStreamConstraints = {
+        video: deviceId
+          ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, frameRate: { ideal: 30 } }
+          : { width: { ideal: 1280 }, frameRate: { ideal: 30 } },
+      }
+      const stream = await navigator.mediaDevices.getUserMedia(constraints)
+      const track = stream.getVideoTracks()[0]
+      if (!track) { try { stream.getTracks().forEach(t => t.stop()) } catch { } return }
+      localCameraTracks.add(track)
+      if (deviceId) set({ selectedCamera: deviceId })
+      else {
+        try {
+          const did = track.getSettings().deviceId
+          if (did) set({ selectedCamera: did })
+        } catch { }
+      }
+      try { get().attachLocalStream(new MediaStream([track])) } catch { }
+      try { await get().refreshCameraDevices() } catch { }
+      set({ cameraOn: true })
+    } catch {
+      try {
+        window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Não foi possível ligar a câmera' }))
+      } catch { }
+    }
+  },
+  startWatchParty: (videoId, title) => {
+    try {
+      const me = useUserStore.getState().currentUser
+      const wp = { videoId, title: title || 'YouTube', byUserId: me?.id || '', byName: me?.name || '', playing: true, position: 0, updatedAt: Date.now() }
+      set({ watchParty: wp })
+      broadcastCallData({ t: 'watch-party', action: 'start', videoId, title: wp.title, byName: wp.byName })
+    } catch { }
+  },
+  stopWatchParty: () => {
+    try {
+      set({ watchParty: null })
+      broadcastCallData({ t: 'watch-party', action: 'stop' })
+    } catch { }
+  },
+  syncWatchParty: (patch) => {
+    try {
+      const cur = get().watchParty
+      if (!cur) return
+      const next = { ...cur, ...patch, updatedAt: Date.now() }
+      set({ watchParty: next })
+      broadcastCallData({ t: 'watch-party', action: 'sync', videoId: next.videoId, playing: next.playing, position: Math.floor(next.position || 0) })
+    } catch { }
+  },
+  playSoundboard: (name) => {
+    // Toca aqui e para todos da call (estilo Discord).
+    try { playSound(name as import('../services/sounds').SoundName) } catch { }
+    try { broadcastCallData({ t: 'soundboard', name }) } catch { }
   },
   stopControlling: () => {
     const wasControlling = get().controlling

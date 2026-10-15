@@ -1,4 +1,5 @@
 import { Fa } from '../../utils/fa'
+import { WatchPartyBar } from './WatchPartyBar'
 import { useEffect, useRef, useCallback, useState } from 'react'
 import type { Channel } from '../../types'
 import { Avatar } from '../ui/Avatar'
@@ -37,6 +38,36 @@ function VcVolumeSlider({ value, onChange }: { value: number; onChange: (v: numb
 
 interface VoiceChannelViewProps {
   channel: Channel
+}
+
+// Tile com video da camera quando houver trilha (avatar caso contrario).
+function VoiceTileMedia({ stream, name, photo, muted }: { stream: MediaStream | null; name: string; photo: string; muted: boolean }) {
+  let hasVideo = false
+  try { hasVideo = Boolean(stream && stream.getVideoTracks().length > 0) } catch { hasVideo = false }
+  if (!hasVideo) {
+    return (
+      <div className="vc-tile-ring">
+        <Avatar src={photo} name={name} size={84} />
+      </div>
+    )
+  }
+  return (
+    <video
+      ref={el => {
+        try {
+          if (el && stream && el.srcObject !== stream) {
+            el.srcObject = stream
+            void el.play().catch(() => { })
+          }
+        } catch { }
+      }}
+      muted={muted}
+      playsInline
+      autoPlay
+      className="vc-tile-ring"
+      style={{ width: 84, height: 84, borderRadius: '50%', objectFit: 'cover', background: '#000' }}
+    />
+  )
 }
 
 export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
@@ -540,6 +571,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
           </div>
         ) : (
           <div className="vc-tiles">
+            <div style={{ gridColumn: '1 / -1' }}><WatchPartyBar /></div>
             {allParticipants.map(p => {
               const isSelf = p.userId === currentUser?.id
               const pMuted = isSelf ? muted : p.muted
@@ -548,9 +580,12 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
               const isMuted = Boolean(pMuted || pDeafened)
               return (
                 <div key={p.userId} className={`vc-tile${speaking ? ' speaking' : ''}${isMuted ? ' muted-ring' : ''}`}>
-                  <div className="vc-tile-ring">
-                    <Avatar src={p.userPhoto} name={p.userName} size={84} />
-                  </div>
+                  <VoiceTileMedia
+                    stream={(isSelf ? localStream : remoteStreams[p.userId]) || null}
+                    name={p.userName}
+                    photo={p.userPhoto}
+                    muted={isSelf}
+                  />
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7, maxWidth: '100%' }}>
                     <span className="vc-tile-name">{isSelf ? 'Você' : p.userName}</span>
                   </div>
@@ -883,6 +918,7 @@ function ScreenMosaicView({ currentUser, screenSharing, screenStream, remoteScre
 
   return (
     <div className="vc-voice-mosaic-wrap">
+      <WatchPartyBar />
       <div className="vc-voice-mosaic">
         {tiles.map(t => {
           const mp = t.remote ? liveParts.find(p => p.userId === t.id) : null
