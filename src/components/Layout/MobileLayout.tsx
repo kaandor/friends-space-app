@@ -7,8 +7,9 @@ import { VoiceChannelView } from '../Call/VoiceChannelView'
 import { FriendsView } from '../Friends/FriendsView'
 import { MobileDiscover } from '../Social/MobileDiscover'
 import { FeedView } from '../Social/FeedView'
-import { Compass, Plus, Mail, MessageCircle, CircleUser, Pen, Settings, LogOut, Newspaper } from 'lucide-react'
+import { Compass, Plus, Mail, MessageCircle, CircleUser, Pen, Settings, LogOut, Newspaper, Mic, MicOff, PhoneOff } from 'lucide-react'
 import { Avatar } from '../ui/Avatar'
+import { useCallStore } from '../../stores/callStore'
 import { Button } from '../ui/Button'
 
 interface MobileLayoutProps {
@@ -48,6 +49,11 @@ export function MobileLayout({
   const homeActive = !currentServer && !currentChannel
   const channelActive = !!currentChannel
   const serverNoChannel = !!currentServer && !currentChannel
+  const activeCall = useCallStore(s => s.activeCall)
+  const callChannelId = useCallStore(s => s.channelId)
+  const callMuted = useCallStore(s => s.muted)
+  const toggleMute = useCallStore(s => s.toggleMute)
+  const endCall = useCallStore(s => s.endCall)
 
   return (
     <div className="fs-mobile-root">
@@ -164,6 +170,44 @@ export function MobileLayout({
                 </div>
               )}
             </div>
+            {activeCall && (currentChannel as Channel | null)?.id !== callChannelId && (() => {
+              let ch = null as null | { id: string; name: string }
+              let srv = null as null | Server
+              for (const s of servers) {
+                const f = ((s.channels || []) as Array<{ id: string; name: string }>).find(c => c.id === callChannelId)
+                if (f) { ch = f; srv = s; break }
+              }
+              if (!ch) return null
+              return (
+                <button
+                  onClick={() => { if (srv) onSelectServer(srv); onSetCurrentChannel(ch as Channel) }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', background: 'var(--accent)', color: '#04120a', border: 'none', borderTop: '1px solid rgba(0,0,0,0.2)', padding: '10px 14px', cursor: 'pointer' }}
+                >
+                  <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#04120a', flexShrink: 0 }} />
+                  <span style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    Em chamada · {ch.name}
+                  </span>
+                  <span
+                    role="button" tabIndex={0}
+                    onClick={e => { e.stopPropagation(); try { toggleMute() } catch { } }}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.stopPropagation(); try { toggleMute() } catch { } } }}
+                    title={callMuted ? 'Ativar microfone' : 'Mutar'}
+                    style={{ display: 'flex', padding: 6, borderRadius: 8, background: 'rgba(0,0,0,0.18)' }}
+                  >
+                    {callMuted ? <MicOff size={15} /> : <Mic size={15} />}
+                  </span>
+                  <span
+                    role="button" tabIndex={0}
+                    onClick={e => { e.stopPropagation(); try { endCall() } catch { } }}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.stopPropagation(); try { endCall() } catch { } } }}
+                    title="Sair da call"
+                    style={{ display: 'flex', padding: 6, borderRadius: 8, background: 'rgba(0,0,0,0.28)' }}
+                  >
+                    <PhoneOff size={15} />
+                  </span>
+                </button>
+              )
+            })()}
             <div className="fs-mobile-tabbar">
               <button className={mobileTab === 'feed' ? 'active' : ''} onClick={() => onMobileTabChange('feed')}>
                 <Newspaper size={16} strokeWidth={2} /><span>Início</span>
