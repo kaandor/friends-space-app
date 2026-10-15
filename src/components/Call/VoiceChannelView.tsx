@@ -504,14 +504,14 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
                     ) : null
                   )}
                 </div>
+              </div>
+              )}
               {controlling && (
                 <RemoteControlOverlay
                   onInput={sendControlInput}
                   onExit={stopControlling}
                   onFullscreen={() => { void toggleFullscreen(controlling ? 'remote' : 'normal') }}
                 />
-              )}
-              </div>
               )}
             {!controlling && !hasAnyScreenShare && (
             <div className="vc-people-strip">

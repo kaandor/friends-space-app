@@ -294,7 +294,7 @@ export function CreateServerModal({ open, onClose, onCreate }: CreateServerModal
               onChange={e => { e.target.value = ''; handleFile('icon', e) }}
             />
             <input
-              ref={bannerInputRef} type="file" accept="image/png,image/jpeg"
+              ref={bannerInputRef} type="file" accept="image/*"
               style={{ display: 'none' }}
               onChange={e => { e.target.value = ''; handleFile('banner', e) }}
             />

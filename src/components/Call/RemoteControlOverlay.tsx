@@ -35,10 +35,39 @@ export function RemoteControlOverlay({ onInput, onExit, onFullscreen }: {
   const [locked, setLocked] = useState(false)
   const [muted, setMuted] = useState(false)
   const [now, setNow] = useState(() => Date.now())
+  // Tela cheia 100% limpa: barra some sozinha apos 3.5s parado e VOLTA ao
+  // mover o mouse (atalhos sempre alcancaveis, nunca travam a visao).
+  const [isFs, setIsFs] = useState(false)
+  const [idleHide, setIdleHide] = useState(false)
+  const idleTimer = useRef<number | null>(null)
 
   useEffect(() => {
     ref.current?.focus()
   }, [])
+  useEffect(() => {
+    const onFs = () => {
+      try { setIsFs(Boolean(document.fullscreenElement)) } catch { }
+      setIdleHide(false)
+    }
+    try { setIsFs(Boolean(document.fullscreenElement)) } catch { }
+    document.addEventListener('fullscreenchange', onFs)
+    return () => document.removeEventListener('fullscreenchange', onFs)
+  }, [])
+  useEffect(() => {
+    if (!isFs) { setIdleHide(false); return }
+    const poke = () => {
+      setIdleHide(false)
+      try { if (idleTimer.current !== null) window.clearTimeout(idleTimer.current) } catch { }
+      idleTimer.current = window.setTimeout(() => setIdleHide(true), 3500)
+    }
+    poke()
+    const el = ref.current
+    el?.addEventListener('mousemove', poke)
+    return () => {
+      el?.removeEventListener('mousemove', poke)
+      try { if (idleTimer.current !== null) window.clearTimeout(idleTimer.current) } catch { }
+    }
+  }, [isFs])
 
   // Countdown do tempo concedido pelo dono.
   useEffect(() => {
@@ -237,8 +266,8 @@ export function RemoteControlOverlay({ onInput, onExit, onFullscreen }: {
         </svg>
       </div>
 
-      {/* Barra do controlador (estilo RustDesk) */}
-      <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(0,0,0,0.72)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 10, padding: 6, pointerEvents: 'auto', zIndex: 47 }}>
+      {/* Barra do controlador (estilo RustDesk) — some no fullscreen parado */}
+      <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(0,0,0,0.72)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 10, padding: 6, pointerEvents: isFs && idleHide ? 'none' : 'auto', opacity: isFs && idleHide ? 0 : 1, transition: 'opacity 0.3s', zIndex: 47 }}>
         <button title="Focar teclado (digitar no PC remoto)" onClick={() => { try { ref.current?.focus() } catch { } }} style={toolBtn(false)}>
           <Fa name="keyboard" size={12} /> Teclado
         </button>
@@ -259,8 +288,8 @@ export function RemoteControlOverlay({ onInput, onExit, onFullscreen }: {
         </button>
       </div>
 
-      {/* Ajuda + countdown */}
-      <div style={{ position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.6)', borderRadius: 8, padding: '5px 12px', color: 'var(--text-secondary)', fontSize: 10.5, pointerEvents: 'none', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 10 }}>
+      {/* Ajuda + countdown + atalhos — some no fullscreen parado */}
+      <div style={{ position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.6)', borderRadius: 8, padding: '5px 12px', color: 'var(--text-secondary)', fontSize: 10.5, pointerEvents: 'none', whiteSpace: 'normal', display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 10, maxWidth: 'calc(100% - 24px)', textAlign: 'center', opacity: isFs && idleHide ? 0 : 1, transition: 'opacity 0.3s' }}>
         <span><b style={{ color: '#fff' }}>Ctrl+Shift+C</b> parar controle</span>
         <span><b style={{ color: '#fff' }}>Ctrl+Shift+Z</b> sair do remoto</span>
         <span title={controlLinkOk === false ? 'PC remoto sem resposta' : lastInputAckAt && Date.now() - lastInputAckAt < 8000 ? 'Comandos chegando no PC remoto' : 'Enlace com o PC remoto'}>

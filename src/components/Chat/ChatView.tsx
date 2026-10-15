@@ -79,6 +79,8 @@ export function ChatView({ channel }: ChatViewProps) {
   const [reactFor, setReactFor] = useState<Message | null>(null)
   const { open: openUserMenu } = useUserMenuStore()
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const stickRef = useRef(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -135,8 +137,18 @@ export function ChatView({ channel }: ChatViewProps) {
   }, [channel.id, loadMessages, loadUnread, markChannelRead])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (stickRef.current) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+  // Light Speed: tempo real no canal aberto (3s com aba visivel).
+  useEffect(() => {
+    if (!channel?.id) return
+    const t = window.setInterval(() => {
+      try {
+        if (document.visibilityState === 'visible') void loadMessages(channel.id)
+      } catch { }
+    }, 3000)
+    return () => window.clearInterval(t)
+  }, [channel?.id, loadMessages])
 
   const isMediaMsg = (msg: Message) => Boolean(msg.attachmentUrl) || Boolean(extractMediaUrl(msg.content))
 
@@ -474,7 +486,12 @@ export function ChatView({ channel }: ChatViewProps) {
         )}
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column' }}>
+      <div ref={scrollRef} onScroll={() => {
+        try {
+          const el = scrollRef.current
+          if (el) stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+        } catch { }
+      }} style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column' }}>
         {groupedMessages.length === 0 && (
           <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 40 }}>
             <div style={{ width: 64, height: 64, background: 'var(--bg-hover)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: 'var(--text-secondary)', margin: '0 auto 16px' }}>

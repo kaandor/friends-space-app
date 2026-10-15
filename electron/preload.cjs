@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('remote-cursor', listener)
     return () => ipcRenderer.removeListener('remote-cursor', listener)
   },
+  remoteControlSelftest: () => ipcRenderer.invoke('remote-control-selftest'),
   onRemoteControlUnavailable: (cb) => {
     const listener = (_event, data) => cb(data && data.reason ? data.reason : 'generic')
     ipcRenderer.on('remote-control-unavailable', listener)

@@ -535,6 +535,27 @@ ipcMain.handle('update:install', () => {
   } catch { return false }
 })
 
+ipcMain.handle('remote-control-selftest', () => {
+  // Autoteste SEM mover o mouse: diz se a injecao tem como funcionar.
+  try {
+    let display = null
+    try {
+      const disp = screen.getPrimaryDisplay()
+      display = disp ? { width: disp.size.width, height: disp.size.height, scaleFactor: disp.scaleFactor || 1 } : null
+    } catch { }
+    if (process.platform === 'win32') {
+      const proc = ensureInputProc()
+      const alive = Boolean(proc && !proc.killed && proc.stdin && proc.stdin.writable)
+      return { ok: true, platform: 'win32', psAlive: alive, display }
+    }
+    if (process.platform === 'linux') {
+      return { ok: true, platform: 'linux', wayland: isWaylandSession(), xdotool: hasXdotool(), display }
+    }
+    return { ok: true, platform: process.platform, unsupported: true, display }
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e || 'erro') }
+  }
+})
 ipcMain.handle('app:version', () => {
   try { return app.getVersion() } catch { return '1.0.0' }
 })

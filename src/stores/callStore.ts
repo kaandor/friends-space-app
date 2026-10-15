@@ -18,6 +18,7 @@ export interface ControlSettings {
   mic: boolean
 }
 export interface ControlGrant { mouse: boolean; keyboard: boolean }
+export interface ControlSelftest { at: number; peer: string; dc: string; ping: string; inject: string }
 interface CallState {
   activeCall: boolean
   channelId: string | null
@@ -97,6 +98,8 @@ interface CallState {
   controlGrants: ControlGrant | null
   controlLinkOk: boolean | null
   lastInputAckAt: number | null
+  selftestResult: ControlSelftest | null
+  runControlSelftest: (peerId?: string) => Promise<void>
   stopControlling: () => void
   revokeControl: () => void
   setAnydeskMode: (enabled: boolean) => void
@@ -770,8 +773,8 @@ function learnPeerClient(peerId: string, payload: unknown): void {
   } catch { }
 }
 
-function getElectronAPI(): { isElectron?: boolean; remoteControlInput?: (data: unknown) => void; remoteControlInfo?: () => Promise<{ scaleFactor?: number }>; remoteCursorFeed?: (enabled: boolean) => void; onRemoteCursor?: (cb: (data: { x: number; y: number; width: number; height: number; scaleFactor?: number }) => void) => () => void; onRemoteControlUnavailable?: (cb: (reason: string) => void) => () => void } | undefined {
-  return (window as unknown as { electronAPI?: { isElectron?: boolean; remoteControlInput?: (data: unknown) => void; remoteControlInfo?: () => Promise<{ scaleFactor?: number }>; remoteCursorFeed?: (enabled: boolean) => void; onRemoteCursor?: (cb: (data: { x: number; y: number; width: number; height: number; scaleFactor?: number }) => void) => () => void; onRemoteControlUnavailable?: (cb: (reason: string) => void) => () => void } }).electronAPI
+function getElectronAPI(): { isElectron?: boolean; remoteControlInput?: (data: unknown) => void; remoteControlInfo?: () => Promise<{ scaleFactor?: number }>; remoteCursorFeed?: (enabled: boolean) => void; onRemoteCursor?: (cb: (data: { x: number; y: number; width: number; height: number; scaleFactor?: number }) => void) => () => void; onRemoteControlUnavailable?: (cb: (reason: string) => void) => () => void; remoteControlSelftest?: () => Promise<unknown> } | undefined {
+  return (window as unknown as { electronAPI?: { isElectron?: boolean; remoteControlInput?: (data: unknown) => void; remoteControlInfo?: () => Promise<{ scaleFactor?: number }>; remoteCursorFeed?: (enabled: boolean) => void; onRemoteCursor?: (cb: (data: { x: number; y: number; width: number; height: number; scaleFactor?: number }) => void) => () => void; onRemoteControlUnavailable?: (cb: (reason: string) => void) => () => void; remoteControlSelftest?: () => Promise<unknown> } }).electronAPI
 }
 
 async function executeRemoteInput(input: { it: 'move' | 'moveRel' | 'button' | 'wheel' | 'key'; x?: number; y?: number; dx?: number; dy?: number; button?: string; down?: boolean; deltaY?: number; key?: string }) {
@@ -1142,6 +1145,7 @@ function handleControlMessage(peerId: string, raw: string) {
       try { sendControlMessage(peerId, { type: 'control-pong' }) } catch { }
       break
     case 'control-pong':
+      try { lastPongAt = Date.now() } catch { }
       try {
         if (useCallStore.getState().controlling === peerId) useCallStore.setState({ controlLinkOk: true })
       } catch { }
@@ -2005,6 +2009,7 @@ function clearControlTimer() {
 }
 const controlGrantsByPeer = new Map<string, { mouse: boolean; keyboard: boolean; clipboard: boolean }>()
 const lastInputAckSent = new Map<string, number>()
+let lastPongAt = 0
 let controlSavedMuted: boolean | null = null
 let controlSavedScreenAudio: boolean | null = null
 let gameBoostSavedFps: number | null = null
@@ -2333,7 +2338,7 @@ function stopSignalLoop() {  if (signalTimer !== null) window.clearTimeout(signa
   for (const stream of Object.values(remoteStreams)) { try { stream.getTracks().forEach(t => t.stop()) } catch { } }
   for (const stream of Object.values(remoteScreenStreams)) { try { stream.getTracks().forEach(t => t.stop()) } catch { } }
   clearControlTimer()
-  useCallStore.setState({ remoteStreams: {}, remoteScreenStreams: {}, connectionStates: {}, peerProtos: {}, sessionWatch: null, controlEndsAt: null, controlGrants: null, controlLinkOk: null, lastInputAckAt: null, speakingUsers: {} })
+  useCallStore.setState({ remoteStreams: {}, remoteScreenStreams: {}, connectionStates: {}, peerProtos: {}, sessionWatch: null, controlEndsAt: null, controlGrants: null, controlLinkOk: null, lastInputAckAt: null, selftestResult: null, speakingUsers: {} })
 }
 
 // Poller rapido de chamadas recebidas: enquanto o usuario nao esta em nenhuma
@@ -2708,6 +2713,7 @@ export const useCallStore = create<CallState>((set, get) => ({
   controlGrants: null,
   controlLinkOk: null,
   lastInputAckAt: null,
+  selftestResult: null,
   speakingUsers: {},
   screenMuted: false,
   volumes: {},
@@ -2990,6 +2996,7 @@ export const useCallStore = create<CallState>((set, get) => ({
       controlGrants: null,
       controlLinkOk: null,
       lastInputAckAt: null,
+      selftestResult: null,
       speakingUsers: {},
       screenMuted: false,
       volumes: {},
@@ -3838,6 +3845,43 @@ export const useCallStore = create<CallState>((set, get) => ({
     const peerId = get().controlling
     if (!peerId || !text) return
     sendControlMessage(peerId, { type: 'clipboard', text: text.slice(0, 100000) })
+  },
+  runControlSelftest: async (peerId) => {
+    // Autoteste fim a fim do controle: DC + ping/pong + injecao local.
+    // Resultado vai para o Debug (selftestResult).
+    try {
+      const st = get()
+      const target = peerId || st.controlling || [...peerConnections.keys()][0] || ''
+      const dc = target ? dataChannels.get(target) : undefined
+      const dcState = !target ? 'sem peer' : (!dc ? 'sem canal' : dc.readyState)
+      let ping = '...'
+      if (target && dc && dc.readyState === 'open') {
+        lastPongAt = 0
+        sendControlMessage(target, { type: 'control-ping' })
+        const t0 = Date.now()
+        while (Date.now() - t0 < 3000) {
+          await new Promise(r => window.setTimeout(r, 200))
+          if (lastPongAt > 0) break
+        }
+        ping = lastPongAt > 0 ? 'pong ok' : 'sem pong'
+      } else {
+        ping = 'sem DC'
+      }
+      let inject = '...'
+      try {
+        const api = getElectronAPI()
+        if (!api?.isElectron) inject = 'web: sem injecao (normal)'
+        else if (!api.remoteControlSelftest) inject = 'preload velho: atualize o app'
+        else {
+          const r = (await api.remoteControlSelftest()) as Record<string, unknown> | null
+          if (!r || r.ok !== true) inject = 'falha: ' + String((r as Record<string, unknown> | null)?.error || '?')
+          else if (r.platform === 'win32') inject = (r as Record<string, unknown>).psAlive ? 'ps1 pronto' : 'ps1 MORTO'
+          else if (r.platform === 'linux') inject = (r as Record<string, unknown>).wayland ? 'Wayland: sem injecao' : ((r as Record<string, unknown>).xdotool ? 'xdotool ok' : 'sem xdotool')
+          else inject = 'SO sem suporte: ' + String(r.platform || '?')
+        }
+      } catch { inject = 'erro' }
+      set({ selftestResult: { at: Date.now(), peer: target || '-', dc: dcState, ping, inject } })
+    } catch { }
   },
   stopControlling: () => {
     const wasControlling = get().controlling

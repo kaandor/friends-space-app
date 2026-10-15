@@ -193,6 +193,25 @@ export function FeedView({ onDriveRequired }: Props) {
     if (searchQuery && searchTab === 'servidores') return
     setPosts([]); setHasMore(true); void refreshFeed(false)
   }, [activeHashtag, scope, searchQuery, searchTab])
+  // Refresh automatico do feed a cada 5s (silencioso: sem skeleton, sem
+  // pulo de scroll). Pausa com busca, postando ou aba oculta.
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      try {
+        if (document.visibilityState !== 'visible') return
+        if (searchQuery || posting) return
+        if (searchTab === 'pessoas' || searchTab === 'servidores') return
+        void (async () => {
+          try {
+            const res = await requestBackend<{ posts: Post[] }>('getFeed', { userId: currentUser?.id || '', limit: 25, scope, sort: searchTab === 'recente' ? 'recent' : undefined, mediaOnly: searchTab === 'midia' ? true : undefined })
+            const fresh = res?.posts || []
+            if (fresh.length > 0) setPosts(fresh)
+          } catch { /* mantem lista atual */ }
+        })()
+      } catch { }
+    }, 5000)
+    return () => window.clearInterval(t)
+  }, [searchQuery, posting, searchTab, scope, currentUser])
   useEffect(() => {
     if (!currentUser || !searchQuery) return
     if (searchTab === 'servidores') {

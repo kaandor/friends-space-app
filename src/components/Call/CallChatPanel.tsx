@@ -27,13 +27,25 @@ export function CallChatPanel({ channel, onClose }: { channel: Channel; onClose:
   const allEmojis = collectAllServerEmojis()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const endRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const stickRef = useRef(true)
 
   useEffect(() => {
     loadMessages(channel.id)
   }, [channel.id, loadMessages])
+  // Light Speed: tempo real no chat da call (3s com aba visivel).
+  useEffect(() => {
+    if (!channel?.id) return
+    const t = window.setInterval(() => {
+      try {
+        if (document.visibilityState === 'visible') void loadMessages(channel.id)
+      } catch { }
+    }, 3000)
+    return () => window.clearInterval(t)
+  }, [channel?.id, loadMessages])
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (stickRef.current) endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
   const send = async () => {
@@ -128,7 +140,12 @@ export function CallChatPanel({ channel, onClose }: { channel: Channel; onClose:
         <button onClick={onClose} title="Fechar chat" style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4, fontSize: 15 }}><Fa name="xmark" size={14} /></button>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div ref={scrollRef} onScroll={() => {
+        try {
+          const el = scrollRef.current
+          if (el) stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+        } catch { }
+      }} style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {messages.length === 0 && (
           <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, paddingTop: 30 }}>
             Sem mensagens ainda. Escreva algo!

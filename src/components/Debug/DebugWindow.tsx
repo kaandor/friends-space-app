@@ -226,6 +226,8 @@ export default function DebugWindow({ onClose }: { onClose: () => void }) {
   const [bugText, setBugText] = useState('')
   const [bugState, setBugState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [turnTest, setTurnTest] = useState<{ running: boolean; text: string }>({ running: false, text: '' })
+  const selftestResult = useCallStore(s => s.selftestResult)
+  const [selftestRunning, setSelftestRunning] = useState(false)
 
   const runTurnTest = useCallback(async () => {
     if (turnTest.running) return
@@ -393,6 +395,26 @@ export default function DebugWindow({ onClose }: { onClose: () => void }) {
                 <b style={{ color: qualityColor(avgLatency, 150, 400) }}>
                   {avgLatency != null ? `${avgLatency} ms` : '—'} / {maxLatency != null ? `${maxLatency} ms` : '—'}
                 </b>
+              </Row>
+              <Row label="Controle remoto">
+                <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <b style={{ color: selftestResult ? (selftestResult.ping === 'pong ok' ? 'var(--accent)' : '#f0b232') : 'var(--text-muted)', fontSize: 12 }}>
+                    {selftestRunning ? 'testando...' : selftestResult
+                      ? `DC ${selftestResult.dc} · ${selftestResult.ping} · ${selftestResult.inject}`
+                      : 'não testado'}
+                  </b>
+                  <button
+                    onClick={() => {
+                      if (selftestRunning) return
+                      setSelftestRunning(true)
+                      void useCallStore.getState().runControlSelftest().catch(() => { }).finally(() => setSelftestRunning(false))
+                    }}
+                    disabled={selftestRunning}
+                    style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 10px', fontSize: 11, fontWeight: 700, cursor: selftestRunning ? 'wait' : 'pointer', opacity: selftestRunning ? 0.6 : 1 }}
+                  >
+                    {selftestRunning ? '...' : 'Testar controle'}
+                  </button>
+                </span>
               </Row>
               <Row label="TURN (relay)">
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

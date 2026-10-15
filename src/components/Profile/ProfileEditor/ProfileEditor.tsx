@@ -909,6 +909,14 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
         reader.onerror = rej;
         reader.readAsDataURL(file);
       });
+      // GIF pula o crop (canvas mataria a animacao): usa direto.
+      if (file.type === 'image/gif') {
+        if (kind === "avatar") setPhotoUrl(dataUrl);
+        else setBannerUrl(dataUrl);
+        notify("GIF aplicado! Clique em Salvar.");
+        e.target.value = "";
+        return;
+      }
       if (kind === "avatar") {
         setPhotoUrl(dataUrl);
         setCropShape("circle");
