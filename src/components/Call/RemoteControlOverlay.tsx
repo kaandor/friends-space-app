@@ -112,7 +112,7 @@ export function RemoteControlOverlay({ onInput, onExit, onFullscreen }: {
       return
     }
     const t = Date.now()
-    if (t - lastSent.current < 33) return
+    if (t - lastSent.current < 20) return // LIGHT SPEED: 50 comandos/s
     lastSent.current = t
     const { x, y } = coords(e)
     onInput({ it: 'move', x, y })

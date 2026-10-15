@@ -4,8 +4,8 @@ import { Avatar } from '../ui/Avatar'
 import { useUserStore } from '../../stores/userStore'
 import { useServerStore } from '../../stores/serverStore'
 import { requestBackend } from '../../services/backend'
-import { uploadToDrive, toImageUrl, isDriveConnected } from '../../services/driveService'
-import { getAstroTier } from '../../utils/astro'
+import { uploadToDriveWithProgress, toImageUrl, isDriveConnected } from '../../services/driveService'
+import { getAstroTier, assertUploadLimit } from '../../utils/astro'
 import { Image, ListChecks, Smile, Calendar, MapPin, Flag, Paperclip, Repeat2, Heart, BarChart3, Bookmark, Upload, Search, Newspaper, X, Trash2, Rocket } from 'lucide-react'
 import { klipyEnabled } from '../../services/klipy'
 import { KlipyPicker } from '../Chat/KlipyPicker'
@@ -149,6 +149,7 @@ export function FeedView({ onDriveRequired }: Props) {
   const [showAllSug, setShowAllSug] = useState(false)
   const [joiningId, setJoiningId] = useState<string | null>(null)
   const isMobileFeed = useIsMobile(900)
+  const [uploadPct, setUploadPct] = useState<number | null>(null)
   useEffect(() => {
     if (!currentUser) return
     void (async () => {
@@ -231,17 +232,29 @@ export function FeedView({ onDriveRequired }: Props) {
     // Se tem mídia anexada e precisa do Drive, abre o gate
     if ((attachedFile || genericFile) && !isDriveConnected()) { onDriveRequired(); return }
 
+    // Limite do plano (Astro) antes de subir: gratis 25MB, ASTRO 250MB, ASTRO+ 1GB, Plus 5GB.
+    for (const f of [attachedFile, genericFile]) {
+      if (!f) continue
+      const blocked = assertUploadLimit(currentUser, f.file.size)
+      if (blocked) {
+        try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: blocked })) } catch { }
+        setPosting(false)
+        return
+      }
+    }
     setPosting(true)
+    setUploadPct(null)
+    const upProgress = (pct: number) => setUploadPct(pct)
     try {
       let mediaUrl = gifUrl.trim()
       let mediaType: 'image' | 'video' = 'image'
       if (attachedFile) {
-        const u = await uploadToDrive(attachedFile.file, attachedFile.name, attachedFile.type, 'posts')
+        const u = await uploadToDriveWithProgress(attachedFile.file, attachedFile.name, attachedFile.type, 'posts', undefined, upProgress)
         if (u) { mediaUrl = u; mediaType = attachedFile.type.startsWith('video') ? 'video' : 'image' }
       }
       if (genericFile) {
         const isMedia = genericFile.type.startsWith('image/') || genericFile.type.startsWith('video/')
-        const u = await uploadToDrive(genericFile.file, genericFile.name, isMedia ? genericFile.type : 'application/octet-stream', 'posts')
+        const u = await uploadToDriveWithProgress(genericFile.file, genericFile.name, isMedia ? genericFile.type : 'application/octet-stream', 'posts', undefined, upProgress)
         if (u) {
           if (genericFile.type.startsWith('video/')) { mediaUrl = u; mediaType = 'video' }
           else if (genericFile.type.startsWith('image/')) { if (!mediaUrl) mediaUrl = u }
@@ -280,6 +293,7 @@ ${u}`.trim().slice(0, 500)
       setComposer('')
       setAttachedFile(null)
       setGenericFile(null)
+      setUploadPct(null)
       setGifUrl('')
       setPollOpen(false)
       setPollOptions(['', ''])
@@ -292,7 +306,7 @@ ${u}`.trim().slice(0, 500)
       setLocOpen(false)
       await refreshFeed(false, activeHashtag)
       void refreshTrending()
-    } finally { setPosting(false) }
+    } finally { setPosting(false); setUploadPct(null) }
   }
 
   const pendingVotes = useRef(new Set<string>())
@@ -586,6 +600,14 @@ ${u}`.trim().slice(0, 500)
             </button>
             {attachedFile && (
               <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>{attachedFile.name.slice(0, 18)} <button onClick={() => setAttachedFile(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12 }}>✕</button></span>
+            )}
+            {uploadPct !== null && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>
+                <span style={{ display: 'inline-block', width: 90, height: 5, borderRadius: 999, background: 'var(--bg-tertiary)', overflow: 'hidden', verticalAlign: 'middle' }}>
+                  <span style={{ display: 'block', height: '100%', width: `${Math.min(100, uploadPct)}%`, background: 'var(--accent)', borderRadius: 999, transition: 'width 0.2s' }} />
+                </span>
+                {Math.min(100, uploadPct)}%
+              </span>
             )}
             {genericFile && (
               <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>📎 {genericFile.name.slice(0, 18)} <button onClick={() => setGenericFile(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12 }}>✕</button></span>

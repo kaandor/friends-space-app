@@ -650,7 +650,7 @@ function queueCandidate(signal: OutSignal) {
   candidateFlushTimer = window.setTimeout(() => {
     candidateFlushTimer = null
     void flushCandidates().catch(() => { })
-  }, 350)
+  }, 200) // LIGHT SPEED: lote menor = candidates chegam antes
 }
 async function flushCandidates() {
   if (candidateBatch.length === 0) return
@@ -1464,7 +1464,8 @@ async function createPeerConnection(peerId: string, initiator: boolean) {
     iceServers: ice,
     bundlePolicy: 'max-bundle',
     rtcpMuxPolicy: 'require',
-    iceCandidatePoolSize: 2,
+    // LIGHT SPEED: pool maior = candidatos prontos antes da oferta (ate 2x no handshake).
+    iceCandidatePoolSize: 4,
   })
   peerConnections.set(peerId, pc)
   peerCreatedAt.set(peerId, Date.now())
@@ -1976,6 +1977,9 @@ async function applySignal(signal: CallSignal) {
 
 let lastSignalTs = 0
 let signalPollActive = false
+// Guarda de reentrancia do compartilhar: duplo clique abria 2 pickers e um
+// abortava o outro (AbortError fantasma).
+let screenShareBusy = false
 const watchResyncAt = new Map<string, number>()
 const CONTROL_SETTINGS_KEY = 'friends-space:control-settings'
 function loadControlSettings(): ControlSettings {
@@ -3155,6 +3159,8 @@ export const useCallStore = create<CallState>((set, get) => ({
             return
           }
         } catch { return }
+        if (screenShareBusy) return
+        screenShareBusy = true
         const coarseMobile = (() => {
           try { return Boolean(window.matchMedia && window.matchMedia('(pointer: coarse)').matches) && Math.min(window.innerWidth, window.innerHeight) < 820 } catch { return false }
         })()
@@ -3187,13 +3193,13 @@ export const useCallStore = create<CallState>((set, get) => ({
         } catch (firstError) {
           const firstName = firstError instanceof Error ? firstError.name : ''
           // So repete com constraints reduzidas se a falha foi por constraints
-          // (OverconstrainedError). Cancelamento (NotAllowedError) nao reabre o picker.
-          if (firstName === 'NotAllowedError') throw firstError
+          // (OverconstrainedError). Cancelamento (NotAllowed/Security) ou
+          // aborto (AbortError: picker duplo, dispositivo ocupado) NAO reabre
+          // o picker — reabrir so irrita e gera o erro fantasma.
+          if (firstName === 'NotAllowedError' || firstName === 'SecurityError' || firstName === 'AbortError') throw firstError
           try {
             stream = await navigator.mediaDevices.getDisplayMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } })
           } catch (secondError) {
-            const secondName = secondError instanceof Error ? secondError.name : ''
-            if (secondName === 'NotAllowedError') throw secondError
             throw secondError
           }
         }
@@ -3246,6 +3252,7 @@ export const useCallStore = create<CallState>((set, get) => ({
                   // borrar a imagem quando a rede oscila.
                   params.encodings[0].maxBitrate = Math.max(Math.min(preferredBitrate, 25000) * 1000, 300_000)
                   params.encodings[0].maxFramerate = preferredFps
+                  try { (params.encodings[0] as { priority?: string }).priority = 'high' } catch { }
                   try { (params as RTCRtpSendParameters & { degradationPreference?: string }).degradationPreference = 'maintain-framerate' } catch { }
                   await sender.setParameters(params)
                 } catch { }
@@ -3288,11 +3295,18 @@ export const useCallStore = create<CallState>((set, get) => ({
           void syncSession(get())
         }
       } catch (error) {
-        const name = error instanceof Error ? error.name : ''
-        const isDenied = name === 'NotAllowedError' || name === 'SecurityError'
-        set({ screenError: isDenied ? 'Permissao negada para compartilhar a tela' : `Nao foi possivel compartilhar a tela (${name || 'erro'})` })
+        const name = error instanceof Error ? error.message : ''
+        const errName = error instanceof Error ? error.name : ''
+        if (errName === 'AbortError') {
+          // Usuario cancelou/fechou o picker: silencioso, sem banner de erro.
+          set({ screenError: null })
+        } else {
+          const isDenied = errName === 'NotAllowedError' || errName === 'SecurityError'
+          set({ screenError: isDenied ? 'Permissao negada para compartilhar a tela' : `Nao foi possivel compartilhar a tela (${errName || name || 'erro'})` })
+        }
       }
     }
+    screenShareBusy = false
     void syncSession(get())
   },
   clearScreenError: () => set({ screenError: null }),
