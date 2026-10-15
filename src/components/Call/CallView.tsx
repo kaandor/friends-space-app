@@ -355,6 +355,23 @@ export function CallView() {
   const { isFullscreen, fullscreenMode, toggleCallFullscreen: toggleFullscreen, exitCallFullscreen } = useCallFullscreen()
   const [screenMenu, setScreenMenu] = useState<{ x: number; y: number; userId: string | null } | null>(null)
 
+  // Aceitou controle: entra em tela cheia sozinho (modo remoto) e sai ao parar.
+  useEffect(() => {
+    const onStarted = () => {
+      try {
+        if (!useCallStore.getState().controlling) return
+        if (document.fullscreenElement) return
+        void toggleFullscreen(screenUserId ? `screen:${screenUserId}` : 'screen', 'remote')
+      } catch { }
+    }
+    const onStopped = () => { try { exitCallFullscreen() } catch { } }
+    window.addEventListener('friends-space:control-started', onStarted)
+    window.addEventListener('friends-space:control-stopped', onStopped)
+    return () => {
+      window.removeEventListener('friends-space:control-started', onStarted)
+      window.removeEventListener('friends-space:control-stopped', onStopped)
+    }
+  }, [screenUserId, toggleFullscreen])
   // Ctrl+Shift+C = parar controle; Ctrl+Shift+Z = cancelar modo remoto (sair da tela cheia)
   // F = alternar tela cheia; setas esquerda/direita = trocar de tela (modo normal, nao remoto)
   useEffect(() => {

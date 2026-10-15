@@ -1024,6 +1024,11 @@ function handleControlMessage(peerId: string, raw: string) {
       useCallStore.setState(state => state.controlPending === peerId
         ? { controlling: peerId, controlPending: null, controlEndsAt: minutes > 0 ? Date.now() + minutes * 60000 : null, controlGrants: { mouse: gm, keyboard: gk }, controlLinkOk: null, lastInputAckAt: null }
         : {})
+      try {
+        if (useCallStore.getState().controlling === peerId) {
+          window.dispatchEvent(new CustomEvent('friends-space:control-started', { detail: { peerId } }))
+        }
+      } catch { }
       // Handshake de enlace: ping imediato; sem pong em 4s = PC remoto mudo.
       try {
         if (useCallStore.getState().controlling === peerId) {
@@ -3808,7 +3813,11 @@ export const useCallStore = create<CallState>((set, get) => ({
     sendControlMessage(peerId, { type: 'clipboard', text: text.slice(0, 100000) })
   },
   stopControlling: () => {
-    const peerId = get().controlling
+    const wasControlling = get().controlling
+    const peerId = wasControlling
+    try {
+      if (wasControlling) window.dispatchEvent(new CustomEvent('friends-space:control-stopped', { detail: { peerId: wasControlling } }))
+    } catch { }
     set({ controlling: null, remoteCursor: null, controlEndsAt: null, controlGrants: null })
     try { document.exitPointerLock?.() } catch { }
     if (peerId) {
@@ -3817,7 +3826,11 @@ export const useCallStore = create<CallState>((set, get) => ({
     }
   },
   revokeControl: () => {
-    const peerId = get().controlledBy
+    const wasControlled = get().controlledBy
+    const peerId = wasControlled
+    try {
+      if (wasControlled) window.dispatchEvent(new CustomEvent('friends-space:control-stopped', { detail: { peerId: wasControlled } }))
+    } catch { }
     clearControlTimer()
     controlGrantsByPeer.delete(peerId || '')
     set({ controlledBy: null, controlEndsAt: null })

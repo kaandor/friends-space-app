@@ -126,6 +126,24 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
     setTileFsId(null)
   }
 
+  // Aceitou controle: entra em tela cheia sozinho (modo remoto) e sai ao parar.
+  useEffect(() => {
+    const onStarted = () => {
+      try {
+        if (!useCallStore.getState().controlling) return
+        if (document.fullscreenElement) return
+        void toggleFullscreen('remote')
+      } catch { }
+    }
+    const onStopped = () => { try { exitCallFullscreen() } catch { } }
+    window.addEventListener('friends-space:control-started', onStarted)
+    window.addEventListener('friends-space:control-stopped', onStopped)
+    return () => {
+      window.removeEventListener('friends-space:control-started', onStarted)
+      window.removeEventListener('friends-space:control-stopped', onStopped)
+    }
+  }, [toggleFullscreen])
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null
