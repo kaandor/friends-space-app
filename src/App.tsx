@@ -1152,6 +1152,30 @@ function App() {
     }
   }
 
+// Vigia do carregamento: se a sessao travar, mostra o motivo + botao
+// em vez de girar para sempre (o print disso diagnostica na hora).
+function LoadingWatchdog() {
+  const [stuck, setStuck] = useState(false)
+  useEffect(() => {
+    const t = window.setTimeout(() => setStuck(true), 20000)
+    return () => window.clearTimeout(t)
+  }, [])
+  if (!stuck) return null
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '0 0 10px' }}>
+        Demorou demais — verifique a internet e tente de novo.
+      </p>
+      <button
+        onClick={() => window.location.reload()}
+        style={{ background: 'var(--accent)', color: '#04120a', border: 'none', borderRadius: 10, padding: '9px 20px', fontWeight: 800, fontSize: 13, cursor: 'pointer' }}
+      >
+        Recarregar agora
+      </button>
+    </div>
+  )
+}
+
   if (!authReady) {
     return (
       <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(90% 70% at 50% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%), radial-gradient(70% 60% at 50% 110%, color-mix(in srgb, #5865f2 10%, transparent), transparent 60%), var(--bg-primary)' }}>
@@ -1165,6 +1189,7 @@ function App() {
             <div className="fs-loadbar" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: '35%', borderRadius: 999, background: 'linear-gradient(90deg, var(--accent-hover), var(--accent))', boxShadow: '0 0 12px color-mix(in srgb, var(--accent) 70%, transparent)' }} />
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: 11, margin: 0, opacity: 0.75 }}>Se travar aqui, recarregue com Ctrl+F5</p>
+          <LoadingWatchdog />
         </div>
         <style>{`@keyframes fsLoadSlide{0%{left:-35%}100%{left:100%}}.fs-loadbar{animation:fsLoadSlide 1.4s ease-in-out infinite}`}</style>
       </div>
