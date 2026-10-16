@@ -540,12 +540,19 @@ ${u}`.trim().slice(0, 500)
         <>
         {/* Composer */}
         <div style={{ background: 'var(--bg-primary)', borderRadius: 12, border: '1px solid var(--border)', padding: 12 }}>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
             <Avatar src={currentUser?.photoUrl || ''} name={currentUser?.name || ''} size={36} />
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-primary)' }}>{currentUser?.name || ''}</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              <span style={{ color: 'var(--text-muted)', display: 'inline-flex', flexShrink: 0, marginTop: 2 }}>🌐</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
               <textarea value={composer} onChange={e => setComposer(e.target.value)} maxLength={500} rows={2}
                 placeholder="O que está acontecendo?"
-                style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', outline: 'none', resize: 'none', fontSize: 14, fontFamily: 'inherit', lineHeight: 1.5 }} />
+                style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', outline: 'none', resize: 'none', fontSize: 14, fontFamily: 'inherit', lineHeight: 1.5, padding: 0 }} />
+              </div>
+              </div>
               {firstUrl(composer) && (
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4, padding: '3px 8px', borderRadius: 999, background: 'var(--bg-tertiary)', fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>
                   🔗 Link detectado
@@ -606,7 +613,6 @@ ${u}`.trim().slice(0, 500)
                 </div>
               )}
             </div>
-          </div>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 0, marginTop: 8, paddingLeft: 46 }}>
             <input ref={fileRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={e => {
               const f = e.target.files?.[0]; if (f) { setAttachedFile({ file: f, name: `post-${Date.now()}.${f.name.split('.').pop()}`, type: f.type }); setGifUrl('') }
