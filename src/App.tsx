@@ -467,10 +467,32 @@ function App() {
       const m6 = t.match(/^#([0-9a-f]{6})$/i)
       const m3 = t.match(/^#([0-9a-f]{3})$/i)
       const mrgb = t.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i)
+      const mhsl = t.match(/^hsla?\(\s*(\d{1,3}(?:\.\d+)?)\s*,\s*(\d{1,3}(?:\.\d+)?)%\s*,\s*(\d{1,3}(?:\.\d+)?)%/i)
+      const named = { green: '008000', lime: '00FF00', limegreen: '32CD32', mediumseagreen: '3CB371', seagreen: '2E8B57', springgreen: '00FF7F', teal: '008080', turquoise: '40E0D0', aqua: '00FFFF', cyan: '00FFFF', chartreuse: '7FFF00', greenyellow: 'ADFF2F', lawngreen: '7CFC00', lightgreen: '90EE90', palegreen: '98FB98', darkgreen: '006400', forestgreen: '228B22', olive: '808000', olivedrab: '6B8E23', darkolivegreen: '556B2F', mediumspringgreen: '00FA9A', lightseagreen: '20B2AA', darkcyan: '008B8B', cadetblue: '5F9EA0', aquamarine: '7FFFD7', mediumaquamarine: '66CDAA', darkseagreen: '8FBC8F' } as Record<string, string>
+      const nlow = t.toLowerCase()
       if (m6) hex = m6[1]
       else if (m3) hex = m3[1].split('').map(c => c + c).join('')
       else if (mrgb) {
         hex = [mrgb[1], mrgb[2], mrgb[3]].map(v => Math.max(0, Math.min(255, Number(v))).toString(16).padStart(2, '0')).join('')
+      } else if (mhsl) {
+        const hh = ((Number(mhsl[1]) % 360) + 360) % 360
+        const ss = Math.max(0, Math.min(100, Number(mhsl[2]))) / 100
+        const ll = Math.max(0, Math.min(100, Number(mhsl[3]))) / 100
+        const c = (1 - Math.abs(2 * ll - 1)) * ss
+        const x = c * (1 - Math.abs(((hh / 60) % 2) - 1))
+        const m2 = ll - c / 2
+        let rr = 0
+        let gg = 0
+        let bb = 0
+        if (hh < 60) { rr = c; gg = x }
+        else if (hh < 120) { rr = x; gg = c }
+        else if (hh < 180) { gg = c; bb = x }
+        else if (hh < 240) { gg = x; bb = c }
+        else if (hh < 300) { rr = x; bb = c }
+        else { rr = c; bb = x }
+        hex = [rr, gg, bb].map(v => Math.round((v + m2) * 255).toString(16).padStart(2, '0')).join('')
+      } else if (named[nlow]) {
+        hex = named[nlow]
       }
       const m = hex ? ([hex] as unknown as RegExpMatchArray) : null
       if (m) {
