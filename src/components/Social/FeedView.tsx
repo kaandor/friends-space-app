@@ -951,7 +951,7 @@ ${u}`.trim().slice(0, 500)
 
       {/* Trending — "O que está acontecendo" (estilo X: notícias + hashtags) */}
       <style>{`.fs-feed-trending{display:block}@media (max-width:900px){.fs-feed-trending{display:none}}`}</style>
-      <div style={{ width: 260, flexShrink: 0, alignSelf: 'flex-start', display: 'flex', flexDirection: 'column', gap: 16 }} className="fs-feed-trending">
+      <div style={{ width: 330, flexShrink: 0, alignSelf: 'flex-start', display: 'flex', flexDirection: 'column', gap: 16 }} className="fs-feed-trending">
       {/* Pesquisa do feed (estilo X) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', boxSizing: 'border-box', background: 'var(--bg-primary)', borderRadius: 999, border: '1px solid var(--border)', padding: '4px 6px 4px 12px' }}>
         <span style={{ color: 'var(--text-muted)', display: 'inline-flex', flexShrink: 0 }}><Search size={14} strokeWidth={2} /></span>
