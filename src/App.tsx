@@ -1551,7 +1551,15 @@ function App() {
 
           ) : (
             <>
-            <div className="fs-icon-sidebar">
+            <div
+            title="Build + cor real aplicada (diagnóstico)"
+            style={{ fontSize: 8.5, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.5, padding: '6px 2px 0', opacity: 0.75, userSelect: 'none' }}
+          >
+            {typeof __BUILD_ID__ !== 'undefined' ? String(__BUILD_ID__).slice(0, 16) : 'dev'}
+            <br />
+            <span className="fs-build-accent-dot" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)', verticalAlign: 'middle' }} />
+          </div>
+          <div className="fs-icon-sidebar">
               <div className="fs-icon-sidebar-top">
                 <button
                   className={`fs-nav-item fs-home-btn ${!currentServer ? 'active' : ''}`}
