@@ -970,7 +970,7 @@ ${u}`.trim().slice(0, 500)
       </div>
       {uiEnabled(currentUser, 'trending') && (
       <div style={{ background: 'var(--bg-primary)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px 8px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px 4px' }}>
           <span style={{ color: '#34d399', display: 'inline-flex' }}><Clock size={15} strokeWidth={2} /></span>
           <h4 style={{ color: 'var(--text-primary)', fontWeight: 800, fontSize: 15, margin: 0, flex: 1 }}>O que está acontecendo</h4>
           <span style={{ color: 'var(--text-muted)', fontSize: 16 }}>›</span>
