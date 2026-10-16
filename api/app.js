@@ -2174,6 +2174,19 @@ const actions = {
     })
     return { ok: true }
   },
+  clearFeed: async (store, data, body) => {
+    requireFlags(store, body, 'dev')
+    const had = Array.isArray(data.posts) ? data.posts.length : 0
+    data.posts = []
+    try {
+      if (store.directory) {
+        for (const profile of Object.values(store.profiles || {})) {
+          if (profile && Array.isArray(profile.posts)) profile.posts = []
+        }
+      }
+    } catch { }
+    return { ok: true, cleared: had }
+  },
   listClientErrors: async (store, data, body) => {
     requireFlags(store, body, 'dev', 'support')
     const errors = []
@@ -4062,8 +4075,9 @@ const actions = {
   getSuggestedServers: async (store, data, body) => {
     const userId = String(body.userId || '')
     const mine = new Set(memberServerIdsOf(store, userId))
+    // So VERIFICADOS aqui (curadoria). Descubra/busca mostra todos os publicos.
     const list = getAllServers(store)
-      .filter((s) => s)
+      .filter((s) => s && s.verified)
       .sort((a, b) => ((b.members || []).length) - ((a.members || []).length))
       .slice(0, 6)
       .map((s) => ({ id: s.id, name: s.name, photoUrl: s.photoUrl || '', members: (s.members || []).length, inviteCode: s.inviteCode || '', verified: Boolean(s.verified), member: mine.has(s.id) || s.ownerId === userId, category: String(s.category || (s.settings && s.settings.category) || '').slice(0, 40) }))
@@ -4129,6 +4143,11 @@ const actions = {
     const friendIds = new Set(userId ? acceptedFriendIds(store, userId) : [])
     const myServers = new Set(userId ? memberServerIdsOf(store, userId) : [])
     let posts = getAllPosts(store)
+    // Feed vivo 24h: post com mais de 24h nao aparece (dados intactos).
+    try {
+      const dayAgo = now() - 86400000
+      posts = posts.filter((p) => p && Number(p.createdAt || 0) >= dayAgo)
+    } catch { }
     if (scope === 'amigos' && userId) {
       posts = posts.filter((p) => p && (p.authorId === userId || friendIds.has(p.authorId) || (p.authorKind === 'server' && myServers.has(p.authorId))))
     }
@@ -4630,6 +4649,10 @@ const actions = {
     let mergedIds = [...new Set([...(existing?.participantIds || []), ...participantIds])]
     mergedIds = mergedIds.filter((id) => id === selfId || !hasStaleStamp(stamps, id, staleThreshold))
     if (body.leaveUserId) mergedIds = mergedIds.filter((id) => id !== body.leaveUserId)
+    // Ultimo a sair apaga na hora (sem esperar os 35s do stamp).
+    if (mergedIds.length === 0) {
+      session.active = false
+    }
     if (selfId) {
       mergedIds = [selfId, ...mergedIds.filter((id) => id !== selfId)]
       stamps[selfId] = now()

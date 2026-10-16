@@ -15,7 +15,7 @@ interface Props {
   onPublished: () => void
 }
 
-const COLORS = ['#ffffff', '#00ff88', '#ffd400', '#ff5fa2', '#4fc3f7', '#ff6b6b', '#0a0a0a']
+const COLORS = ['#ffffff', '#29A3FF', '#ffd400', '#ff5fa2', '#4fc3f7', '#ff6b6b', '#0a0a0a']
 const FONTS = [
   { id: 'sans', label: 'Padrão', css: "Inter, system-ui, sans-serif" },
   { id: 'serif', label: 'Clássica', css: "Georgia, 'Times New Roman', serif" },
@@ -273,7 +273,7 @@ export function StoryCreatorModal({ mediaUrl, mediaType, initialPhotos, sharedPo
                   padding: '9px 4px', borderRadius: 10, cursor: 'pointer', fontSize: 13,
                   fontFamily: f.css,
                   border: font === f.id ? '1.5px solid var(--accent)' : '1.5px solid rgba(255,255,255,.1)',
-                  background: font === f.id ? 'rgba(0,255,136,.08)' : 'rgba(0,0,0,.3)',
+                  background: font === f.id ? 'rgba(41,163,255,.08)' : 'rgba(0,0,0,.3)',
                   color: font === f.id ? 'var(--accent)' : 'rgba(255,255,255,.75)', fontWeight: 700,
                 }}
               >
@@ -294,7 +294,7 @@ export function StoryCreatorModal({ mediaUrl, mediaType, initialPhotos, sharedPo
                 style={{
                   width: 30, height: 30, borderRadius: '50%', background: c, cursor: 'pointer', padding: 0,
                   border: color === c ? '2.5px solid var(--accent)' : '2px solid rgba(255,255,255,.2)',
-                  boxShadow: color === c ? '0 0 0 3px rgba(0,255,136,.2)' : 'none',
+                  boxShadow: color === c ? '0 0 0 3px rgba(41,163,255,.2)' : 'none',
                 }}
               />
             ))}
@@ -314,7 +314,7 @@ export function StoryCreatorModal({ mediaUrl, mediaType, initialPhotos, sharedPo
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             onClick={() => setBold(!bold)}
-            style={{ flex: 1, padding: '10px 0', borderRadius: 10, cursor: 'pointer', fontWeight: 800, border: bold ? '1.5px solid var(--accent)' : '1.5px solid rgba(255,255,255,.1)', background: bold ? 'rgba(0,255,136,.08)' : 'rgba(0,0,0,.3)', color: bold ? 'var(--accent)' : 'rgba(255,255,255,.75)' }}
+            style={{ flex: 1, padding: '10px 0', borderRadius: 10, cursor: 'pointer', fontWeight: 800, border: bold ? '1.5px solid var(--accent)' : '1.5px solid rgba(255,255,255,.1)', background: bold ? 'rgba(41,163,255,.08)' : 'rgba(0,0,0,.3)', color: bold ? 'var(--accent)' : 'rgba(255,255,255,.75)' }}
           >
             Negrito
           </button>
@@ -369,9 +369,9 @@ export function StoryCreatorModal({ mediaUrl, mediaType, initialPhotos, sharedPo
           disabled={publishing || !canPublish}
           style={{
             padding: '13px', borderRadius: 12, border: 'none', cursor: publishing || !canPublish ? 'default' : 'pointer',
-            background: 'linear-gradient(135deg, #00ff88, #00ccff)', color: '#02120a',
+            background: 'linear-gradient(135deg, #29A3FF, #00ccff)', color: '#02120a',
             fontWeight: 900, fontSize: 14, opacity: publishing || !canPublish ? 0.5 : 1,
-            boxShadow: '0 8px 24px rgba(0,255,136,.25)',
+            boxShadow: '0 8px 24px rgba(41,163,255,.25)',
           }}
         >
           {publishing ? 'Publicando...' : photos.length > 1 ? `Publicar ${photos.length} stories →` : 'Compartilhar story →'}

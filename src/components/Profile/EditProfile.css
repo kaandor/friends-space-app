@@ -130,7 +130,7 @@
 .fs-edit-field input:focus,
 .fs-edit-field textarea:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.18);
+  box-shadow: 0 0 0 3px rgba(41, 163, 255, 0.18);
 }
 
 .fs-edit-hint {

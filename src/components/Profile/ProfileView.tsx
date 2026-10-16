@@ -24,13 +24,11 @@ export function ProfileView({ onClose, initialTab = 'perfil' }: ProfileViewProps
   const userSettings = (currentUser?.settings || {}) as Record<string, string | boolean | undefined>
   const strSetting = (key: string, fallback: string) => typeof userSettings[key] === 'string' ? userSettings[key] as string : fallback
   const boolSetting = (key: string, fallback: boolean) => typeof userSettings[key] === 'boolean' ? userSettings[key] as boolean : fallback
-  const [name, setName] = useState(currentUser?.name || '')
-  const [username, setUsername] = useState(currentUser?.friendCode || '')
-  const [bio, setBio] = useState(currentUser?.bio || '')
-  const [pronoun, setPronoun] = useState(strSetting('pronoun', ''))
+  const [name] = useState(currentUser?.name || '')
+  const [username] = useState(currentUser?.friendCode || '')
   const [photoUrl, setPhotoUrl] = useState(currentUser?.photoUrl || '')
   const [bannerUrl, setBannerUrl] = useState(currentUser?.bannerUrl || '')
-  const [accentColor] = useState(currentUser?.accentColor || '#00ff88')
+  const [accentColor] = useState(currentUser?.accentColor || '#29A3FF')
   const [tab, setTab] = useState<ProfileTab>(initialTab)
   const [cropImage, setCropImage] = useState<string | null>(null)
   const [cropShape, setCropShape] = useState<'circle' | 'rect'>('circle')
@@ -48,8 +46,6 @@ export function ProfileView({ onClose, initialTab = 'perfil' }: ProfileViewProps
 
   // Privacidade (gerenciado pelo PrivacySettings, que salva via savePrivacyAll)
 
-  const [usernameError, setUsernameError] = useState('')
-  const [usernameChecking, setUsernameChecking] = useState(false)
   const [syncState, setSyncState] = useState<SyncState>('idle')
   const syncTimer = useRef<number | null>(null)
   const mountedRef = useRef(true)
@@ -83,11 +79,6 @@ export function ProfileView({ onClose, initialTab = 'perfil' }: ProfileViewProps
     }
   }
 
-  const scheduleAutoSave = (patch: Partial<Parameters<typeof updateUser>[0]>) => {
-    if (syncTimer.current !== null) window.clearTimeout(syncTimer.current)
-    setSyncState('saving')
-    syncTimer.current = window.setTimeout(() => { void persist(patch) }, 600)
-  }
 
   const scheduleSettingsSave = (key: string, value: string | boolean) => {
     if (syncTimer.current !== null) window.clearTimeout(syncTimer.current)
@@ -107,62 +98,7 @@ export function ProfileView({ onClose, initialTab = 'perfil' }: ProfileViewProps
     }, 600)
   }
 
-  const checkUsernameUnique = async (value: string) => {
-    if (!value || value === (currentUser?.friendCode || '')) {
-      setUsernameError('')
-      return true
-    }
-    setUsernameChecking(true)
-    try {
-      const { requestBackend } = await import('../../services/backend')
-      const existing = await requestBackend<{ friendCode?: string } | undefined>('findUserByFriendCode', { friendCode: value })
-      if (existing && existing.friendCode && existing.friendCode.toUpperCase() === value.toUpperCase()) {
-        setUsernameError('Este nome de usuario ja esta em uso')
-        setUsernameChecking(false)
-        return false
-      }
-    } catch { }
-    setUsernameError('')
-    setUsernameChecking(false)
-    return true
-  }
 
-  const handleSave = async () => {
-    if (!username) {
-      setUsernameError('Nome de usuario e obrigatorio')
-      return
-    }
-    const unique = await checkUsernameUnique(username)
-    if (!unique) return
-    const settings: Record<string, unknown> = {
-      ...(currentUser?.settings || {}),
-      pronoun,
-      status,
-      statusMessage,
-      showActivity,
-      showServers,
-      showFriends,
-    }
-    setSyncState('saving')
-    let finalPhotoUrl = photoUrl
-    let finalBannerUrl = bannerUrl
-    if (typeof finalPhotoUrl === 'string' && finalPhotoUrl.startsWith('data:image/')) {
-      finalPhotoUrl = await uploadProfileImage(finalPhotoUrl, 'avatar')
-    }
-    if (typeof finalBannerUrl === 'string' && finalBannerUrl.startsWith('data:image/')) {
-      finalBannerUrl = await uploadProfileImage(finalBannerUrl, 'banner')
-    }
-    if (
-      (typeof finalPhotoUrl === 'string' && finalPhotoUrl.startsWith('data:image/')) ||
-      (typeof finalBannerUrl === 'string' && finalBannerUrl.startsWith('data:image/'))
-    ) {
-      setSyncState('error')
-      return
-    }
-    await updateUser({ name, friendCode: username.toUpperCase(), bio, photoUrl: finalPhotoUrl, bannerUrl: finalBannerUrl, accentColor, settings })
-    setSyncState('synced')
-    onClose()
-  }
 
   const openAvatarCrop = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -324,40 +260,21 @@ export function ProfileView({ onClose, initialTab = 'perfil' }: ProfileViewProps
           <div className="profile-tab-content">
             {tab === 'perfil' && (
               <div className="profile-form">
-                <div className="profile-field">
-                  <label>Nome de Exibicao <span className="required">*</span></label>
-                  <input value={name} onChange={e => { setName(e.target.value); scheduleAutoSave({ name: e.target.value }) }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 6 }}>
+                  <Avatar src={currentUser?.photoUrl || ''} name={currentUser?.name || ''} size={64} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)' }}>{currentUser?.name || ''}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>@{currentUser?.friendCode || ''}</div>
+                  </div>
                 </div>
-                <div className="profile-field">
-                  <label>Nome de usuario</label>
-                  <input
-                    value={username}
-                    onChange={e => {
-                      const val = e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '')
-                      setUsername(val)
-                      setUsernameError('')
-                    }}
-                    onBlur={() => { void (async () => {
-                      if (!username || username === (currentUser?.friendCode || '')) return
-                      const unique = await checkUsernameUnique(username)
-                      if (unique) scheduleAutoSave({ friendCode: username.toUpperCase() })
-                    })() }}
-                    style={usernameError ? { borderColor: '#ed4245' } : {}}
-                  />
-                  {usernameChecking && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Verificando...</span>}
-                  {usernameError && <span style={{ fontSize: 11, color: '#ed4245', marginTop: 2 }}>{usernameError}</span>}
-                </div>
-                <div className="profile-field">
-                  <label>Sobre mim</label>
-                  <textarea value={bio} onChange={e => { setBio(e.target.value); scheduleAutoSave({ bio: e.target.value }) }} placeholder="Escreva algo sobre voce..." rows={3} />
-                </div>
-                <div className="profile-field">
-                  <label>Pronome (Opcional)</label>
-                  <input value={pronoun} onChange={e => { setPronoun(e.target.value); scheduleAutoSave({ settings: { ...userSettings, pronoun: e.target.value } }) }} placeholder="Ex: Ele/Dele, Ela/Dela..." />
-                </div>
+                {currentUser?.bio && (
+                  <div className="profile-field">
+                    <label>Sobre mim</label>
+                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{currentUser.bio}</div>
+                  </div>
+                )}
                 <div className="profile-form-actions">
-                  <button className="profile-cancel-btn" onClick={onClose}>Cancelar</button>
-                  <button className="profile-save-btn" onClick={handleSave}>Salvar Alteracoes</button>
+                  <button className="profile-save-btn" onClick={() => { try { window.dispatchEvent(new CustomEvent('friends-space:edit-profile')) } catch { } onClose() }}>Editar perfil</button>
                 </div>
               </div>
             )}
@@ -403,7 +320,7 @@ export function ProfileView({ onClose, initialTab = 'perfil' }: ProfileViewProps
                 </div>
                 <div className="profile-form-actions">
                   <button className="profile-cancel-btn" onClick={onClose}>Cancelar</button>
-                  <button className="profile-save-btn" onClick={handleSave}>Salvar Alteracoes</button>
+                  <button className="profile-save-btn" onClick={onClose}>Concluir</button>
                 </div>
               </div>
             )}

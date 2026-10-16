@@ -9,7 +9,6 @@ import "./ProfileEditor.css";
 import {
   Check,
   ChevronLeft,
-  ChevronRight,
   CircleDot,
   CircleUserRound,
   Eye,
@@ -197,24 +196,7 @@ const freePremiumFeatures = [
   "Streaming em qualidade superior",
 ];
 
-const astroDecorations = [
-  ["Nenhuma", "", true],
-  ["Pulsar", "Disponível no ASTRO+", false],
-  ["Aurora", "Disponível no ASTRO+", false],
-  ["Nebulosa", "Disponível no ASTRO+", false],
-  ["Orbit", "Disponível no ASTRO+", false],
-  ["Cometa", "Disponível no ASTRO+", false],
-] as const;
 
-const astroPlusDecorations = [
-  ["Nenhuma", "", false],
-  ["Pulsar", "", false],
-  ["Aurora", "", false],
-  ["Nebulosa", "", false],
-  ["Estelar", "", false],
-  ["Supernova", "", false],
-  ["Galáxia", "Selecionada", true],
-] as const;
 
 const astroComparisons = [
   ["Upload de arquivos", "Até 250 MB", "Até 1 GB"],
@@ -353,48 +335,32 @@ function LockedFeatureRow({ feature, targetLabel }: { feature: string; targetLab
 }
 
 function AstroDecorations({ selectedFrame, onFrameSelect, onOpenFrames, onUpgrade }: { selectedFrame: FrameId; onFrameSelect: (frame: FrameId) => void; onOpenFrames: () => void; onUpgrade: () => void }) {
+  void selectedFrame; void onFrameSelect; void onOpenFrames; void onUpgrade;
+    void selectedFrame; void onFrameSelect; void onOpenFrames; void onUpgrade;
   return (
     <section className="decorations-section">
-      <div className="decorations-heading">
-        <SectionTitle icon={Sparkles} title="Decorações e molduras" description="Destaque seu avatar com molduras e efeitos exclusivos." />
-        <div className="decorations-actions"><button onClick={onUpgrade}>ASTRO+</button><button onClick={onOpenFrames}>Ver todas</button></div>
-      </div>
+      <SectionTitle icon={Sparkles} title="Decorações e molduras" description="Em breve — estamos preparando novidades." />
       <div className="decoration-strip">
-        {astroDecorations.map(([name, note], index) => {
-          const frameId = name === "Nenhuma" ? "none" : "pulsar";
-          const selected = selectedFrame === frameId;
-          return <button className={cn("decoration-item", selected && "decoration-selected")} key={name} onClick={() => name === "Nenhuma" ? onFrameSelect("none") : onUpgrade()}>
-            {name === "Nenhuma" ? <span className="decoration-empty"><X size={20} /></span> : <span className={cn("decoration-ring", `decoration-ring-${index}`)} />}
-            {name !== "Nenhuma" && <LockKeyhole className="decoration-lock" size={12} />}
-            {selected && <span className="decoration-selected-check"><Check size={10} strokeWidth={3} /></span>}
-            <b>{name}</b>{note && <small>{note}</small>}
-          </button>;
-        })}
+        <div className="decoration-item" style={{ cursor: 'default', borderStyle: 'dashed' }}>
+          <span className="decoration-empty"><Sparkles size={20} /></span>
+          <b>Em breve</b>
+        </div>
       </div>
     </section>
   );
 }
 
 function AstroPlusTierDecorations({ selectedFrame, onFrameSelect, onOpenFrames, onUpgrade, onNotify }: { selectedFrame: FrameId; onFrameSelect: (frame: FrameId) => void; onOpenFrames: () => void; onUpgrade: () => void; onNotify: (message: string) => void }) {
-  const decorations = [["Nenhuma", "", false], ["Pulsar", "Disponível", false], ["Aurora", "Disponível", false], ["Nebulosa", "Selecionada", true], ["Estelar", "ASTRO PLUS", false], ["Supernova", "ASTRO PLUS", false]] as const;
+  void selectedFrame; void onFrameSelect; void onOpenFrames; void onUpgrade; void onNotify;
+    void selectedFrame; void onFrameSelect; void onOpenFrames; void onUpgrade; void onNotify;
   return (
-    <section className="decorations-section astro-plus-tier-decorations-section">
-      <div className="decorations-heading">
-        <SectionTitle icon={Sparkles} title="Decorações e molduras" description="Destaque seu avatar com molduras e efeitos exclusivos." />
-        <div className="decorations-actions"><button className="astro-plus-tier-pill" onClick={() => onNotify("Você está no ASTRO+")}>ASTRO+</button><button onClick={onOpenFrames}>Ver todas</button></div>
-      </div>
-      <div className="decoration-strip astro-plus-tier-decoration-strip">
-        {decorations.map(([name, note], index) => {
-          const locked = note === "ASTRO PLUS";
-          const frameId = (FRAME_SHOP_OPTIONS.find((item) => item.name === name)?.id ?? "none") as FrameId;
-          const selected = selectedFrame === frameId;
-          return <button className={cn("decoration-item astro-plus-tier-decoration-item", selected && "decoration-selected")} key={name} onClick={() => locked ? onUpgrade() : onFrameSelect(frameId)}>
-            {name === "Nenhuma" ? <span className="decoration-empty"><X size={20} /></span> : <span className={cn("decoration-ring", `astro-plus-tier-ring-${index}`)} />}
-            {selected && <span className="decoration-selected-check"><Check size={10} strokeWidth={3} /></span>}
-            {locked && <LockKeyhole className="decoration-lock" size={12} />}
-            <b>{name}</b>{note && <small>{note}</small>}
-          </button>;
-        })}
+    <section className="decorations-section">
+      <SectionTitle icon={Sparkles} title="Decorações e molduras" description="Em breve — estamos preparando novidades." />
+      <div className="decoration-strip">
+        <div className="decoration-item" style={{ cursor: 'default', borderStyle: 'dashed' }}>
+          <span className="decoration-empty"><Sparkles size={20} /></span>
+          <b>Em breve</b>
+        </div>
       </div>
     </section>
   );
@@ -631,23 +597,16 @@ function SocialSettingsModal({ plan, displayName, username, about, selectedFrame
   );
 }
 function AstroPlusDecorations({ selectedFrame, onFrameSelect, onOpenFrames, onNotify }: { selectedFrame: FrameId; onFrameSelect: (frame: FrameId) => void; onOpenFrames: () => void; onNotify: (message: string) => void }) {
+  void selectedFrame; void onFrameSelect; void onOpenFrames; void onNotify;
+    void selectedFrame; void onFrameSelect; void onOpenFrames; void onNotify;
   return (
-    <section className="decorations-section astro-plus-decorations-section">
-      <div className="decorations-heading">
-        <SectionTitle icon={Sparkles} title="Decorações e molduras" description="Destaque seu avatar com molduras e efeitos exclusivos." />
-        <div className="decorations-actions"><button className="astro-plus-pill" onClick={() => onNotify("Você já está no ASTRO+")}>ASTRO+</button><button onClick={onOpenFrames}>Ver todas</button></div>
-      </div>
-      <div className="decoration-strip astro-plus-decoration-strip">
-        {astroPlusDecorations.map(([name, note], index) => {
-          const frameId = (FRAME_SHOP_OPTIONS.find((item) => item.name === name)?.id ?? "none") as FrameId;
-          const selected = selectedFrame === frameId;
-          return <button className={cn("decoration-item astro-plus-decoration-item", selected && "decoration-selected")} key={name} onClick={() => onFrameSelect(frameId)}>
-            {name === "Nenhuma" ? <span className="decoration-empty"><X size={20} /></span> : <span className={cn("decoration-ring", `astro-plus-ring-${index}`)} />}
-            {selected && <span className="decoration-selected-check"><Check size={10} strokeWidth={3} /></span>}
-            <b>{name}</b>{note && <small>{note}</small>}
-          </button>;
-        })}
-        <button className="decoration-next" aria-label="Abrir loja de molduras" onClick={onOpenFrames}> <ChevronRight size={17} /> </button>
+    <section className="decorations-section">
+      <SectionTitle icon={Sparkles} title="Decorações e molduras" description="Em breve — estamos preparando novidades." />
+      <div className="decoration-strip">
+        <div className="decoration-item" style={{ cursor: 'default', borderStyle: 'dashed' }}>
+          <span className="decoration-empty"><Sparkles size={20} /></span>
+          <b>Em breve</b>
+        </div>
       </div>
     </section>
   );
@@ -966,13 +925,24 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
     if (!unique) return;
     setSaving(true);
     try {
+      const withTimeout = async <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> => {
+        let timer: number | undefined
+        try {
+          return await Promise.race([
+            p,
+            new Promise<T>((resolve) => { timer = window.setTimeout(() => resolve(fallback), ms) }),
+          ])
+        } finally {
+          if (timer !== undefined) window.clearTimeout(timer)
+        }
+      }
       let finalPhotoUrl = photoUrl;
       let finalBannerUrl = bannerUrl;
       if (typeof finalPhotoUrl === "string" && finalPhotoUrl.startsWith("data:image/")) {
-        finalPhotoUrl = await uploadProfileImage(finalPhotoUrl, "avatar");
+        finalPhotoUrl = await withTimeout(uploadProfileImage(finalPhotoUrl, "avatar"), 20000, finalPhotoUrl);
       }
       if (typeof finalBannerUrl === "string" && finalBannerUrl.startsWith("data:image/")) {
-        finalBannerUrl = await uploadProfileImage(finalBannerUrl, "banner");
+        finalBannerUrl = await withTimeout(uploadProfileImage(finalBannerUrl, "banner"), 20000, finalBannerUrl);
       }
       const settings: Record<string, unknown> = {
         ...userSettings,

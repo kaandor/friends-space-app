@@ -880,7 +880,7 @@ function MosaicScreenTile({ tileId, stream, label, focused, speaking, muted, onF
       <video ref={ref} autoPlay muted playsInline />
       <span className="vc-mosaic-label">
         {label}
-        {focused && <b style={{ color: '#00ff88' }}> · EM DESTAQUE</b>}
+        {focused && <b style={{ color: '#29A3FF' }}> · EM DESTAQUE</b>}
       </span>
       {fsActive && (
         <button className="vc-fs-exit" onClick={e => { e.stopPropagation(); onExitFs() }} title="Minimizar (sair da tela cheia)"><Fa name="minimize" size={14} /></button>
@@ -939,6 +939,23 @@ function ScreenMosaicView({ currentUser, screenSharing, screenStream, remoteScre
           />
           )
         })}
+      </div>
+      <div className="vc-strip">
+        {(() => {
+          const selfUser = (currentUser || null) as unknown as { id: string; name?: string; photoUrl?: string } | null
+          const self = selfUser ? [{ userId: selfUser.id, userName: 'Você', userPhoto: selfUser.photoUrl || '', muted: selfMuted }] : []
+          return [...self, ...liveParts.filter(x => x.userId !== currentUser?.id)].map(x => {
+            const speaking = Boolean(speakingUsers[x.userId]) && !x.muted
+            return (
+              <div key={'strip-' + x.userId} className={`vc-strip-chip${speaking ? ' speaking' : ''}${x.muted ? ' muted-ring' : ''}`} title={x.userName}>
+                <div className="vc-strip-ring">
+                  <Avatar src={x.userPhoto} name={x.userName} size={30} />
+                </div>
+                <span className="vc-strip-name">{x.userName}</span>
+              </div>
+            )
+          })
+        })()}
       </div>
     </div>
   )

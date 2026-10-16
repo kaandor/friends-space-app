@@ -35,6 +35,7 @@ export function VoicePanel() {
   const activeCall = useCallStore(s => s.activeCall)
   const channelId = useCallStore(s => s.channelId)
   const createdAt = useCallStore(s => s.createdAt)
+  const connectedAt = useCallStore(s => s.connectedAt)
   const participants = useCallStore(s => s.participants)
   const screenSharing = useCallStore(s => s.screenSharing)
   const toggleScreenShare = useCallStore(s => s.toggleScreenShare)
@@ -73,18 +74,18 @@ export function VoicePanel() {
   }
 
   return (
-    <div style={{ margin: '8px 12px 0', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 12, padding: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-        <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />
-        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)' }}>Voz conectada</span>
+    <div style={{ margin: '10px 12px 0', background: 'linear-gradient(180deg, var(--bg-secondary), var(--bg-tertiary))', border: '1px solid var(--border)', borderRadius: 10, padding: 14, boxShadow: 'var(--shadow)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0, boxShadow: '0 0 8px var(--accent)' }} />
+        <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--accent)', letterSpacing: '0.02em' }}>Voz conectada</span>
         <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-          {createdAt ? fmtElapsed(now - createdAt) : '--:--'}
+          {(connectedAt || createdAt) ? fmtElapsed(now - ((connectedAt || createdAt) as number)) : '--:--'}
         </span>
       </div>
-      <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3 }}>
         {channelName}
       </div>
-      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>
+      <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
         {serverName}{serverName ? ' · ' : ''}{participants.length} na call
       </div>
       <div style={{ display: 'flex', gap: 6 }}>

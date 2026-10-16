@@ -190,7 +190,7 @@ export function UserContextMenu() {
         {user.bannerUrl ? (
           <img src={user.bannerUrl} alt="Banner" style={{ width: '100%', height: 90, objectFit: 'cover', display: 'block' }} />
         ) : (
-          <div style={{ height: 90, background: `linear-gradient(135deg, ${user.accentColor || '#00ff88'}22, transparent)` }} />
+          <div style={{ height: 90, background: `linear-gradient(135deg, ${user.accentColor || '#29A3FF'}22, transparent)` }} />
         )}
       </div>
       <div style={{ padding: 12, borderBottom: '1px solid var(--border)' }}>

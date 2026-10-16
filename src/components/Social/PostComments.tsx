@@ -427,7 +427,7 @@ export function PostComments({ postId, initial, users, currentUserId, header }: 
                   onClick={handleSend}
                   disabled={sending || !!photo?.uploading || (!input.trim() && !photo?.url)}
                   title="Enviar"
-                  style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent)', border: 'none', borderRadius: 12, color: '#000', cursor: sending ? 'default' : 'pointer', opacity: (!input.trim() && !photo?.url) ? 0.5 : 1, flexShrink: 0, boxShadow: '0 2px 12px rgba(0,255,136,.22)' }}
+                  style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent)', border: 'none', borderRadius: 12, color: '#000', cursor: sending ? 'default' : 'pointer', opacity: (!input.trim() && !photo?.url) ? 0.5 : 1, flexShrink: 0, boxShadow: '0 2px 12px rgba(41,163,255,.22)' }}
                 >
                   <Send size={17} strokeWidth={2} />
                 </button>

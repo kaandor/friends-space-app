@@ -1,6 +1,6 @@
 import { Fa } from '../../utils/fa'
 import { useState } from 'react'
-import { ArrowLeft, Menu, ChevronDown, House, Settings, ShieldHalf, Languages, HardDrive, Check, Pen, History, Info as InfoIcon, Rocket } from 'lucide-react'
+import { ArrowLeft, Menu, ChevronDown, House, Settings, ShieldHalf, Languages, HardDrive, Check, Pen, History, Info as InfoIcon, Rocket, UserPlus, MessageCircle, Phone, Download } from 'lucide-react'
 import { Avatar } from '../ui/Avatar'
 import { IconNotification, IconAdd, IconSearch } from '../../utils/icons'
 import type { User, Server } from '../../types'
@@ -221,18 +221,29 @@ export function TopBar({ activeUser, onShowPrivacy, onShowEditProfile, onShowAst
                     <div style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: 'var(--text-muted)' }}>
                       Historico
                     </div>
-                    {notifications.slice(0, 20).map(n => (
-                      <div key={n.id} className="fs-dropdown-item" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'default', opacity: n.read ? 0.55 : 1 }}>
+                    {notifications.slice(0, 20).map(n => {
+                      const kind = String(n.type || '')
+                      const Icon = kind.includes('friend') || kind.includes('pending') ? UserPlus
+                        : kind.includes('call') ? Phone
+                        : kind.includes('update') ? Download
+                        : MessageCircle
+                      const tint = kind.includes('update') ? 'var(--accent)' : kind.includes('call') ? '#f0b232' : 'var(--accent)'
+                      return (
+                      <div key={n.id} className="fs-dropdown-item" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'default', opacity: n.read ? 0.55 : 1, borderLeft: n.read ? 'none' : '2px solid var(--accent)', paddingLeft: n.read ? undefined : 10 }}>
+                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', flexShrink: 0 }}>
+                          <Icon size={14} style={{ color: tint }} />
+                        </span>
                         <Avatar src={n.fromPhoto} name={n.fromName} size={26} />
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.35 }}>{n.title}</div>
-                          {n.body ? <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.3 }}>{n.body}</div> : null}
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+                          <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.35 }}>{n.title}</div>
+                          {n.body ? <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.4 }}>{n.body}</div> : null}
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>
                             {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>
                         </div>
                       </div>
-                    ))}
+                      )
+                    })}
                   </>
                 )}
               </div>

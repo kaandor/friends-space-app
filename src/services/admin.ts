@@ -155,6 +155,16 @@ export async function listCallSessionsAdmin(): Promise<CallSessionAdmin[]> {
   }
 }
 
+export async function clearFeed() {
+  try {
+    const result = await requestBackend<{ cleared?: number }>('clearFeed', {
+      adminId: getAdminId(),
+    })
+    return { ok: true, cleared: result?.cleared ?? 0 }
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Erro ao limpar feed' }
+  }
+}
 export async function cleanupCallSession(sessionId: string) {
   try {
     const result = await requestBackend<{ removed: number }>('cleanupCallSession', {

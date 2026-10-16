@@ -16,7 +16,7 @@ function accentColor(): string {
     const v = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()
     if (v && v !== 'var(--accent)') return v
   } catch { }
-  return '#00ff88'
+  return '#29A3FF'
 }
 
 function mutedColor(): string {
@@ -218,6 +218,7 @@ export default function DebugWindow({ onClose }: { onClose: () => void }) {
   const livekitActive = useCallStore(s => s.livekitActive)
   const sessionId = useCallStore(s => s.sessionId)
   const createdAt = useCallStore(s => s.createdAt)
+  const connectedAt = useCallStore(s => s.connectedAt)
   const activeCall = useCallStore(s => s.activeCall)
   const [diag, setDiag] = useState<CallDiagnostics | null>(null)
   const [now, setNow] = useState(() => Date.now())
@@ -318,7 +319,8 @@ export default function DebugWindow({ onClose }: { onClose: () => void }) {
     } catch { return 'dev' }
   })()
   const nameOf = (peerId: string) => participants.find(p => p.userId === peerId)?.userName || `${peerId.slice(0, 8)}…`
-  const elapsed = activeCall && createdAt && createdAt > 0 ? formatElapsed(now - createdAt) : '--:--'
+  const callStart = (connectedAt && connectedAt > 0 ? connectedAt : createdAt) || 0
+  const elapsed = activeCall && callStart > 0 ? formatElapsed(now - callStart) : '--:--'
   const watch = useCallStore(s => s.sessionWatch)
   const lastDown = downHist.length > 0 ? downHist[downHist.length - 1] : null
 

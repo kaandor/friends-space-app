@@ -606,7 +606,7 @@ export function CallView() {
             {hasActiveScreen && !popout && !showMosaic && controlling !== screenUserId && (
               <div className="vc-topbar">
                 <span className="vc-live-dot" />
-                <Fa name="display" size={14} style={{  color: '#00ff88' }} />
+                <Fa name="display" size={14} style={{  color: '#29A3FF' }} />
                 <span style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Tela de {screenLabel}</span>
                 <span className="vc-aolive">AO VIVO</span>
                 <span className="vc-call-time">{callElapsed}</span>
@@ -1013,14 +1013,14 @@ export function CallView() {
                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
-                <span style={{ width: 34, height: 34, borderRadius: 10, background: item.active ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: item.active ? '#00ff88' : '#fff' }}>
+                <span style={{ width: 34, height: 34, borderRadius: 10, background: item.active ? 'rgba(41,163,255,0.15)' : 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: item.active ? '#29A3FF' : '#fff' }}>
                   {item.icon}
                 </span>
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#fff' }}>{item.label}</span>
                   <span style={{ display: 'block', fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>{item.desc}</span>
                 </span>
-                {item.active && <Check size={14} color="#00ff88" />}
+                {item.active && <Check size={14} color="#29A3FF" />}
               </button>
             ))}
           </div>

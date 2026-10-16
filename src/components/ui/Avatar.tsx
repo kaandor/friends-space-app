@@ -8,7 +8,7 @@ interface AvatarProps {
 }
 
 const colors = [
-  '#00ff88', '#00cc6a', '#ff4444', '#ffaa00',
+  '#29A3FF', '#0B7FD4', '#ff4444', '#ffaa00',
   '#4488ff', '#aa44ff', '#ff44aa', '#44ffcc',
 ]
 

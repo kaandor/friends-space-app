@@ -5,7 +5,7 @@ export function PrivacyPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary, #0f1115)', color: 'var(--text-primary, #e5e7eb)', padding: '32px 16px', fontFamily: 'Poppins, system-ui, sans-serif' }}>
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
-        <a href={base} style={{ color: '#00ff88', fontSize: 13, textDecoration: 'none', fontWeight: 600 }}>← Voltar ao Friends Space</a>
+        <a href={base} style={{ color: '#29A3FF', fontSize: 13, textDecoration: 'none', fontWeight: 600 }}>← Voltar ao Friends Space</a>
         <h1 style={{ fontSize: 26, fontWeight: 800, margin: '18px 0 6px' }}>Política de Privacidade</h1>
         <p style={{ color: 'var(--text-muted, #9ca3af)', fontSize: 12.5, margin: '0 0 24px' }}>Última atualização: 25/08/2026 · Friends Space Beta</p>
 
@@ -29,7 +29,7 @@ export function PrivacyPage() {
           </Section>
 
           <Section title="4. Publicidade e cookies">
-            <p>O plano gratuito exibe anúncios do Google AdSense no feed, no mesmo formato de redes sociais (a cada grupo de posts). O Google pode usar cookies e tecnologias semelhantes para veicular anúncios relevantes, conforme a política do Google e os controles disponíveis em <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer" style={{ color: '#00ff88' }}>g.co/adssettings</a>. Assinantes do plano ASTRO não recebem anúncios.</p>
+            <p>O plano gratuito exibe anúncios do Google AdSense no feed, no mesmo formato de redes sociais (a cada grupo de posts). O Google pode usar cookies e tecnologias semelhantes para veicular anúncios relevantes, conforme a política do Google e os controles disponíveis em <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer" style={{ color: '#29A3FF' }}>g.co/adssettings</a>. Assinantes do plano ASTRO não recebem anúncios.</p>
           </Section>
 
           <Section title="5. Compartilhamento">

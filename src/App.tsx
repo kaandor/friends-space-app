@@ -111,6 +111,7 @@ function App() {
   const { loadFriends, sendFriendRequest, addFriendById } = useFriendStore()
   const { loadCallSessions, incomingCall, setIncomingCall, callingUser, endCall, declineIncomingCall, callRejectedBy, callUser, dismissRejectedCall, callWaiting } = useCallStore()
   const callChannelId = useCallStore(s => s.channelId)
+  const activeCall = useCallStore(s => s.activeCall)
   const callServerId = useCallStore(s => s.serverId)
   const controllingCall = useCallStore(s => s.controlling)
   const ringing = Boolean(callingUser) || Boolean(incomingCall)
@@ -281,13 +282,10 @@ function App() {
   }, [])
 
   useEffect(() => {
+    // Editar perfil UNICO: sempre o modal (ProfileEditor). O inline do
+    // ProfileView foi removido — era o duplicado que confundia o save.
     const onEditProfile = () => {
-      if (!isDriveConnected()) {
-        setPendingDriveAction(() => () => { setProfileTab('perfil'); setShowProfile(true) })
-        setDriveGateOpen(true)
-        return
-      }
-      setProfileTab('perfil'); setShowProfile(true)
+      setShowEditProfile(true)
     }
     window.addEventListener('friends-space:edit-profile', onEditProfile)
     return () => window.removeEventListener('friends-space:edit-profile', onEditProfile)
@@ -302,7 +300,7 @@ function App() {
   const [showRoles, setShowRoles] = useState(false)
   const [inviteCode, setInviteCode] = useState('')
   const [roleName, setRoleName] = useState('')
-  const [roleColor, setRoleColor] = useState('#00ff88')
+  const [roleColor, setRoleColor] = useState('#29A3FF')
   const [toast, setToast] = useState('')
   const [showEditServer, setShowEditServer] = useState(false)
   const [editingServer, setEditingServer] = useState<Server | null>(null)
@@ -318,7 +316,7 @@ function App() {
   const [editServerPhoto, setEditServerPhoto] = useState('')
   const [editServerBanner, setEditServerBanner] = useState('')
   const [editServerDesc, setEditServerDesc] = useState('')
-  const [editServerColor, setEditServerColor] = useState('#00ff88')
+  const [editServerColor, setEditServerColor] = useState('#29A3FF')
   const [editCallAccess, setEditCallAccess] = useState<'public' | 'members' | 'staff'>('public')
   const [editCallPassword, setEditCallPassword] = useState('')
   const [editStaffIds, setEditStaffIds] = useState('')
@@ -525,6 +523,31 @@ function App() {
     return () => { window.removeEventListener('friends-space:toast', onToast); window.removeEventListener('friends-space:open-discover', onOpenDiscover); window.removeEventListener('friends-space:open-download', onOpenDownload) }
   }, [])
 
+  // Lembra o ultimo canal de TEXTO por servidor: ao sair da call em voz,
+  // volta sozinho para onde estava (em vez de ficar parado no canal vazio).
+  const wasInCallRef = useRef(false)
+  useEffect(() => {
+    try {
+      if (currentChannel && currentChannel.type === 'text' && currentChannel.serverId) {
+        window.localStorage.setItem('friends-space:last-channel:' + currentChannel.serverId, currentChannel.id)
+      }
+    } catch { }
+  }, [currentChannel])
+  useEffect(() => {
+    const inCall = Boolean(activeCall)
+    const was = wasInCallRef.current
+    wasInCallRef.current = inCall
+    if (was && !inCall && currentChannel && currentChannel.type === 'voice') {
+      try {
+        const lastId = window.localStorage.getItem('friends-space:last-channel:' + (currentChannel.serverId || ''))
+        const srv = servers.find(x => x.id === currentChannel.serverId)
+        const target = (srv?.channels || []).find(c => c.id === lastId && c.type === 'text')
+          || (srv?.channels || []).find(c => c.type === 'text')
+        if (target) setCurrentChannel(target)
+      } catch { }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCall])
   // Pre-conexao: entrou no servidor = pre-aquece ICE + sessoes + usuarios.
   const prewarmServerId = currentServer?.id
   useEffect(() => {
@@ -980,7 +1003,7 @@ function App() {
     setEditServerPhoto(target.photoUrl || '')
     setEditServerBanner(target.bannerUrl || '')
     setEditServerDesc(target.description || '')
-    setEditServerColor(target.accentColor || '#00ff88')
+    setEditServerColor(target.accentColor || '#29A3FF')
     setEditCallAccess(target.callAccess || 'public')
     setEditCallPassword(target.callPassword || '')
     setEditStaffIds((target.staffMemberIds || []).join(', '))

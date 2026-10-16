@@ -634,7 +634,7 @@ ${u}`.trim().slice(0, 500)
             <span style={{ flex: 1 }} />
             <span style={{ fontSize: 11, color: composer.length > 450 ? '#ef4444' : 'var(--text-muted)', fontWeight: 600, marginRight: 8 }}>{composer.length}/500</span>
             <button onClick={handlePost} disabled={posting || (!composer.trim() && !attachedFile && !gifUrl.trim() && !genericFile && pollOptions.filter(o => o.trim()).length < 2)}
-              style={{ padding: '9px 22px', background: 'var(--accent)', border: 'none', borderRadius: 999, color: '#000', fontWeight: 800, fontSize: 13, letterSpacing: '0.01em', cursor: 'pointer', boxShadow: '0 2px 14px rgba(0,255,136,.22)', opacity: posting || (!composer.trim() && !attachedFile && !gifUrl.trim() && !genericFile && pollOptions.filter(o => o.trim()).length < 2) ? 0.5 : 1 }}>
+              style={{ padding: '9px 22px', background: 'var(--accent)', border: 'none', borderRadius: 999, color: '#000', fontWeight: 800, fontSize: 13, letterSpacing: '0.01em', cursor: 'pointer', boxShadow: '0 2px 14px rgba(41,163,255,.22)', opacity: posting || (!composer.trim() && !attachedFile && !gifUrl.trim() && !genericFile && pollOptions.filter(o => o.trim()).length < 2) ? 0.5 : 1 }}>
               {posting ? 'Publicando...' : scheduledAt ? 'Agendar' : 'Publicar'}
             </button>
             {emojiOpen && (

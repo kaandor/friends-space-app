@@ -38,7 +38,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
             onClick={() => window.location.reload()}
             style={{
               padding: '10px 22px', borderRadius: 8, border: 'none', cursor: 'pointer',
-              background: 'var(--accent, #00ff88)', color: '#000', fontWeight: 800, fontSize: 14,
+              background: 'var(--accent, #29A3FF)', color: '#000', fontWeight: 800, fontSize: 14,
             }}
           >
             Recarregar

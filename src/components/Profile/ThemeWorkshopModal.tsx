@@ -27,7 +27,7 @@ export function ThemeWorkshopModal({ onClose }: Props) {
   const [granted, setGranted] = useState<UserTheme[]>([])
   const [name, setName] = useState('')
   const [kind, setKind] = useState<'solid' | 'animated'>('solid')
-  const [accent, setAccent] = useState('#00ff88')
+  const [accent, setAccent] = useState('#29A3FF')
   const [bg, setBg] = useState('#0a0a0a')
   const [bg2, setBg2] = useState('#111111')
   const [text, setText] = useState('#f0f3f4')

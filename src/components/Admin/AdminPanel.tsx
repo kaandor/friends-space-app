@@ -10,7 +10,7 @@ import {
   approveUser, listPendingUsers,
   getUserDiagnostics, rejectUser, listBans, banIp, unbanIp, unbanDevice,
   adminCancelAstro, type AdminAstroTier,
-  listClientErrors, type ClientErrorEntry,
+  listClientErrors, type ClientErrorEntry, clearFeed,
 } from '../../services/admin'
 import { Flag, CircleAlert, ShieldCheck, UserCog, Server as ServerIcon, Phone, Rocket, Headset, Gavel, RectangleHorizontal, RotateCw, BadgeCheck, Code2, LayoutDashboard, Bug, Search, type LucideIcon } from 'lucide-react'
 import { Avatar } from '../ui/Avatar'
@@ -272,6 +272,11 @@ export function AdminPanel({ open, onClose, initialTab }: { open: boolean; onClo
     ]).finally(() => setInitialLoading(false))
   }, [open, loadReports, loadServers, loadCalls, loadMod, loadAds, loadErrors, isDevFlag, initialTab])
 
+  useEffect(() => {
+    if (!open || tab !== 'calls') return
+    const t = window.setInterval(() => { try { void loadCalls() } catch { } }, 5000)
+    return () => window.clearInterval(t)
+  }, [open, tab, loadCalls])
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
@@ -580,6 +585,12 @@ export function AdminPanel({ open, onClose, initialTab }: { open: boolean; onClo
                 <button onClick={() => void loadMod()} style={{ padding: '8px 14px', borderRadius: 8, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', marginBottom: 12 }}>
                   <RotateCw size={13} strokeWidth={2.5} style={{ marginRight: 6, verticalAlign: -2 }} />Atualizar
                 </button>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                  <SmallBtn color={RED} onClick={() => {
+                    if (!window.confirm('Limpar TODO o feed? Isso apaga todos os posts.')) return
+                    void clearFeed().then(r => notify(r.ok ? `Feed limpo (${r.cleared ?? 0} posts).` : (r.error || 'Erro')))
+                  }}>Limpar feed</SmallBtn>
+                </div>
                 <h3 style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', margin: '4px 0 8px' }}>Contas recentes ({pendingList.length})</h3>
                 {pendingList.length === 0 && <Empty label="Nenhuma conta nova nos últimos 7 dias." />}
                 {pendingList.map(u => (

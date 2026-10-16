@@ -92,6 +92,7 @@ export type SoundName =
   | 'astro'
   | 'mute'
   | 'unmute'
+  | 'chime'
 
 export function playSound(name: SoundName) {
   try {
@@ -152,6 +153,10 @@ export function playSound(name: SoundName) {
       case 'unmute':
         tone({ freq: 330, glideTo: 660, dur: 0.16, gain: 0.13, type: 'triangle' })
         break
+      case 'chime':
+        tone({ freq: 880, dur: 0.22, gain: 0.07, type: 'sine' })
+        tone({ freq: 1174.66, at: 0.12, dur: 0.3, gain: 0.06, type: 'sine' })
+        break
     }
   } catch {
     // audio indisponivel: silencio
@@ -181,6 +186,8 @@ const TYPE_SOUND: Record<string, SoundName> = {
   'status': 'notification',
   'astro': 'astro',
   'astro-gift': 'astro',
+  'feed-comment': 'chime',
+  'update-news': 'chime',
 }
 
 export function playSoundForType(type: string) {

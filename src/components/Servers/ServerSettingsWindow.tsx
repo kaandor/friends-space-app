@@ -329,7 +329,7 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
 
   /* Formulários */
   const [newRole, setNewRole] = useState('')
-  const [newRoleColor, setNewRoleColor] = useState('#00ff88')
+  const [newRoleColor, setNewRoleColor] = useState('#29A3FF')
   const [autoMod, setAutoMod] = useState({ spam: initialSettings.automod.spam, links: initialSettings.automod.links, ofensa: initialSettings.automod.ofensa, caps: initialSettings.automod.caps })
   const [blockedWords, setBlockedWords] = useState<string[]>(initialSettings.automod.words)
   const [newWord, setNewWord] = useState('')
@@ -1456,7 +1456,7 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
       const applyData = async (data: { channels?: { name: string; type: 'text' | 'voice'; categoryId?: string }[]; categories?: { name: string }[]; roles?: { name: string; color: string }[] }) => {
         for (const c of data.categories || []) { try { await addCategory(server.id, c.name) } catch { /* noop */ } }
         for (const ch of data.channels || []) { try { await addChannel(server.id, ch.name, ch.type === 'voice' ? 'voice' : 'text', ch.categoryId) } catch { /* noop */ } }
-        for (const r of data.roles || []) { try { await addRole(server.id, r.name, r.color || '#00ff88') } catch { /* noop */ } }
+        for (const r of data.roles || []) { try { await addRole(server.id, r.name, r.color || '#29A3FF') } catch { /* noop */ } }
         notify('Modelo aplicado')
       }
       const applySaved = () => {

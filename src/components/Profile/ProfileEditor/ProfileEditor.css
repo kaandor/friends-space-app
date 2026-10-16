@@ -18,8 +18,8 @@
   --text-soft: #d4dadd;
   --muted: #8d979d;
   --muted-2: #687279;
-  --green: #19d56b;
-  --green-deep: #0e9d4c;
+  --green: #29A3FF;
+  --green-deep: #0B7FD4;
   --red: #ff5964;
   --shadow: 0 12px 28px rgba(0,0,0,.22);
   --ease-out: cubic-bezier(.23,1,.32,1);
@@ -97,7 +97,14 @@
 .fs-profile-editor .profile-header-actions button { width: 30px; height: 30px; display: grid; place-items: center; background: transparent; color: #aab3b7; border-radius: 6px; }
 .fs-profile-editor .profile-header-actions button:hover { color: var(--green); background: #131b17; }
 .fs-profile-editor .main-layout { display: grid; grid-template-columns: minmax(0, 1fr) 410px; gap: 18px; align-items: start; padding: 0 16px 18px; max-width: 1370px; }
-.fs-profile-editor .editor-column { min-width: 0; padding-top: 19px; }
+.fs-profile-editor .editor-column { min-width: 0; padding-top: 19px;
+/* Parte branca completa: a coluna do editor preenche a altura da janela. */
+.fs-profile-editor .main-layout > .editor-column {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+ }
 .fs-profile-editor .editor-top-grid { display: grid; grid-template-columns: minmax(190px, 29%) minmax(330px, 1fr); border-bottom: 1px solid rgba(255,255,255,.055); padding-bottom: 20px; }
 .fs-profile-editor .profile-photo-section { min-height: 302px; padding: 5px 16px 0 15px; border-right: 1px solid rgba(255,255,255,.05); }
 .fs-profile-editor .basic-info-section { padding: 5px 0 0 24px; }
@@ -1107,7 +1114,7 @@
   place-items: center;
   flex: none;
   border-radius: 6px;
-  background: rgba(25, 213, 107, .16);
+  background: rgba(41, 163, 255, .16);
   color: var(--green);
 }
 .fs-profile-editor .astro-plus-tier-profile-page .brand-mark {
@@ -1757,7 +1764,7 @@
   color: #06140b;
   border-color: transparent;
   font-weight: 700;
-  box-shadow: 0 0 12px rgba(25, 213, 107, 0.3);
+  box-shadow: 0 0 12px rgba(41, 163, 255, 0.3);
 }
 .fs-profile-editor .appearance-color-grid {
   display: grid;
@@ -1788,7 +1795,7 @@
   color: #06140b;
   border-color: transparent;
   font-weight: 700;
-  box-shadow: 0 0 12px rgba(25, 213, 107, 0.3);
+  box-shadow: 0 0 12px rgba(41, 163, 255, 0.3);
 }
 .fs-profile-editor .appearance-color-swatch {
   width: 14px;
@@ -2767,7 +2774,7 @@
   -webkit-backdrop-filter: blur(4px);
   transition: background 160ms var(--ease-out), transform 160ms var(--ease-out);
 }
-.fs-profile-editor .astro-card-banner-edit:hover { background: rgba(25, 213, 107, .85); color: #06140b; transform: scale(1.05); }
+.fs-profile-editor .astro-card-banner-edit:hover { background: rgba(41, 163, 255, .85); color: #06140b; transform: scale(1.05); }
 .fs-profile-editor .astro-card-banner-edit:active { transform: scale(.96); }
 .fs-profile-editor .plan-resources-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .fs-profile-editor .plan-resources-heading h3 { margin: 0 0 13px; flex: 1; }

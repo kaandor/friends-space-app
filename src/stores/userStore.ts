@@ -50,10 +50,17 @@ function startPresencePoll() {
   }, 10000)
 }
 
+// Contador de abas: fechar UMA aba com outras abertas nao pode marcar
+// offline (era a causa do online-fantasma invertido e do offline errado).
 function markOfflineBeacon() {
   try {
     const u = useUserStore.getState().currentUser
     if (!u) return
+    try {
+      const n = Math.max(0, Number(window.localStorage.getItem('friends-space:tabs') || '1') - 1)
+      window.localStorage.setItem('friends-space:tabs', String(n))
+      if (n > 0) return
+    } catch { }
     const payload = JSON.stringify({ action: 'markOffline', userId: u.id })
     if (navigator.sendBeacon) {
       try {
@@ -69,6 +76,10 @@ function markOfflineBeacon() {
 function startHeartbeat() {
   if (heartbeatStarted) return
   heartbeatStarted = true
+  try {
+    const n = Number(window.localStorage.getItem('friends-space:tabs') || '0')
+    window.localStorage.setItem('friends-space:tabs', String(n + 1))
+  } catch { }
   lastBeatAt = 0
   void sendHeartbeat()
   void useUserStore.getState().loadUsers().catch(() => { })

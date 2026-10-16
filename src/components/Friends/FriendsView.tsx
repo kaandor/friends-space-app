@@ -570,6 +570,31 @@ export function FriendsView() {
             <FeedView onDriveRequired={() => setDriveModal(true)} />
           </div>
         )}
+        {currentDMUser && !isMobile && (
+          <aside style={{ width: 260, flexShrink: 0, borderLeft: '1px solid var(--border)', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 18px', gap: 6, overflowY: 'auto' }}>
+            <Avatar src={currentDMUser.photoUrl || ''} name={currentDMUser.name} size={88} />
+            <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)', textAlign: 'center' }}>{currentDMUser.name}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>@{currentDMUser.friendCode || 'usuario'}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: isUserOnline(currentDMUser) ? 'var(--accent)' : 'var(--text-muted)' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: isUserOnline(currentDMUser) ? 'var(--accent)' : 'var(--text-muted)' }} />
+              {isUserOnline(currentDMUser) ? 'Online agora' : 'Offline'}
+            </div>
+            {currentDMUser.bio && (
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', textAlign: 'center', lineHeight: 1.5, marginTop: 4 }}>{currentDMUser.bio}</div>
+            )}
+            <button
+              onClick={e => {
+                try {
+                  const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                  openUserMenu(currentDMUser, r.left + r.width / 2, r.top)
+                } catch { }
+              }}
+              style={{ marginTop: 12, background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+            >
+              Ver perfil completo
+            </button>
+          </aside>
+        )}
       </div>
 
       {showAstroPlans && <AstroPlansModal onClose={() => setShowAstroPlans(false)} />}

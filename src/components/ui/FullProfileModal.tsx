@@ -201,7 +201,7 @@ export function FullProfileModal({ user, onClose }: { user: User; onClose: () =>
   const verified = Boolean(user.googleId || user.authProvider === 'google')
   const badgeHidden = settings['showBadges'] === false
   const showJoinDate = settings['showJoinDate'] !== false
-  const accent = user.accentColor || '#00ff88'
+  const accent = user.accentColor || '#29A3FF'
 
   const sendMessage = () => {
     window.dispatchEvent(new CustomEvent('friends-space:open-dm', { detail: { user } }))

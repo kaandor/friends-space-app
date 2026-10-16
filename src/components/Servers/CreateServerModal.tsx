@@ -125,12 +125,12 @@ export function CreateServerModal({ open, onClose, onCreate }: CreateServerModal
   const [folders, setFolders] = useState(['Canais de Texto', 'Canais de Voz'])
   const [newFolder, setNewFolder] = useState('')
   const [roles, setRoles] = useState<CreateServerRoleDraft[]>([
-    { name: 'Admin', color: '#00ff88' },
+    { name: 'Admin', color: '#29A3FF' },
     { name: 'Moderador', color: '#5865f2' },
     { name: 'Membro', color: '#99aab5' },
   ])
   const [newRoleName, setNewRoleName] = useState('')
-  const [newRoleColor, setNewRoleColor] = useState('#00ff88')
+  const [newRoleColor, setNewRoleColor] = useState('#29A3FF')
   const [error, setError] = useState(false)
   const iconInputRef = useRef<HTMLInputElement>(null)
   const bannerInputRef = useRef<HTMLInputElement>(null)
@@ -245,11 +245,11 @@ export function CreateServerModal({ open, onClose, onCreate }: CreateServerModal
     setFolders(['Canais de Texto', 'Canais de Voz'])
     setNewFolder('')
     setRoles([
-      { name: 'Admin', color: '#00ff88' },
+      { name: 'Admin', color: '#29A3FF' },
       { name: 'Moderador', color: '#5865f2' },
       { name: 'Membro', color: '#99aab5' },
     ])
-    setNewRoleName(''); setNewRoleColor('#00ff88')
+    setNewRoleName(''); setNewRoleColor('#29A3FF')
     setSettings({ public: true, verify: true, welcome: true, logs: false })
     setActiveStep(0)
     onClose()

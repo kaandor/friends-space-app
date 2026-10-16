@@ -263,10 +263,10 @@ export const useServerStore = create<ServerState>((set, get) => ({
         { id: crypto.randomUUID(), name: 'geral', type: 'text', serverId },
         { id: crypto.randomUUID(), name: 'Sala 1', type: 'voice', serverId },
       ]
-      const roleDrafts = (extra?.roles || []).map(r => ({ name: String(r?.name || '').trim().slice(0, 30), color: String(r?.color || '#00ff88') })).filter(r => r.name)
+      const roleDrafts = (extra?.roles || []).map(r => ({ name: String(r?.name || '').trim().slice(0, 30), color: String(r?.color || '#29A3FF') })).filter(r => r.name)
       const roles: Role[] = roleDrafts.length > 0
         ? roleDrafts.map(r => ({ id: crypto.randomUUID(), name: r.name, color: r.color, serverId, permissions: r.name.toLowerCase() === 'admin' ? ['all'] : [] }))
-        : [{ id: crypto.randomUUID(), name: 'Admin', color: '#00ff88', serverId, permissions: ['all'] }]
+        : [{ id: crypto.randomUUID(), name: 'Admin', color: '#29A3FF', serverId, permissions: ['all'] }]
       const categories = (extra?.categories || []).map(n => String(n || '').trim().slice(0, 40)).filter(Boolean)
         .map(n => ({ id: crypto.randomUUID(), name: n, serverId }))
       const events = (extra?.events || []).map(e => ({

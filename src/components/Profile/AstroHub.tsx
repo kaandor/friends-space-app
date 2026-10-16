@@ -78,7 +78,14 @@ export function AstroHub() {
         <div className="fs-astrohub-stars2" style={{ position: 'absolute', inset: 0, backgroundImage: STARS_2, pointerEvents: 'none' }} />
         <div style={{ position: 'relative', padding: '20px 18px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-            <span className="fs-astrohub-rocket" style={{ fontSize: 40, lineHeight: 1, filter: `drop-shadow(0 0 14px color-mix(in srgb, ${planColor} 70%, transparent))` }}>🚀</span>
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 52, height: 52, borderRadius: 14, background: `color-mix(in srgb, ${planColor} 14%, transparent)`, border: `1px solid color-mix(in srgb, ${planColor} 35%, transparent)`, flexShrink: 0 }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={planColor} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+                <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+                <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+                <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+              </svg>
+            </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 2, color: planColor, textTransform: 'uppercase' }}>
                 {paid ? plan?.badge : 'Friends Space Astro'}

@@ -28,6 +28,7 @@ interface CallState {
   channelId: string | null
   serverId: string | null
   createdAt: number | null
+  connectedAt: number | null
   participants: CallParticipant[]
   muted: boolean
   deafened: boolean
@@ -1695,6 +1696,11 @@ async function createPeerConnection(peerId: string, initiator: boolean) {
     // recriando a PC em loop (sintoma: ping aparece e some). O browser conclui
     // o DTLS sozinho; se a PC morrer de verdade, o processCallSignals recria.
     if (connectionState === 'connected') {
+      // Timer conta da PRIMEIRA conexao real (createdAt marcava o join,
+      // incluindo os segundos conectando — era o "tempo errado").
+      try {
+        if (!useCallStore.getState().connectedAt) useCallStore.setState({ connectedAt: Date.now() })
+      } catch { }
       reconnectRetries.delete(peerId)
       peerLastConnected.set(peerId, Date.now())
       const timer = disconnectTimers.get(peerId)
@@ -2389,7 +2395,7 @@ function stopSignalLoop() {  if (signalTimer !== null) window.clearTimeout(signa
   for (const stream of Object.values(remoteStreams)) { try { stream.getTracks().forEach(t => t.stop()) } catch { } }
   for (const stream of Object.values(remoteScreenStreams)) { try { stream.getTracks().forEach(t => t.stop()) } catch { } }
   clearControlTimer()
-  useCallStore.setState({ remoteStreams: {}, remoteScreenStreams: {}, connectionStates: {}, peerProtos: {}, sessionWatch: null, controlEndsAt: null, controlGrants: null, controlLinkOk: null, lastInputAckAt: null, selftestResult: null, speakingUsers: {} })
+  useCallStore.setState({ remoteStreams: {}, remoteScreenStreams: {}, connectionStates: {}, peerProtos: {}, sessionWatch: null, controlEndsAt: null, controlGrants: null, controlLinkOk: null, lastInputAckAt: null, selftestResult: null, connectedAt: null, speakingUsers: {} })
 }
 
 // Poller rapido de chamadas recebidas: enquanto o usuario nao esta em nenhuma
@@ -2745,6 +2751,7 @@ export const useCallStore = create<CallState>((set, get) => ({
   channelId: null,
   serverId: null,
   createdAt: null,
+  connectedAt: null,
   participants: [],
   muted: false,
   deafened: false,
@@ -3039,6 +3046,7 @@ export const useCallStore = create<CallState>((set, get) => ({
       channelId: null,
       serverId: null,
       createdAt: null,
+      connectedAt: null,
       participants: [],
       muted: false,
       deafened: false,

@@ -262,7 +262,7 @@ export function RemoteControlOverlay({ onInput, onExit, onFullscreen }: {
       >
         <svg viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
           <path d="M4 2 L4 20 L8.6 15.9 L11.8 21.2 L14.4 19.9 L11.2 14.6 L16 14.5 Z" fill="#fff" stroke="#111" strokeWidth="1.4" />
-          <path d="M4 2 L4 20 L8.6 15.9 L11.8 21.2 L14.4 19.9 L11.2 14.6 L16 14.5 Z" fill="#00ff88" opacity="0.35" />
+          <path d="M4 2 L4 20 L8.6 15.9 L11.8 21.2 L14.4 19.9 L11.2 14.6 L16 14.5 Z" fill="#29A3FF" opacity="0.35" />
         </svg>
       </div>
 
@@ -293,7 +293,7 @@ export function RemoteControlOverlay({ onInput, onExit, onFullscreen }: {
         <span><b style={{ color: '#fff' }}>Ctrl+Shift+C</b> parar controle</span>
         <span><b style={{ color: '#fff' }}>Ctrl+Shift+Z</b> sair do remoto</span>
         <span title={controlLinkOk === false ? 'PC remoto sem resposta' : lastInputAckAt && Date.now() - lastInputAckAt < 8000 ? 'Comandos chegando no PC remoto' : 'Enlace com o PC remoto'}>
-          <b style={{ color: controlLinkOk === false ? '#f04747' : lastInputAckAt && Date.now() - lastInputAckAt < 8000 ? '#00ff88' : '#f0b232' }}>
+          <b style={{ color: controlLinkOk === false ? '#f04747' : lastInputAckAt && Date.now() - lastInputAckAt < 8000 ? '#29A3FF' : '#f0b232' }}>
             {controlLinkOk === false ? 'sem resposta' : lastInputAckAt && Date.now() - lastInputAckAt < 8000 ? 'controlando' : 'ligando…'}
           </b>
         </span>
