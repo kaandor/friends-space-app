@@ -17,7 +17,7 @@ export interface AppearanceSettings {
 }
 
 export const APPEARANCE_THEMES: Record<AppearanceThemeId, { accent: string; strong: string; soft: string; glow: string; isLight?: boolean }> = {
-  default: { accent: "#10b981", strong: "#052e16", soft: "rgba(16,185,129,.15)", glow: "rgba(16,185,129,.28)" },
+  default: { accent: "#29A3FF", strong: "#0B7FD4", soft: "rgba(41,163,255,.15)", glow: "rgba(41,163,255,.28)" },
   white: { accent: "#ffffff", strong: "#0f172a", soft: "rgba(15,23,42,.15)", glow: "rgba(15,23,42,.2)", isLight: true },
   green: { accent: "#10b981", strong: "#047857", soft: "rgba(16,185,129,.15)", glow: "rgba(16,185,129,.28)" },
   blue: { accent: "#3b82f6", strong: "#1d4ed8", soft: "rgba(59,130,246,.15)", glow: "rgba(59,130,246,.28)" },
