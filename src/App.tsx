@@ -106,6 +106,16 @@ function getInitialTheme(): 'dark' | 'light' {
 
 // Vigia do carregamento: se a sessao travar, mostra o motivo + botao
 // em vez de girar para sempre (o print disso diagnostica na hora).
+async function updateUserAccent(ap: Record<string, unknown>, cu: { id: string; settings?: unknown }) {
+  try {
+    const { requestBackend } = await import('./services/backend')
+    await requestBackend('updateUser', {
+      id: cu.id,
+      data: { settings: { ...((cu.settings || {}) as Record<string, unknown>), appliedTheme: { ...ap, accent: '#29A3FF' } } },
+    })
+  } catch { }
+}
+
 function LoadingWatchdog() {
   const [stuck, setStuck] = useState(false)
   useEffect(() => {
@@ -447,11 +457,41 @@ function App() {
     const s = (currentUser?.settings || {}) as Record<string, unknown>
     const active = (s.astro === true || s.astro === 'true') && !(Number(s.astroUntil || 0) > 0 && Number(s.astroUntil) < Date.now())
     const applied = (active ? s.appliedTheme : null) as Record<string, string> | undefined
-    // Migracao tema azul: accents verdes legados (00ff88/00cc6a/19d56b)
-    // viram azul pinguim. Temas custom de outra cor sao preservados.
+    // Migracao tema azul: QUALQUER accent esverdeado (matiz 80-170)
+    // vira azul pinguim. Outras cores custom sao preservadas.
     let appliedAccent = String(applied?.accent || '')
     try {
-      if (/^#(00ff88|00cc6a|19d56b)$/i.test(appliedAccent.trim())) appliedAccent = '#29A3FF'
+      const m = appliedAccent.trim().match(/^#([0-9a-f]{6})$/i)
+      if (m) {
+        const r = parseInt(m[1].slice(0, 2), 16) / 255
+        const g = parseInt(m[1].slice(2, 4), 16) / 255
+        const b = parseInt(m[1].slice(4, 6), 16) / 255
+        const mx = Math.max(r, g, b)
+        const mn = Math.min(r, g, b)
+        const d = mx - mn
+        let h = 0
+        if (d > 0) {
+          if (mx === r) h = ((g - b) / d) % 6
+          else if (mx === g) h = (b - r) / d + 2
+          else h = (r - g) / d + 4
+          h = h * 60
+          if (h < 0) h += 360
+        }
+        const sat = mx === 0 ? 0 : d / mx
+        if (d > 0.12 && sat > 0.25 && h >= 80 && h <= 170) {
+          appliedAccent = '#29A3FF'
+          // Persiste 1x para nao depender da migracao (sincroniza devices).
+          try {
+            const cu = useUserStore.getState().currentUser
+            const st = (cu?.settings || {}) as Record<string, unknown>
+            const ap = (st.appliedTheme || {}) as Record<string, unknown>
+            if (cu && String(ap.accent || '') !== '#29A3FF' && !(window as unknown as { __accentMigrated?: boolean }).__accentMigrated) {
+              (window as unknown as { __accentMigrated?: boolean }).__accentMigrated = true
+              void updateUserAccent(ap, cu)
+            }
+          } catch { }
+        }
+      }
     } catch { }
     const vars: Array<[string, string]> = [
       ['--accent', appliedAccent],
