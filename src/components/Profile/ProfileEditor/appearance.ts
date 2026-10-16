@@ -143,8 +143,8 @@ export function appearanceScreenStyle(appearance: AppearanceSettings): CSSProper
     "--bg-tertiary": hasImage ? `color-mix(in srgb, ${page} 84%, transparent)` : `var(--appearance-page-bg)`,
     "--bg-hover": "color-mix(in srgb, var(--appearance-page-bg) 86%, var(--appearance-accent))",
     "--bg-active": "color-mix(in srgb, var(--appearance-page-bg) 74%, var(--appearance-accent))",
-    "--border": "color-mix(in srgb, var(--appearance-accent) 30%, transparent)",
-    "--border-light": "color-mix(in srgb, var(--appearance-accent) 40%, transparent)",
+    "--border": "color-mix(in srgb, var(--appearance-accent) 8%, transparent)",
+    "--border-light": "color-mix(in srgb, var(--appearance-accent) 13%, transparent)",
     "--sans": "var(--appearance-font)",
   } as CSSProperties;
 }
