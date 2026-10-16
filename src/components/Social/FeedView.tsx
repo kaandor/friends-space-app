@@ -6,7 +6,7 @@ import { useServerStore } from '../../stores/serverStore'
 import { requestBackend } from '../../services/backend'
 import { uploadToDriveWithProgress, toImageUrl, isDriveConnected } from '../../services/driveService'
 import { getAstroTier, assertUploadLimit } from '../../utils/astro'
-import { Image, ListChecks, Smile, Calendar, MapPin, Flag, Paperclip, Repeat2, Heart, BarChart3, Bookmark, Upload, Search, Newspaper, X, Trash2, Rocket, Globe } from 'lucide-react'
+import { Image, ListChecks, Smile, Calendar, MapPin, Flag, Paperclip, Repeat2, Heart, BarChart3, Bookmark, Upload, Search, Newspaper, X, Trash2, Rocket, Globe, Clock } from 'lucide-react'
 import { klipyEnabled } from '../../services/klipy'
 import { KlipyPicker } from '../Chat/KlipyPicker'
 import { uiEnabled } from '../Profile/InterfaceTab'
@@ -724,7 +724,7 @@ ${u}`.trim().slice(0, 500)
                 <Avatar src={s.photoUrl} name={s.name} size={40} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {s.name} {s.verified && <span style={{ color: 'var(--accent)' }}>✔</span>}
+                {s.name} {s.verified && <span style={{ color: '#34d399' }}>✔</span>}
                   </div>
                   <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center', marginTop: 2 }}>
                     {s.category && <span style={{ fontSize: 10, fontWeight: 800, background: 'var(--accent)', color: '#000', borderRadius: 4, padding: '1px 6px' }}>{s.category}</span>}
@@ -964,14 +964,14 @@ ${u}`.trim().slice(0, 500)
             style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 12, padding: '6px 8px', flexShrink: 0 }}>✕</button>
         )}
         <button onClick={() => { if (searchInput.trim().length >= 2) { setSearchQuery(searchInput.trim()); setSearchTab('principal') } }} title="Buscar"
-          style={{ border: 'none', borderRadius: 999, background: 'var(--accent)', color: '#000', fontWeight: 800, fontSize: 12, padding: '7px 14px', cursor: 'pointer', flexShrink: 0 }}>
+          style={{ border: 'none', borderRadius: 999, background: '#34d399', color: '#06281c', fontWeight: 800, fontSize: 12, padding: '7px 14px', cursor: 'pointer', flexShrink: 0 }}>
           Buscar
         </button>
       </div>
       {uiEnabled(currentUser, 'trending') && (
       <div style={{ background: 'var(--bg-primary)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px 8px', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ color: 'var(--text-muted)', display: 'inline-flex' }}>🕐</span>
+          <span style={{ color: '#34d399', display: 'inline-flex' }}><Clock size={15} strokeWidth={2} /></span>
           <h4 style={{ color: 'var(--text-primary)', fontWeight: 800, fontSize: 15, margin: 0, flex: 1 }}>O que está acontecendo</h4>
           <span style={{ color: 'var(--text-muted)', fontSize: 16 }}>›</span>
         </div>
@@ -1008,8 +1008,8 @@ ${u}`.trim().slice(0, 500)
               Notícias do dia
             </h4>
             <button onClick={() => setNewsOpen(true)} title="Today's News — resumo das notícias" className="fs-icon-btn"
-              style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)', cursor: 'pointer', width: 28, height: 28 }}>
-              <Newspaper size={14} strokeWidth={2} />
+              style={{ background: 'none', border: 'none', color: '#34d399', cursor: 'pointer', width: 28, height: 28 }}>
+              <Newspaper size={15} strokeWidth={2} />
             </button>
           </div>
           {(showAllNews ? visibleNews : visibleNews.slice(0, 5)).map(n => (
@@ -1018,8 +1018,7 @@ ${u}`.trim().slice(0, 500)
               onMouseOver={e => e.currentTarget.style.background = 'var(--bg-hover)'}
               onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{[n.category, n.source].filter(Boolean).join(' · ') || 'Notícias'}</div>
-                <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13, lineHeight: 1.35, marginTop: 1 }}>{n.title}</div>
+                <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13, lineHeight: 1.35 }}>{n.title}</div>
                 {timeAgo(n.pubDate) && <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>{timeAgo(n.pubDate)}</div>}
               </div>
               <span style={{ color: 'var(--text-muted)', fontSize: 16, flexShrink: 0 }}>›</span>
@@ -1055,7 +1054,7 @@ ${u}`.trim().slice(0, 500)
               </span>
             ) : (
               <button onClick={() => void handleFollow(s)} disabled={joiningId === s.id}
-                style={{ padding: '6px 14px', borderRadius: 999, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', fontWeight: 800, fontSize: 12, cursor: 'pointer', opacity: joiningId === s.id ? 0.5 : 1, flexShrink: 0 }}>
+                style={{ padding: '6px 14px', borderRadius: 999, border: '1px solid #34d399', background: 'transparent', color: '#34d399', fontWeight: 800, fontSize: 12, cursor: 'pointer', opacity: joiningId === s.id ? 0.5 : 1, flexShrink: 0 }}>
                 {joiningId === s.id ? '...' : 'Seguir'}
               </button>
             )}
