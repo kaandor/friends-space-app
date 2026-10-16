@@ -6,7 +6,7 @@ import { useServerStore } from '../../stores/serverStore'
 import { requestBackend } from '../../services/backend'
 import { uploadToDriveWithProgress, toImageUrl, isDriveConnected } from '../../services/driveService'
 import { getAstroTier, assertUploadLimit } from '../../utils/astro'
-import { Image, ListChecks, Smile, Calendar, MapPin, Flag, Paperclip, Repeat2, Heart, BarChart3, Bookmark, Upload, Search, Newspaper, X, Trash2, Rocket, Globe, Clock } from 'lucide-react'
+import { Image, ListChecks, Smile, Calendar, MapPin, Flag, Paperclip, Repeat2, Heart, BarChart3, Bookmark, Upload, Search, Newspaper, X, Trash2, Rocket, Globe, Clock, Lock, ChevronDown, Check } from 'lucide-react'
 import { klipyEnabled } from '../../services/klipy'
 import { KlipyPicker } from '../Chat/KlipyPicker'
 import { uiEnabled } from '../Profile/InterfaceTab'
@@ -133,6 +133,7 @@ export function FeedView({ onDriveRequired }: Props) {
   const [scheduledAt, setScheduledAt] = useState('')
   const [locOpen, setLocOpen] = useState(false)
   const [location, setLocation] = useState('')
+  const [audOpen, setAudOpen] = useState(false)
   const [promoted, setPromoted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(true)
@@ -651,12 +652,33 @@ ${u}`.trim().slice(0, 500)
               <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>📎 {genericFile.name.slice(0, 18)} <button onClick={() => setGenericFile(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12 }}>✕</button></span>
             )}
             <span style={{ flex: 1 }} />
-            <select value={view === 'amigos' ? 'amigos' : 'recentes'} onChange={e => setView(e.target.value === 'amigos' ? 'amigos' : 'recentes')}
-              title="Quem pode ver"
-              style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 999, padding: '6px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none', marginRight: 8 }}>
-              <option value="recentes">🌐 Todos</option>
-              <option value="amigos">🔒 Amigos</option>
-            </select>
+            <div style={{ position: 'relative', marginRight: 8 }}>
+              <button onClick={() => setAudOpen(a => !a)} title="Quem pode ver"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 999, padding: '6px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
+                {view === 'amigos' ? <Lock size={13} strokeWidth={2} /> : <Globe size={13} strokeWidth={2} />}
+                {view === 'amigos' ? 'Amigos' : 'Todos'}
+                <ChevronDown size={13} strokeWidth={2} />
+              </button>
+              {audOpen && (
+                <>
+                  <button aria-label="Fechar" onClick={() => setAudOpen(false)} style={{ position: 'fixed', inset: 0, background: 'transparent', border: 'none', zIndex: 28, cursor: 'default' }} />
+                  <div className="fs-menu-in" style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 30, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 12, padding: 6, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 160, boxShadow: '0 12px 40px rgba(0,0,0,.5)' }}>
+                    <button onClick={() => { setView('recentes'); setAudOpen(false) }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8, border: 'none', background: view !== 'amigos' ? 'var(--bg-tertiary)' : 'none', color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left' }}>
+                      <Globe size={14} strokeWidth={2} />
+                      <span style={{ flex: 1 }}>Todos</span>
+                      {view !== 'amigos' && <Check size={14} strokeWidth={2.5} />}
+                    </button>
+                    <button onClick={() => { setView('amigos'); setAudOpen(false) }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8, border: 'none', background: view === 'amigos' ? 'var(--bg-tertiary)' : 'none', color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left' }}>
+                      <Lock size={14} strokeWidth={2} />
+                      <span style={{ flex: 1 }}>Amigos</span>
+                      {view === 'amigos' && <Check size={14} strokeWidth={2.5} />}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
             <button onClick={handlePost} disabled={posting || (!composer.trim() && !attachedFile && !gifUrl.trim() && !genericFile && pollOptions.filter(o => o.trim()).length < 2)}
               style={{ padding: '9px 22px', background: '#34d399', border: 'none', borderRadius: 999, color: '#06281c', fontWeight: 800, fontSize: 13, letterSpacing: '0.01em', cursor: 'pointer', boxShadow: '0 2px 14px rgba(52,211,153,.25)', opacity: posting || (!composer.trim() && !attachedFile && !gifUrl.trim() && !genericFile && pollOptions.filter(o => o.trim()).length < 2) ? 0.5 : 1 }}>
               {posting ? 'Postando...' : scheduledAt ? 'Agendar' : 'Postar'}
