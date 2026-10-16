@@ -461,11 +461,22 @@ function App() {
     // vira azul pinguim. Outras cores custom sao preservadas.
     let appliedAccent = String(applied?.accent || '')
     try {
-      const m = appliedAccent.trim().match(/^#([0-9a-f]{6})$/i)
+      // Aceita #rrggbb, #rgb e rgb()/rgba() — o workshop ja salvou de tudo.
+      const t = appliedAccent.trim()
+      let hex = ''
+      const m6 = t.match(/^#([0-9a-f]{6})$/i)
+      const m3 = t.match(/^#([0-9a-f]{3})$/i)
+      const mrgb = t.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i)
+      if (m6) hex = m6[1]
+      else if (m3) hex = m3[1].split('').map(c => c + c).join('')
+      else if (mrgb) {
+        hex = [mrgb[1], mrgb[2], mrgb[3]].map(v => Math.max(0, Math.min(255, Number(v))).toString(16).padStart(2, '0')).join('')
+      }
+      const m = hex ? ([hex] as unknown as RegExpMatchArray) : null
       if (m) {
-        const r = parseInt(m[1].slice(0, 2), 16) / 255
-        const g = parseInt(m[1].slice(2, 4), 16) / 255
-        const b = parseInt(m[1].slice(4, 6), 16) / 255
+        const r = parseInt(hex.slice(0, 2), 16) / 255
+        const g = parseInt(hex.slice(2, 4), 16) / 255
+        const b = parseInt(hex.slice(4, 6), 16) / 255
         const mx = Math.max(r, g, b)
         const mn = Math.min(r, g, b)
         const d = mx - mn
