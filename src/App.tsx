@@ -104,6 +104,30 @@ function getInitialTheme(): 'dark' | 'light' {
   return 'dark'
 }
 
+// Vigia do carregamento: se a sessao travar, mostra o motivo + botao
+// em vez de girar para sempre (o print disso diagnostica na hora).
+function LoadingWatchdog() {
+  const [stuck, setStuck] = useState(false)
+  useEffect(() => {
+    const t = window.setTimeout(() => setStuck(true), 20000)
+    return () => window.clearTimeout(t)
+  }, [])
+  if (!stuck) return null
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '0 0 10px' }}>
+        Demorou demais — verifique a internet e tente de novo.
+      </p>
+      <button
+        onClick={() => window.location.reload()}
+        style={{ background: 'var(--accent)', color: '#04120a', border: 'none', borderRadius: 10, padding: '9px 20px', fontWeight: 800, fontSize: 13, cursor: 'pointer' }}
+      >
+        Recarregar agora
+      </button>
+    </div>
+  )
+}
+
 function App() {
   const { currentUser, loadCurrentUser, loadUsers, signOut } = useUserStore()
   const { servers, currentServer, currentChannel, loadServers, createServer, joinServer, addRole, updateServer, deleteServer, leaveServer, setCurrentServer, setCurrentChannel, unread, totalUnread, loadUnread } = useServerStore()
@@ -1152,29 +1176,6 @@ function App() {
     }
   }
 
-// Vigia do carregamento: se a sessao travar, mostra o motivo + botao
-// em vez de girar para sempre (o print disso diagnostica na hora).
-function LoadingWatchdog() {
-  const [stuck, setStuck] = useState(false)
-  useEffect(() => {
-    const t = window.setTimeout(() => setStuck(true), 20000)
-    return () => window.clearTimeout(t)
-  }, [])
-  if (!stuck) return null
-  return (
-    <div style={{ textAlign: 'center' }}>
-      <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '0 0 10px' }}>
-        Demorou demais — verifique a internet e tente de novo.
-      </p>
-      <button
-        onClick={() => window.location.reload()}
-        style={{ background: 'var(--accent)', color: '#04120a', border: 'none', borderRadius: 10, padding: '9px 20px', fontWeight: 800, fontSize: 13, cursor: 'pointer' }}
-      >
-        Recarregar agora
-      </button>
-    </div>
-  )
-}
 
   if (!authReady) {
     return (
