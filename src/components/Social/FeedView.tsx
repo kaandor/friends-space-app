@@ -951,9 +951,9 @@ ${u}`.trim().slice(0, 500)
 
       {/* Trending — "O que está acontecendo" (estilo X: notícias + hashtags) */}
       <style>{`.fs-feed-trending{display:block}@media (max-width:900px){.fs-feed-trending{display:none}}`}</style>
-      <div style={{ width: 330, flexShrink: 0, alignSelf: 'flex-start', display: 'flex', flexDirection: 'column', gap: 16 }} className="fs-feed-trending">
+      <div style={{ width: 330, flexShrink: 0, alignSelf: 'flex-start', display: 'flex', flexDirection: 'column', gap: 12 }} className="fs-feed-trending">
       {/* Pesquisa do feed (estilo X) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', boxSizing: 'border-box', background: 'var(--bg-primary)', borderRadius: 999, border: '1px solid var(--border)', padding: '4px 6px 4px 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', boxSizing: 'border-box', background: 'var(--bg-primary)', borderRadius: 12, border: '1px solid var(--border)', padding: '4px 6px 4px 12px' }}>
         <span style={{ color: 'var(--text-muted)', display: 'inline-flex', flexShrink: 0 }}><Search size={14} strokeWidth={2} /></span>
         <input value={searchInput} onChange={e => setSearchInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && searchInput.trim().length >= 2) { setSearchQuery(searchInput.trim()); setSearchTab('principal') } }}
@@ -964,7 +964,7 @@ ${u}`.trim().slice(0, 500)
             style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 12, padding: '6px 8px', flexShrink: 0 }}>✕</button>
         )}
         <button onClick={() => { if (searchInput.trim().length >= 2) { setSearchQuery(searchInput.trim()); setSearchTab('principal') } }} title="Buscar"
-          style={{ border: 'none', borderRadius: 999, background: '#34d399', color: '#06281c', fontWeight: 800, fontSize: 12, padding: '7px 14px', cursor: 'pointer', flexShrink: 0 }}>
+          style={{ border: 'none', borderRadius: 8, background: '#34d399', color: '#06281c', fontWeight: 800, fontSize: 12, padding: '7px 14px', cursor: 'pointer', flexShrink: 0 }}>
           Buscar
         </button>
       </div>
@@ -1049,12 +1049,12 @@ ${u}`.trim().slice(0, 500)
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.category ? `${s.category} · ` : ''}{s.members} membro{s.members === 1 ? '' : 's'}</div>
             </div>
             {s.member ? (
-              <span style={{ padding: '6px 14px', borderRadius: 999, border: '1px solid var(--border)', color: 'var(--text-muted)', fontWeight: 800, fontSize: 12 }}>
+              <span style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', color: 'var(--text-muted)', fontWeight: 800, fontSize: 12 }}>
                 Seguindo
               </span>
             ) : (
               <button onClick={() => void handleFollow(s)} disabled={joiningId === s.id}
-                style={{ padding: '6px 14px', borderRadius: 999, border: '1px solid #34d399', background: 'transparent', color: '#34d399', fontWeight: 800, fontSize: 12, cursor: 'pointer', opacity: joiningId === s.id ? 0.5 : 1, flexShrink: 0 }}>
+                style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #34d399', background: 'transparent', color: '#34d399', fontWeight: 800, fontSize: 12, cursor: 'pointer', opacity: joiningId === s.id ? 0.5 : 1, flexShrink: 0 }}>
                 {joiningId === s.id ? '...' : 'Seguir'}
               </button>
             )}
