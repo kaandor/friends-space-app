@@ -31,6 +31,9 @@
   align-items: center;
   padding: 12px 0;
   border-right: 1px solid var(--border);
+  border-left: none !important;
+  box-shadow: none !important;
+  outline: none !important;
   flex-shrink: 0;
   height: 100%;
   min-height: 0;
