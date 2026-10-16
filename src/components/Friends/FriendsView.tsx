@@ -29,7 +29,7 @@ function normalizeSearchValue(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[\s_-]/g, '')
 }
 
-  type FriendsTab = 'todas' | 'naolidas'
+  type FriendsTab = 'todas' | 'naonline'
 
 export function FriendsView() {
   const { currentUser } = useUserStore()
@@ -131,7 +131,7 @@ export function FriendsView() {
     }
   }
 
-  const tabFriends = filteredFriends
+  const tabFriends = tab === 'naonline' ? filteredFriends.filter(u => { try { return isUserOnline(u) } catch { return false } }) : filteredFriends
 
   const handleSendDM = async () => {
     if (!dmInput.trim() || !currentUser || !currentDMUser || dmSending) return
@@ -239,13 +239,13 @@ export function FriendsView() {
   }
 
   const tabs: { key: FriendsTab; label: string; badge?: number }[] = [
-    { key: 'todas', label: 'Todas' },
-    { key: 'naolidas', label: 'Nao lidas' },
+    { key: 'todas', label: 'Todos' },
+    { key: 'naonline', label: 'Na Online' },
   ]
 
   return (
     <div className="fs-friends-root fs-chat-card" style={{ flex: 1, display: isMobile ? 'block' : 'flex', height: '100%', minHeight: 0 }}>
-      <div className="fs-friends-panel" style={{ width: 350, borderRight: '1px solid var(--border)', display: isMobile && currentDMUser ? 'none' : 'flex', flexDirection: 'column', background: 'var(--bg-secondary)', flexShrink: 0 }}>
+      <div className="fs-friends-panel" style={{ width: 350, display: isMobile && currentDMUser ? 'none' : 'flex', flexDirection: 'column', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 12, margin: 12, overflow: 'hidden', flexShrink: 0 }}>
         <div style={{ padding: '20px 16px', borderBottom: '1px solid var(--border)' }}>
           {isMobile && (
             <button onClick={() => setShowAddInline(v => !v)}
@@ -352,13 +352,13 @@ export function FriendsView() {
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '10px 0' }}>
-          {tab === 'naolidas' && (
+          {tab === 'naonline' && tabFriends.length === 0 && (
             <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
               <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
-                Nenhuma mensagem nova
+                Ninguém online agora
               </div>
               <div style={{ fontSize: 12 }}>
-                Suas conversas aparecerao aqui.
+                Quando amigos entrarem, aparecem aqui.
               </div>
             </div>
           )}
