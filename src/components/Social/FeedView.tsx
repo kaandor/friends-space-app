@@ -139,7 +139,16 @@ export function FeedView({ onDriveRequired }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [reportPostId, setReportPostId] = useState<string | null>(null)
   const [menuPostId, setMenuPostId] = useState<string | null>(null)
-  const [scope, setScope] = useState<'global' | 'amigos'>('global')
+  const [view, setView] = useState<'recentes' | 'amigos' | 'mencoes'>('recentes')
+  const scope: 'global' | 'amigos' = view === 'amigos' ? 'amigos' : 'global'
+  const mentionsMe = (p: Post): boolean => {
+    try {
+      const hay = `${p.content || ''} ${(p.comments || []).map(c => (c as { content?: string }).content || '').join(' ')}`.toLowerCase()
+      const names = [currentUser?.name || '', currentUser?.friendCode || ''].map(x => String(x).toLowerCase()).filter(Boolean)
+      return names.some(n => hay.includes('@' + n))
+    } catch { return false }
+  }
+  const listedPosts = view === 'mencoes' ? posts.filter(mentionsMe) : posts
   const [searchInput, setSearchInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [searchTab, setSearchTab] = useState<'principal' | 'recente' | 'pessoas' | 'midia' | 'servidores'>('principal')
@@ -461,10 +470,10 @@ ${u}`.trim().slice(0, 500)
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 32, background: 'var(--bg-primary)', borderRadius: 12, border: '1px solid var(--border)', padding: '4px 12px 0' }}>
-            {(['global', 'amigos'] as const).map(s => (
-              <button key={s} onClick={() => setScope(s)}
-                style={{ padding: '10px 4px 8px', background: 'none', border: 'none', borderBottom: scope === s ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer', fontWeight: 800, fontSize: 13, color: scope === s ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                {s === 'global' ? 'Global' : 'Amigos'}
+            {([['recentes', 'Recentes'], ['amigos', 'Amigos'], ['mencoes', 'Menções']] as const).map(([v, label]) => (
+              <button key={v} onClick={() => setView(v)}
+                style={{ padding: '10px 4px 8px', background: 'none', border: 'none', borderBottom: view === v ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer', fontWeight: 800, fontSize: 13, color: view === v ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                {label}
               </button>
             ))}
           </div>
@@ -633,9 +642,15 @@ ${u}`.trim().slice(0, 500)
             )}
             <span style={{ flex: 1 }} />
             <span style={{ fontSize: 11, color: composer.length > 450 ? '#ef4444' : 'var(--text-muted)', fontWeight: 600, marginRight: 8 }}>{composer.length}/500</span>
+            <select value={view === 'amigos' ? 'amigos' : 'recentes'} onChange={e => setView(e.target.value === 'amigos' ? 'amigos' : 'recentes')}
+              title="Quem pode ver"
+              style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 999, padding: '6px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none', marginRight: 8 }}>
+              <option value="recentes">🌐 Todos</option>
+              <option value="amigos">🔒 Amigos</option>
+            </select>
             <button onClick={handlePost} disabled={posting || (!composer.trim() && !attachedFile && !gifUrl.trim() && !genericFile && pollOptions.filter(o => o.trim()).length < 2)}
               style={{ padding: '9px 22px', background: 'var(--accent)', border: 'none', borderRadius: 999, color: '#000', fontWeight: 800, fontSize: 13, letterSpacing: '0.01em', cursor: 'pointer', boxShadow: '0 2px 14px rgba(41,163,255,.22)', opacity: posting || (!composer.trim() && !attachedFile && !gifUrl.trim() && !genericFile && pollOptions.filter(o => o.trim()).length < 2) ? 0.5 : 1 }}>
-              {posting ? 'Publicando...' : scheduledAt ? 'Agendar' : 'Publicar'}
+              {posting ? 'Postando...' : scheduledAt ? 'Agendar' : 'Postar'}
             </button>
             {emojiOpen && (
               <div className="fs-menu-in" style={{ position: 'absolute', top: '100%', left: 40, zIndex: 30, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 14, padding: 10, display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 4, maxHeight: 208, overflowY: 'auto', boxShadow: '0 12px 40px rgba(0,0,0,.5)' }}>
@@ -721,7 +736,7 @@ ${u}`.trim().slice(0, 500)
               </div>
             ))}
           </div>
-        ) : posts.map((post, i) => (
+        ) : listedPosts.map((post, i) => (
           <div key={post.id}>
             {i > 0 && i % 5 === 0 && <AdSlot />}
             <div style={{ background: 'var(--bg-primary)', borderRadius: 12, border: '1px solid var(--border)', padding: 12, transition: 'background .15s', position: 'relative' }}
@@ -842,7 +857,10 @@ ${u}`.trim().slice(0, 500)
           </div>
         )}
         {loading && <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, padding: 12 }}>Carregando...</div>}
-        {hasMore && !loading && posts.length > 0 && !(searchQuery && searchTab === 'servidores') && (
+        {!searchQuery && view === 'mencoes' && listedPosts.length === 0 && !loading && (
+          <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: 28 }}>Nenhuma menção a você ainda.</div>
+        )}
+        {hasMore && !loading && listedPosts.length > 0 && !(searchQuery && searchTab === 'servidores') && view !== 'mencoes' && (
           <button onClick={() => void refreshFeed(true, activeHashtag)} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 0', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%' }}>
             Carregar mais
           </button>
