@@ -651,6 +651,39 @@ function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCall])
+  // Modo ?inspect=1: clica em qualquer lugar e mostra o que eh aquele
+  // elemento (tag + classes + id + borda/sombra/fundo). Diagnostico visual.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search || '')
+      if (params.get('inspect') !== '1') return
+      const onClick = (e: MouseEvent) => {
+        try {
+          e.preventDefault()
+          e.stopPropagation()
+          const el = e.target as HTMLElement | null
+          if (!el || !(el instanceof Element)) return
+          const cs = window.getComputedStyle(el)
+          const info = [
+            'TAG=' + el.tagName,
+            'CLASS=' + (el.className && typeof el.className === 'string' ? el.className : String(el.className || '')),
+            'ID=' + ((el as HTMLElement).id || '-'),
+            'border=' + cs.borderLeftWidth + '/' + cs.borderLeftStyle + '/' + cs.borderLeftColor,
+            'shadow=' + String(cs.boxShadow).slice(0, 90),
+            'bg=' + cs.backgroundColor,
+            'outline=' + cs.outlineWidth + '/' + cs.outlineStyle + '/' + cs.outlineColor,
+          ].join(' | ')
+          try {
+            void navigator.clipboard?.writeText(info).catch(() => { })
+          } catch { }
+          window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: info.slice(0, 300) }))
+        } catch { }
+      }
+      window.addEventListener('click', onClick, true)
+      window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Modo inspect: clique na linha verde' }))
+      return () => window.removeEventListener('click', onClick, true)
+    } catch { }
+  }, [])
   // Pre-conexao: entrou no servidor = pre-aquece ICE + sessoes + usuarios.
   const prewarmServerId = currentServer?.id
   useEffect(() => {
