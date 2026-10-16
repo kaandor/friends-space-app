@@ -447,8 +447,14 @@ function App() {
     const s = (currentUser?.settings || {}) as Record<string, unknown>
     const active = (s.astro === true || s.astro === 'true') && !(Number(s.astroUntil || 0) > 0 && Number(s.astroUntil) < Date.now())
     const applied = (active ? s.appliedTheme : null) as Record<string, string> | undefined
+    // Migracao tema azul: accents verdes legados (00ff88/00cc6a/19d56b)
+    // viram azul pinguim. Temas custom de outra cor sao preservados.
+    let appliedAccent = String(applied?.accent || '')
+    try {
+      if (/^#(00ff88|00cc6a|19d56b)$/i.test(appliedAccent.trim())) appliedAccent = '#29A3FF'
+    } catch { }
     const vars: Array<[string, string]> = [
-      ['--accent', String(applied?.accent || '')],
+      ['--accent', appliedAccent],
       ['--bg-primary', String(applied?.bg || '')],
       ['--bg-secondary', String(applied?.bg2 || '')],
       ['--text-primary', String(applied?.text || '')],
