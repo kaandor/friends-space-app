@@ -118,7 +118,7 @@ export function FeedView({ onDriveRequired }: Props) {
   const [news, setNews] = useState<Array<{ title: string; link: string; source: string; category: string; image: string; pubDate: string }>>([])
   const [newsOpen, setNewsOpen] = useState(false)
   const [showAllNews, setShowAllNews] = useState(false)
-  const [hiddenNews, setHiddenNews] = useState<string[]>([])
+  const [hiddenNews] = useState<string[]>([])
   const [activeHashtag, setActiveHashtag] = useState('')
   const [composer, setComposer] = useState('')
   const [posting, setPosting] = useState(false)
@@ -233,6 +233,20 @@ export function FeedView({ onDriveRequired }: Props) {
     }
   }, [currentUser, searchQuery, searchTab])
 
+  const timeAgo = (iso?: string): string => {
+    try {
+      if (!iso) return ''
+      const ms = Date.now() - new Date(iso).getTime()
+      if (!Number.isFinite(ms) || ms < 0) return ''
+      const m = Math.floor(ms / 60000)
+      if (m < 1) return 'agora'
+      if (m < 60) return `${m} min atrás`
+      const h = Math.floor(m / 60)
+      if (h < 24) return `${h} hora${h === 1 ? '' : 's'} atrás`
+      const d = Math.floor(h / 24)
+      return `${d} dia${d === 1 ? '' : 's'} atrás`
+    } catch { return '' }
+  }
   const refreshTrending = useCallback(async () => {
     try {
       const res = await requestBackend<{ trending: Array<{ tag: string; count: number }> }>('getTrending', {})
@@ -511,7 +525,7 @@ ${u}`.trim().slice(0, 500)
                   <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.members} membros</div>
                 </div>
                 <button onClick={() => void handleFollow(s)} disabled={joiningId === s.id}
-                  style={{ padding: '6px 14px', borderRadius: 999, border: 'none', background: 'var(--text-primary)', color: 'var(--bg-primary)', fontWeight: 800, fontSize: 12, cursor: 'pointer', opacity: joiningId === s.id ? 0.5 : 1 }}>
+                  style={{ padding: '6px 14px', borderRadius: 999, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', fontWeight: 800, fontSize: 12, cursor: 'pointer', opacity: joiningId === s.id ? 0.5 : 1, flexShrink: 0 }}>
                   {joiningId === s.id ? '...' : 'Seguir'}
                 </button>
               </div>
@@ -951,11 +965,13 @@ ${u}`.trim().slice(0, 500)
       </div>
       {uiEnabled(currentUser, 'trending') && (
       <div style={{ background: 'var(--bg-primary)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' }}>
-        <h4 style={{ color: 'var(--text-primary)', fontWeight: 800, fontSize: 15, margin: '0', padding: '12px 14px 8px', borderBottom: '1px solid var(--border)' }}>
-          O que está acontecendo
-        </h4>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px 8px', borderBottom: '1px solid var(--border)' }}>
+          <span style={{ color: 'var(--text-muted)', display: 'inline-flex' }}>🕐</span>
+          <h4 style={{ color: 'var(--text-primary)', fontWeight: 800, fontSize: 15, margin: 0, flex: 1 }}>O que está acontecendo</h4>
+          <span style={{ color: 'var(--text-muted)', fontSize: 16 }}>›</span>
+        </div>
         {trending.length === 0 ? (
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0, padding: '12px 14px' }}>Nenhum assunto em alta ainda. Seja o primeiro a postar!</p>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0, padding: '12px 14px' }}>Seja o primeiro a saber sobre as últimas novidades.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {trending.map((t, idx) => (
@@ -964,10 +980,11 @@ ${u}`.trim().slice(0, 500)
                 onMouseOver={e => e.currentTarget.style.background = 'var(--bg-hover)'}
                 onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                 <span style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: 12, minWidth: 16 }}>{idx + 1}</span>
-                <div style={{ minWidth: 0 }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
                   <span style={{ color: activeHashtag === t.tag ? 'var(--accent)' : 'var(--text-primary)', fontWeight: 700, fontSize: 13 }}>{t.tag}</span>
                   <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>{t.count} posts</div>
                 </div>
+                <span style={{ color: 'var(--text-muted)', fontSize: 16 }}>›</span>
               </button>
             ))}
             {activeHashtag && (
@@ -998,9 +1015,9 @@ ${u}`.trim().slice(0, 500)
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{[n.category, n.source].filter(Boolean).join(' · ') || 'Notícias'}</div>
                 <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13, lineHeight: 1.35, marginTop: 1 }}>{n.title}</div>
+                {timeAgo(n.pubDate) && <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>{timeAgo(n.pubDate)}</div>}
               </div>
-              <button onClick={e => { e.stopPropagation(); setHiddenNews(h => [...h, n.link]) }} title="Ver menos"
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, padding: '2px 4px' }}>⋯</button>
+              <span style={{ color: 'var(--text-muted)', fontSize: 16, flexShrink: 0 }}>›</span>
             </div>
           ))}
           {visibleNews.length > 5 && (
@@ -1033,7 +1050,7 @@ ${u}`.trim().slice(0, 500)
               </span>
             ) : (
               <button onClick={() => void handleFollow(s)} disabled={joiningId === s.id}
-                style={{ padding: '6px 14px', borderRadius: 999, border: 'none', background: 'var(--text-primary)', color: 'var(--bg-primary)', fontWeight: 800, fontSize: 12, cursor: 'pointer', opacity: joiningId === s.id ? 0.5 : 1 }}>
+                style={{ padding: '6px 14px', borderRadius: 999, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', fontWeight: 800, fontSize: 12, cursor: 'pointer', opacity: joiningId === s.id ? 0.5 : 1, flexShrink: 0 }}>
                 {joiningId === s.id ? '...' : 'Seguir'}
               </button>
             )}
