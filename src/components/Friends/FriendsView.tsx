@@ -395,9 +395,8 @@ export function FriendsView() {
                     })()}
                   </div>
                   <span style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontWeight: 500 }}>{user.name}</span>
+                    <span style={{ fontWeight: 600, fontSize: 14 }}>{user.name}</span>
                     <span style={{ color: isUserOnline(user) ? 'var(--accent)' : 'var(--text-muted)', fontSize: 11 }}>{isUserOnline(user) ? 'Online' : 'Offline'}</span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>@{user.friendCode}</span>
                     {(() => {
                       const s = (user.settings || {}) as Record<string, string | boolean | undefined>
                       const statusMessage = typeof s['statusMessage'] === 'string' ? s['statusMessage'] as string : ''
