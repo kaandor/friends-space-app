@@ -6,7 +6,7 @@ import { useServerStore } from '../../stores/serverStore'
 import { requestBackend } from '../../services/backend'
 import { uploadToDriveWithProgress, toImageUrl, isDriveConnected } from '../../services/driveService'
 import { getAstroTier, assertUploadLimit } from '../../utils/astro'
-import { Image, ListChecks, Smile, Calendar, MapPin, Flag, Paperclip, Repeat2, Heart, BarChart3, Bookmark, Upload, Search, Newspaper, X, Trash2, Rocket } from 'lucide-react'
+import { Image, ListChecks, Smile, Calendar, MapPin, Flag, Paperclip, Repeat2, Heart, BarChart3, Bookmark, Upload, Search, Newspaper, X, Trash2, Rocket, Globe } from 'lucide-react'
 import { klipyEnabled } from '../../services/klipy'
 import { KlipyPicker } from '../Chat/KlipyPicker'
 import { uiEnabled } from '../Profile/InterfaceTab'
@@ -482,16 +482,7 @@ ${u}`.trim().slice(0, 500)
               ))}
             </div>
           </div>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 32, background: 'var(--bg-primary)', borderRadius: 12, border: '1px solid var(--border)', padding: '4px 12px 0' }}>
-            {([['recentes', 'Recentes'], ['amigos', 'Amigos'], ['mencoes', 'Menções']] as const).map(([v, label]) => (
-              <button key={v} onClick={() => setView(v)}
-                style={{ padding: '10px 4px 8px', background: 'none', border: 'none', borderBottom: view === v ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer', fontWeight: 800, fontSize: 13, color: view === v ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
+        ) : null}
         {!searchQuery && isMobileFeed && (
           <div style={{ background: 'var(--bg-primary)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' }}>
             <div style={{ padding: '12px 14px 8px', fontWeight: 800, fontSize: 15, color: 'var(--text-primary)' }}>O que está acontecendo</div>
@@ -541,18 +532,18 @@ ${u}`.trim().slice(0, 500)
         {/* Composer */}
         <div style={{ background: 'var(--bg-primary)', borderRadius: 12, border: '1px solid var(--border)', padding: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-            <Avatar src={currentUser?.photoUrl || ''} name={currentUser?.name || ''} size={36} />
-            <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-primary)' }}>{currentUser?.name || ''}</span>
+            <Avatar src={currentUser?.photoUrl || ''} name={currentUser?.name || ''} size={32} />
+            <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>{currentUser?.name || ''}</span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-              <span style={{ color: 'var(--text-muted)', display: 'inline-flex', flexShrink: 0, marginTop: 2 }}>🌐</span>
+          <div style={{ border: '1px solid var(--border)', borderRadius: 12, padding: '12px 12px 8px' }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <span style={{ color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: 26, height: 26, border: '1px solid var(--border)', borderRadius: 8 }}><Globe size={14} strokeWidth={2} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
-              <textarea value={composer} onChange={e => setComposer(e.target.value)} maxLength={500} rows={2}
+              <textarea value={composer} onChange={e => setComposer(e.target.value)} maxLength={500} rows={1}
                 placeholder="O que está acontecendo?"
-                style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', outline: 'none', resize: 'none', fontSize: 14, fontFamily: 'inherit', lineHeight: 1.5, padding: 0 }} />
+                style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', outline: 'none', resize: 'none', fontSize: 14, fontFamily: 'inherit', lineHeight: 1.5, padding: '4px 0 0' }} />
               </div>
-              </div>
+            </div>
               {firstUrl(composer) && (
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4, padding: '3px 8px', borderRadius: 999, background: 'var(--bg-tertiary)', fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>
                   🔗 Link detectado
@@ -612,8 +603,7 @@ ${u}`.trim().slice(0, 500)
                   )}
                 </div>
               )}
-            </div>
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 0, marginTop: 8, paddingLeft: 46 }}>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 0, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
             <input ref={fileRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={e => {
               const f = e.target.files?.[0]; if (f) { setAttachedFile({ file: f, name: `post-${Date.now()}.${f.name.split('.').pop()}`, type: f.type }); setGifUrl('') }
               e.target.value = ''
@@ -661,7 +651,6 @@ ${u}`.trim().slice(0, 500)
               <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>📎 {genericFile.name.slice(0, 18)} <button onClick={() => setGenericFile(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12 }}>✕</button></span>
             )}
             <span style={{ flex: 1 }} />
-            <span style={{ fontSize: 11, color: composer.length > 450 ? '#ef4444' : 'var(--text-muted)', fontWeight: 600, marginRight: 8 }}>{composer.length}/500</span>
             <select value={view === 'amigos' ? 'amigos' : 'recentes'} onChange={e => setView(e.target.value === 'amigos' ? 'amigos' : 'recentes')}
               title="Quem pode ver"
               style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 999, padding: '6px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none', marginRight: 8 }}>
@@ -669,7 +658,7 @@ ${u}`.trim().slice(0, 500)
               <option value="amigos">🔒 Amigos</option>
             </select>
             <button onClick={handlePost} disabled={posting || (!composer.trim() && !attachedFile && !gifUrl.trim() && !genericFile && pollOptions.filter(o => o.trim()).length < 2)}
-              style={{ padding: '9px 22px', background: 'var(--accent)', border: 'none', borderRadius: 999, color: '#000', fontWeight: 800, fontSize: 13, letterSpacing: '0.01em', cursor: 'pointer', boxShadow: '0 2px 14px rgba(41,163,255,.22)', opacity: posting || (!composer.trim() && !attachedFile && !gifUrl.trim() && !genericFile && pollOptions.filter(o => o.trim()).length < 2) ? 0.5 : 1 }}>
+              style={{ padding: '9px 22px', background: '#34d399', border: 'none', borderRadius: 999, color: '#06281c', fontWeight: 800, fontSize: 13, letterSpacing: '0.01em', cursor: 'pointer', boxShadow: '0 2px 14px rgba(52,211,153,.25)', opacity: posting || (!composer.trim() && !attachedFile && !gifUrl.trim() && !genericFile && pollOptions.filter(o => o.trim()).length < 2) ? 0.5 : 1 }}>
               {posting ? 'Postando...' : scheduledAt ? 'Agendar' : 'Postar'}
             </button>
             {emojiOpen && (
@@ -701,6 +690,16 @@ ${u}`.trim().slice(0, 500)
               </div>
             )}
           </div>
+          </div>
+        </div>
+        {/* Abas abaixo do composer */}
+        <div style={{ display: 'flex', gap: 24, padding: '0 12px', borderBottom: '1px solid var(--border)' }}>
+          {([['recentes', 'Recentes'], ['mencoes', 'Menções']] as const).map(([v, label]) => (
+            <button key={v} onClick={() => setView(v)}
+              style={{ padding: '10px 2px 8px', background: 'none', border: 'none', borderBottom: view === v ? '2px solid #34d399' : '2px solid transparent', cursor: 'pointer', fontWeight: 800, fontSize: 13, color: view === v ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+              {label}
+            </button>
+          ))}
         </div>
         </>
         )}
