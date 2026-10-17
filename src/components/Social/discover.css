@@ -5,10 +5,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  background: rgba(3, 5, 10, 0.72);
-  backdrop-filter: blur(9px);
-  -webkit-backdrop-filter: blur(9px);
+  padding: 0;
+  background: var(--bg-primary);
   animation: discover-fade-in 0.16s ease-out;
 }
 
@@ -23,23 +21,23 @@
 }
 
 .ping-discover {
-  --ping-side: #191b1f;
-  --ping-main: #232529;
-  --ping-card: #2b2d33;
-  --ping-card-hover: #33363d;
-  --ping-text: #f2f3f5;
-  --ping-muted: #a8adb7;
-  --ping-accent: #29A3FF;
+  --ping-side: var(--bg-secondary);
+  --ping-main: var(--bg-primary);
+  --ping-card: var(--bg-secondary);
+  --ping-card-hover: var(--bg-hover);
+  --ping-text: var(--text-primary);
+  --ping-muted: var(--text-secondary);
+  --ping-accent: var(--accent);
   position: relative;
   display: flex;
-  width: min(1360px, 97vw);
-  height: min(90vh, 900px);
-  border-radius: 14px;
-  border: 1px solid #101215;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
   background: var(--ping-main);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6), 0 0 60px rgba(41, 163, 255, 0.08);
+  box-shadow: none;
   overflow: hidden;
-  animation: ping-pop-in 0.2s ease-out;
+  animation: discover-fade-in 0.18s ease-out;
 }
 
 .ping-side {
@@ -82,7 +80,7 @@
 }
 
 .ping-side-close:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-hover);
   color: var(--ping-text);
 }
 
@@ -110,12 +108,12 @@
 }
 
 .ping-side-nav button:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-hover);
   color: var(--ping-text);
 }
 
 .ping-side-nav button.active {
-  background: rgba(255, 255, 255, 0.09);
+  background: var(--bg-active);
   color: var(--ping-text);
   font-weight: 700;
 }
@@ -130,7 +128,7 @@
   gap: 10px;
   padding: 8px;
   border-radius: 9px;
-  background: rgba(0, 0, 0, 0.28);
+  background: var(--bg-tertiary);
 }
 
 .ping-user > img,
@@ -207,6 +205,13 @@
   min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ping-tabs:active {
+  cursor: grabbing;
 }
 
 .ping-tabs::-webkit-scrollbar {
@@ -231,7 +236,7 @@
 }
 
 .ping-tabs button.active {
-  color: #fff;
+  color: var(--ping-text);
   font-weight: 700;
 }
 
@@ -254,13 +259,13 @@
   width: 216px;
   padding: 7px 12px;
   border-radius: 999px;
-  background: #16181c;
+  background: var(--bg-tertiary);
   color: var(--ping-muted);
   transition: box-shadow 0.15s ease;
 }
 
 .ping-topsearch:focus-within {
-  box-shadow: 0 0 0 3px rgba(41, 163, 255, 0.18);
+  box-shadow: 0 0 0 3px var(--accent-dim);
 }
 
 .ping-topsearch input {
@@ -300,23 +305,22 @@
 .ping-hero {
   padding: 52px clamp(24px, 7vw, 104px) 44px;
   background:
-    radial-gradient(ellipse 130% 170% at 26% 40%, rgba(41, 163, 255, 0.5) 0%, rgba(32, 76, 168, 0.34) 36%, rgba(13, 20, 44, 0) 64%),
-    linear-gradient(180deg, #131a3f 0%, #101532 44%, var(--ping-main) 100%);
+    radial-gradient(ellipse 130% 170% at 26% 40%, color-mix(in srgb, var(--accent) 42%, transparent) 0%, color-mix(in srgb, var(--accent) 18%, transparent) 36%, transparent 64%),
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 20%, var(--bg-secondary)) 0%, color-mix(in srgb, var(--accent) 7%, var(--bg-primary)) 46%, var(--bg-primary) 100%);
 }
 
 .ping-hero h1 {
   margin: 0;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: clamp(26px, 3.1vw, 40px);
   font-weight: 900;
   line-height: 1.05;
   letter-spacing: 0.4px;
-  text-shadow: 0 4px 22px rgba(0, 0, 0, 0.45);
 }
 
 .ping-hero p {
   margin: 14px 0 0;
-  color: #c7d3e4;
+  color: var(--text-secondary);
   font-size: 14.5px;
   line-height: 1.5;
   max-width: 460px;
@@ -345,7 +349,7 @@
 .ping-content-filter {
   padding: 5px 11px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-tertiary);
   color: var(--ping-muted);
   font-size: 11.5px;
   font-weight: 700;
@@ -395,7 +399,7 @@
   position: relative;
   display: block;
   height: 134px;
-  background-color: #1c1e22;
+  background-color: var(--bg-tertiary);
   background-size: cover;
   background-position: center;
   flex-shrink: 0;
@@ -409,8 +413,8 @@
   justify-content: center;
   font-size: 46px;
   font-weight: 900;
-  color: rgba(41, 163, 255, 0.3);
-  background: linear-gradient(135deg, rgba(41, 163, 255, 0.18), rgba(11, 127, 212, 0.04));
+  color: color-mix(in srgb, var(--accent) 32%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, transparent), color-mix(in srgb, var(--accent) 4%, transparent));
 }
 
 .ping-server-icon {
@@ -424,7 +428,7 @@
   height: 48px;
   border-radius: 12px;
   border: 4px solid var(--ping-card);
-  background: #16181c;
+  background: var(--bg-tertiary);
   color: var(--ping-accent);
   font-size: 19px;
   font-weight: 900;
@@ -512,7 +516,7 @@
   display: block;
   height: 12px;
   border-radius: 6px;
-  background: linear-gradient(90deg, #33363d 25%, #3d4048 50%, #33363d 75%);
+  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-hover) 50%, var(--bg-tertiary) 75%);
   background-size: 220% 100%;
   animation: ping-shimmer 1.3s ease-in-out infinite;
 }
@@ -528,7 +532,7 @@
   align-items: center;
   gap: 7px;
   padding: 54px 20px;
-  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border: 1px dashed var(--border-light);
   border-radius: 12px;
   color: var(--ping-muted);
   text-align: center;
@@ -559,7 +563,7 @@
 }
 
 .ping-empty button:hover {
-  background: #0B7FD4;
+  background: var(--accent-hover);
   color: #fff;
 }
 
@@ -574,12 +578,12 @@
   gap: 8px;
   padding: 10px 18px;
   border-radius: 999px;
-  border: 1px solid rgba(41, 163, 255, 0.5);
-  background: #16181c;
+  border: 1px solid var(--accent);
+  background: var(--bg-tertiary);
   color: var(--ping-text);
   font-size: 12.5px;
   font-weight: 700;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow);
   animation: ping-pop-in 0.18s ease-out;
 }
 
@@ -593,13 +597,7 @@
 }
 
 @media (max-width: 760px) {
-  .discover-modal { padding: 0; }
-
   .ping-discover {
-    width: 100vw;
-    height: 100vh;
-    border-radius: 0;
-    border: none;
     flex-direction: column;
   }
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import {
   Activity, BadgeCheck, BookOpen, BriefcaseBusiness, Cat, Clapperboard, Compass,
   Gamepad2, Landmark, Monitor, Music2, PenTool, Radio, Search, ShieldCheck, Sparkles, Users, X,
@@ -57,6 +57,35 @@ export function DiscoverView({ onClose }: Props) {
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [entering, setEntering] = useState<string | null>(null)
   const [notice, setNotice] = useState('')
+  const tabsRef = useRef<HTMLDivElement>(null)
+  const tabsDrag = useRef({ active: false, moved: false, startX: 0, scrollLeft: 0 })
+
+  const onTabsPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return
+    const el = tabsRef.current
+    if (!el) return
+    tabsDrag.current = { active: true, moved: false, startX: e.clientX, scrollLeft: el.scrollLeft }
+    const move = (ev: PointerEvent) => {
+      if (!tabsDrag.current.active) return
+      const dx = ev.clientX - tabsDrag.current.startX
+      if (Math.abs(dx) > 4) tabsDrag.current.moved = true
+      el.scrollLeft = tabsDrag.current.scrollLeft - dx
+    }
+    const up = () => {
+      tabsDrag.current.active = false
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', up)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', up)
+  }
+
+  const pickTab = (name: string) => {
+    if (tabsDrag.current.moved) return
+    setCategory(name)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -167,11 +196,11 @@ export function DiscoverView({ onClose }: Props) {
 
         <section className="ping-main">
           <div className="ping-topbar">
-            <div className="ping-tabs">
+            <div className="ping-tabs" ref={tabsRef} onPointerDown={onTabsPointerDown}>
               <button
                 type="button"
                 className={category === 'Todos' ? 'active' : ''}
-                onClick={() => setCategory('Todos')}
+                onClick={() => pickTab('Todos')}
               >
                 Início
               </button>
@@ -180,7 +209,7 @@ export function DiscoverView({ onClose }: Props) {
                   key={theme.name}
                   type="button"
                   className={category === theme.name ? 'active' : ''}
-                  onClick={() => setCategory(theme.name)}
+                  onClick={() => pickTab(theme.name)}
                   title={theme.description}
                 >
                   {theme.name}
