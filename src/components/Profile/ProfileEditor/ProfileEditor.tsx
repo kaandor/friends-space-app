@@ -1,21 +1,38 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { APPEARANCE_FONTS, APPEARANCE_TEXT_COLORS, appearanceDataAttrs, appearanceStyle, clampAppearanceToPlan, parseAppearance, serializeAppearance, PLAN_THEMES, PLAN_BACKGROUNDS, type AppearanceBgId, type AppearanceFontId, type AppearanceTextColorId, type AppearanceThemeId } from "./appearance";
+import { APPEARANCE_FONTS, APPEARANCE_TEXT_COLORS, clampAppearanceToPlan, parseAppearance, serializeAppearance, PLAN_THEMES, PLAN_BACKGROUNDS, type AppearanceBgId, type AppearanceFontId, type AppearanceTextColorId, type AppearanceThemeId } from "./appearance";
 import { useUserStore } from "../../../stores/userStore";
-import { getAstroTier, type AstroTier } from "../../../utils/astro";
+import { getAstroTier } from "../../../utils/astro";
+import { NAME_COLORS, type NameEffect } from "../../../utils/nameStyle";
 import { ImageCropper } from "../../ui/ImageCropper";
 import { uploadProfileImage, isDriveConnected, toImageUrl, getLastDriveError } from "../../../services/driveService";
 import { DriveRequiredModal } from "../../Chat/DriveRequiredModal";
 import "./ProfileEditor.css";
+import "./AstroProfileEditor.css";
 import {
+  ALL_SHOP_ITEMS,
+  KIND_CATALOG,
+  KIND_LABEL,
+  KIND_TITLE,
+  TIER_TO_PLAN,
+  catalogItem,
+  isUnlocked,
+  parseWishlist,
+  skinClass,
+  type CatalogItem,
+  type CatalogKind,
+  type WishlistEntry,
+} from "./astroCatalog";
+import {
+  ArrowLeft,
   Check,
-  ChevronLeft,
-  CircleDot,
-  CircleUserRound,
+  ChevronDown,
+  ChevronsRight,
   Eye,
-  Image,
+  Info,
   LockKeyhole,
   MessageCircle,
   Pencil,
+  Plus,
   Rocket,
   Search,
   ShieldCheck,
@@ -25,29 +42,6 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "./cn";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip";
-
-// STYLE NOTE: The crop supports four deliberate states: Free, ASTRO, ASTRO+, and ASTRO PLUS.
-// ASTRO owns emerald surfaces; ASTRO+ owns violet surfaces; ASTRO PLUS owns gold/amber surfaces.
-// Keep every tier distinct in media, resource copy, controls, comparisons, and save/management actions.
-
-const ASSETS = {
-  avatar: "/manus-storage/free-avatar-500x500_fe125bff.svg",
-  astroAvatar: "/manus-storage/astro-avatar-500x500_ed79d9c1.svg",
-  astroCardBanner: "/manus-storage/astro-plan-header_53ad0a08.svg",
-  astroPlusCardHeader: "/manus-storage/astro-plus-tier-header_f4443ccd.svg",
-  astroPlusGoldCardHeader: "/manus-storage/astro-plus-gold-header_f9c03b66.svg",
-  freeCardHeader: "/manus-storage/free-plan-header_8051f2a6.svg",
-  texture: "/manus-storage/friends-space-texture_39554b97.svg",
-  freeAvatar: "/manus-storage/free-avatar-500x500_fe125bff.svg",
-  freePlanIcon: "/manus-storage/free-plan-header_8051f2a6.svg",
-  freeBanner: "/manus-storage/free-clean-banner_73058eb2.svg",
-  astroBanner: "/manus-storage/friends-space-astro-banner-hd-green_8f8db9a4.svg",
-  astroPlusBanner: "/manus-storage/friends-space-astro-plus-banner-hd_25eb679b.svg",
-  astroPlusGoldBanner: "/manus-storage/friends-space-astro-plus-gold-banner-hd_bba7b14d.svg",
-  astroPlusAvatar: "/manus-storage/astro-plus-avatar-500x500_cbcb0ba6.svg",
-  astroPlusGoldAvatar: "/manus-storage/astro-plus-gold-avatar-500x500_e0ab7cf3.svg",
-};
 
 export type Plan = "free" | "astro" | "astroPlus" | "astroPlusGold";
 export type SocialStatus = "online" | "away" | "dnd" | "invisible";
@@ -58,6 +52,13 @@ export type MuralItem = { id: string; value: string; image: string };
 export type MuralState = Record<MuralFieldId, MuralItem[]>;
 
 export type FrameId = "none" | "pulsar" | "aurora" | "nebulosa" | "estelar" | "supernova" | "galaxia" | "infinito";
+
+const ASSETS = {
+  astroAvatar: "/manus-storage/astro-avatar-500x500_ed79d9c1.svg",
+  freeAvatar: "/manus-storage/free-avatar-500x500_fe125bff.svg",
+  astroPlusAvatar: "/manus-storage/astro-plus-avatar-500x500_cbcb0ba6.svg",
+  astroPlusGoldAvatar: "/manus-storage/astro-plus-gold-avatar-500x500_e0ab7cf3.svg",
+};
 
 const MURAL_FIELD_DEFS: Array<{ id: MuralFieldId; label: string; placeholder: string; image: string; fallback: string; media: string; entity: string }> = [
   { id: "games", label: "Jogos favoritos", placeholder: "Ex.: Valorant, Minecraft, Stardew Valley", image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=640&q=80", fallback: "Adicione seus jogos favoritos", media: "software", entity: "software" },
@@ -89,259 +90,270 @@ const createMuralItem = (field: MuralFieldId, value = ""): MuralItem => ({
   image: MURAL_FIELD_DEFS.find((definition) => definition.id === field)?.image ?? "",
 });
 
-const FRAME_SHOP_OPTIONS: Array<{ id: FrameId; name: string; note: string; plans: Plan[] }> = [
-  { id: "none", name: "Nenhuma", note: "Sem moldura", plans: ["free", "astro", "astroPlus", "astroPlusGold"] },
-  { id: "pulsar", name: "Pulsar", note: "ASTRO", plans: ["astro", "astroPlus", "astroPlusGold"] },
-  { id: "aurora", name: "Aurora", note: "ASTRO+", plans: ["astroPlus", "astroPlusGold"] },
-  { id: "nebulosa", name: "Nebulosa", note: "ASTRO+", plans: ["astroPlus", "astroPlusGold"] },
-  { id: "estelar", name: "Estelar", note: "ASTRO+", plans: ["astroPlus", "astroPlusGold"] },
-  { id: "supernova", name: "Supernova", note: "ASTRO+", plans: ["astroPlus", "astroPlusGold"] },
-  { id: "galaxia", name: "Galáxia", note: "ASTRO+", plans: ["astroPlus", "astroPlusGold"] },
-  { id: "infinito", name: "Infinito", note: "ASTRO PLUS", plans: ["astroPlusGold"] },
-];
+const planLabelOf = (plan: Plan) => plan === "astroPlusGold" ? "ASTRO PLUS" : plan === "astroPlus" ? "ASTRO+" : plan === "astro" ? "ASTRO" : "GRATUITO";
 
-const freeFeatures = [
-  "Editar nome de exibição",
-  "Editar nome de usuário (1 vez)",
-  "Adicionar amigos",
-  "Participar de servidores",
-  "Enviar mensagens",
-  "Upload de arquivos até 25 MB",
-  "Streaming em 720p / 30 FPS",
-  "Streaming em 420p / 30 FPS",
-];
+function settingString(settings: Record<string, unknown>, key: string, fallback: string): string {
+  return typeof settings[key] === "string" ? settings[key] as string : fallback;
+}
 
-const astroFeatures = [
-  "Editar nome de exibição",
-  "Editar nome de usuário",
-  "Adicionar sobre você",
-  "Banner personalizado",
-  "Avatar animado",
-  "Emojis exclusivos",
-  "Mais espaço para o “Sobre mim”",
-  "Plano de fundo do perfil",
-  "Acesso antecipado a alguns recursos",
-];
+function imgSrc(url: string, size: number): string {
+  if (!url) return "";
+  if (url.startsWith("data:") || url.startsWith("http") || url.startsWith("blob:")) return url;
+  return toImageUrl(url, size);
+}
 
-const astroPlusFeatures = [
-  "Editar nome de exibição",
-  "Editar nome de usuário",
-  "Adicionar sobre você",
-  "Banner personalizado",
-  "Avatar animado",
-  "Molduras premium",
-  "Nome com efeito animado",
-  "Efeitos exclusivos de perfil",
-  "Upload de arquivos até 1 GB",
-  "Streaming em 2K / 30 FPS",
-  "Compartilhamento de tela em alta qualidade",
-];
+function nameStyleFor(id: string, effect: NameEffect, paid: boolean): { style: React.CSSProperties; className: string } {
+  if (!paid) return { style: {}, className: "" };
+  const color = NAME_COLORS.find((item) => item.id === id)?.color || "";
+  if (effect === "neon" && color) return { style: { color, textShadow: `0 0 8px ${color}, 0 0 18px ${color}55` }, className: "" };
+  if (color) return { style: { color }, className: "" };
+  return { style: {}, className: effect === "shine" ? "fs-name-shine" : "" };
+}
 
-const astroPlusGoldFeatures = [
-  "Tudo do plano ASTRO+",
-  "Insígnia ASTRO Plus",
-  "Upload de arquivos até 5 GB",
-  "Streaming em 2K / 60 FPS",
-  "Perfil totalmente personalizável",
-  "Nome com efeito animado",
-  "Efeitos exclusivos em mensagens",
-  "Todas as molduras premium",
-  "Insígnias exclusivas por tempo de assinatura",
-  "Prioridade no acesso a recursos experimentais",
-];
+/* ─────────────────────────── componentinhos da prévia ─────────────────────────── */
 
-const astroPlusTierComparisons = [
-  ["Upload de arquivos", "Até 1 GB", "Até 5 GB"],
-  ["Streaming (qualidade)", "2K / 30 FPS", "2K / 60 FPS"],
-  ["Compartilhamento de tela", "Maior qualidade", "Qualidade máxima"],
-  ["Biblioteca de temas", "Ampliada", "Expandida"],
-  ["Moldura premium", "Disponível", "Todas disponíveis"],
-  ["Recursos Beta", "Acesso limitado", "Prioridade máxima"],
-  ["Acesso a novos recursos", "Antecipado", "Prioridade máxima"],
-];
-
-const astroPlusGoldComparisons = [
-  ["Upload de arquivos", "Até 5 GB"],
-  ["Streaming (qualidade)", "2K / 60 FPS"],
-  ["Banner personalizado", "Disponível"],
-  ["Avatar animado", "Disponível"],
-  ["Molduras e efeitos", "Disponível"],
-  ["Emojis exclusivos", "Disponível"],
-  ["Insígnias exclusivas", "Disponível"],
-  ["Recursos antecipados", "Disponível"],
-];
-
-const astroPlusTierLockedFeatures = [
-  "Biblioteca de temas expandida",
-  "Efeitos exclusivos em mensagens",
-  "Acesso Beta a recursos",
-  "Recursos ultra exclusivos",
-];
-
-const astroPlusGoldLockedFeatures = [
-  "Biblioteca de temas expandida",
-  "Efeitos exclusivos em mensagens",
-  "Acesso Beta a recursos",
-  "Recursos ultra exclusivos",
-];
-
-const freePremiumFeatures = [
-  "Molduras e efeitos premium",
-  "Emojis exclusivos",
-  "Avatar animado",
-  "Insígnias exclusivas",
-  "Recursos antecipados",
-  "Acesso aos recursos Beta",
-  "Upload de arquivos maior que 25 MB",
-  "Streaming em qualidade superior",
-];
-
-
-
-const astroComparisons = [
-  ["Upload de arquivos", "Até 250 MB", "Até 1 GB"],
-  ["Streaming", "1080p / 60 FPS", "2K / 30 FPS"],
-  ["Compartilhamento de tela", "Padrão", "Maior qualidade"],
-  ["Biblioteca de temas", "Padrão", "Ampliada"],
-  ["Moldura premium", "Não disponível", "Disponível"],
-  ["Recursos Beta", "Acesso limitado", "Acesso completo"],
-  ["Acesso a novos recursos", "Somente alguns", "Acesso antecipado"],
-];
-
-function SectionTitle({ icon: Icon, title, description, tone = "green" }: { icon: typeof Image; title: string; description?: string; tone?: "green" | "neutral" }) {
+function SkinThumb({ kind, id }: { kind: CatalogKind; id: string }) {
+  const cls = skinClass(kind, id);
+  if (kind === "avatar") {
+    return <span className={cn("ape-item-avatar", cls)}><i /></span>;
+  }
+  if (kind === "nameplate") {
+    return <span className={cn("ape-plate-sample", "ape-plate", cls)}>Nome</span>;
+  }
+  if (kind === "frame") {
+    return (
+      <span className="ape-item-preview" style={{ position: "relative" }}>
+        <span className="ape-card-fill" />
+        <span className={cn("ape-card", cls)} style={{ position: "absolute", inset: 4 }} />
+      </span>
+    );
+  }
   return (
-    <div className="section-title">
-      <Icon className={cn("section-title-icon", tone === "neutral" && "section-title-icon-neutral")} size={17} strokeWidth={1.9} />
-      <div>
-        <h2>{title}</h2>
-        {description && <p>{description}</p>}
+    <span className="ape-item-preview" style={{ position: "relative" }}>
+      <span className="ape-card-fill" />
+      <span className={cn("ape-effect-layer", cls)} />
+    </span>
+  );
+}
+
+function MiniCard({ displayName, username, avatarSrc, bannerStyle, decoration, nameplate, frame, effect, nameStyle, nameClassName, badge }: {
+  displayName: string;
+  username: string;
+  avatarSrc?: string;
+  bannerStyle?: React.CSSProperties;
+  decoration: string;
+  nameplate: string;
+  frame: string;
+  effect: string;
+  nameStyle?: React.CSSProperties;
+  nameClassName?: string;
+  badge?: boolean;
+}) {
+  return (
+    <div className={cn("ape-card", "ape-picker-preview-card", skinClass("frame", frame))}>
+      <div className="ape-card-inner">
+        <div className="ape-card-banner" style={bannerStyle} />
+        <div className="ape-avatar-wrap">
+          <div className={cn("ape-avatar", skinClass("avatar", decoration))}>
+            <img src={avatarSrc || ASSETS.freeAvatar} alt="Avatar" />
+          </div>
+        </div>
+        <div className="ape-card-body">
+          <span className="ape-name-line">
+            <span className={cn("ape-plate", skinClass("nameplate", nameplate))}>
+              <span className={cn("ape-display-name", nameClassName)} style={nameStyle}>{displayName || "Seu nome"}</span>
+            </span>
+            {badge && <span className="ape-badge-astro"><Rocket size={15} /></span>}
+          </span>
+          <span className="ape-handle-line"><span className="ape-handle">@{username || "usuario"}</span></span>
+        </div>
+        {effect !== "none" && <span className={cn("ape-effect-layer", skinClass("effect", effect))} />}
       </div>
     </div>
   );
 }
 
-function ProfilePhoto({ plan, onNotify, selectedFrame, photoUrl, onEditPhoto, onRemovePhoto }: { plan: Plan; onNotify: (message: string) => void; selectedFrame: FrameId; photoUrl?: string; onEditPhoto?: () => void; onRemovePhoto?: () => void }) {
-  const isPaid = plan !== "free";
-  const isAstroPlusTier = plan === "astroPlus";
-  const isAstroPlusGold = plan === "astroPlusGold";
-  const defaultAvatar = plan === "free" ? ASSETS.freeAvatar : plan === "astro" ? ASSETS.astroAvatar : plan === "astroPlus" ? ASSETS.astroPlusAvatar : ASSETS.astroPlusGoldAvatar;
-  const currentAvatar = photoUrl || defaultAvatar;
-  const avatarSrc = toImageUrl(currentAvatar);
-  return (
-    <section className={cn("profile-photo-section", isPaid && "astro-photo-section", isAstroPlusTier && "astro-plus-tier-photo-section", isAstroPlusGold && "astro-plus-photo-section")}>
-      <SectionTitle icon={CircleUserRound} title="Foto de perfil" description="PNG, JPG ou WEBP. Recomendado: 500x500px. Máx. 5MB." tone="neutral" />
-      <div className={cn("profile-avatar-large", isPaid && "astro-avatar-large", isAstroPlusTier && "astro-plus-tier-avatar-large", isAstroPlusGold && "astro-plus-avatar-large", `profile-frame-${selectedFrame}`)}>
-        <img src={avatarSrc} alt="Sua foto de perfil" />
-        {isPaid ? (
-          <button className={cn("astro-avatar-edit", isAstroPlusTier && "astro-plus-tier-avatar-edit", isAstroPlusGold && "astro-plus-avatar-edit")} aria-label="Editar foto de perfil" onClick={onEditPhoto}><Pencil size={14} /></button>
-        ) : (
-          <span className="free-avatar-lock"><LockKeyhole size={15} /></span>
-        )}
-      </div>
-      {isPaid ? (
-        <button className="remove-media-button" onClick={onRemovePhoto}><Trash2 size={12} />Remover foto</button>
-      ) : (
-        <p className="photo-note">Imagem padrão do Friends Space.<br /><button onClick={() => onNotify("O avatar personalizado está disponível no ASTRO")}>Disponível no <b>ASTRO</b>.</button></p>
-      )}
-    </section>
-  );
-}
+/* ─────────────────────────── picker de itens (Loja) ─────────────────────────── */
 
-function AboutSection({ plan, about, setAbout }: { plan: Plan; about: string; setAbout: (value: string) => void }) {
-  const isPaid = plan !== "free";
-  const isAstroPlusTier = plan === "astroPlus";
-  const isAstroPlusGold = plan === "astroPlusGold";
+function CatalogPicker({ kind, current, plan, previewing, displayName, username, avatarSrc, bannerStyle, decoration, nameplate, frame, effect, nameStyle, nameClassName, badge, onApply, onClose, onLocked }: {
+  kind: CatalogKind;
+  current: string;
+  plan: Plan;
+  previewing: boolean;
+  displayName: string;
+  username: string;
+  avatarSrc?: string;
+  bannerStyle?: React.CSSProperties;
+  decoration: string;
+  nameplate: string;
+  frame: string;
+  effect: string;
+  nameStyle?: React.CSSProperties;
+  nameClassName?: string;
+  badge?: boolean;
+  onApply: (id: string) => void;
+  onClose: () => void;
+  onLocked: (item: CatalogItem) => void;
+}) {
+  const [tab, setTab] = useState<"mine" | "shop">("mine");
+  const [pending, setPending] = useState(current);
+  const items = KIND_CATALOG[kind];
+  const unlocked = (item: CatalogItem) => previewing || isUnlocked(item, plan);
+  const mineItems = items.filter((item) => item.id === "none" || unlocked(item));
+  const shopLocked = items.filter((item) => item.id !== "none" && !unlocked(item));
+  const shopOwned = items.filter((item) => item.id === "none" || unlocked(item));
+  const apply = { decoration, nameplate, frame, effect };
+  if (kind === "avatar") apply.decoration = pending;
+  if (kind === "nameplate") apply.nameplate = pending;
+  if (kind === "frame") apply.frame = pending;
+  if (kind === "effect") apply.effect = pending;
   return (
-    <section className={cn("about-section", isPaid && "astro-about-section", isAstroPlusTier && "astro-plus-tier-about-section", isAstroPlusGold && "astro-plus-about-section")}>
-      <SectionTitle icon={ShieldCheck} title="Sobre você" description="Conte um pouco sobre você." />
-      <label className="control-label about-label">Sobre mim
-        <textarea maxLength={120} value={about} onChange={(event) => setAbout(event.target.value)} placeholder="Fale sobre você..." />
-        <small className="about-counter">{about.length}/120</small>
-      </label>
-    </section>
-  );
-}
-
-function PremiumUnavailable() {
-  return (
-    <section className="premium-card" style={{ backgroundImage: `linear-gradient(rgba(15,19,23,.94), rgba(15,19,23,.94)), url(${ASSETS.texture})` }}>
-      <h2>Recursos premium indisponíveis no plano Gratuito</h2>
-      <div className="premium-grid">
-        {freePremiumFeatures.map((feature) => (
-          <Tooltip key={feature}>
-            <TooltipTrigger asChild>
-              <button className="premium-item premium-item-hint" type="button">
-                <LockKeyhole size={13} strokeWidth={1.8} /><span>{feature}</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent className="tier-tooltip" side="top">Disponível ao assinar o plano ASTRO ou superior.</TooltipContent>
-          </Tooltip>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function LockedFeatureRow({ feature, targetLabel }: { feature: string; targetLabel: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <li className="locked-feature-hint"><LockKeyhole size={13} />{feature}</li>
-      </TooltipTrigger>
-      <TooltipContent className="tier-tooltip" side="top">Recurso reservado para o {targetLabel}. Toque para saber mais.</TooltipContent>
-    </Tooltip>
-  );
-}
-
-function AstroDecorations({ selectedFrame, onFrameSelect, onOpenFrames, onUpgrade }: { selectedFrame: FrameId; onFrameSelect: (frame: FrameId) => void; onOpenFrames: () => void; onUpgrade: () => void }) {
-  void selectedFrame; void onFrameSelect; void onOpenFrames; void onUpgrade;
-    void selectedFrame; void onFrameSelect; void onOpenFrames; void onUpgrade;
-  return (
-    <section className="decorations-section">
-      <SectionTitle icon={Sparkles} title="Decorações e molduras" description="Em breve — estamos preparando novidades." />
-      <div className="decoration-strip">
-        <div className="decoration-item" style={{ cursor: 'default', borderStyle: 'dashed' }}>
-          <span className="decoration-empty"><Sparkles size={20} /></span>
-          <b>Em breve</b>
+    <div className="ape-picker-overlay" onClick={onClose}>
+      <div className="ape-picker" onClick={(event) => event.stopPropagation()}>
+        <div className="ape-picker-head">
+          <h3>{KIND_TITLE[kind]}</h3>
+          <button className="ape-close" style={{ position: "static" }} onClick={onClose} aria-label="Fechar"><X size={15} /></button>
+        </div>
+        <div className="ape-picker-body">
+          <div className="ape-picker-left">
+            <div className="ape-picker-tabs">
+              <button className={cn("ape-picker-tab", tab === "mine" && "active")} onClick={() => setTab("mine")}>Suas opções</button>
+              <button className={cn("ape-picker-tab", tab === "shop" && "active")} onClick={() => setTab("shop")}>{previewing ? "Todas" : "Loja"}</button>
+            </div>
+            {tab === "mine" ? (
+              <>
+                <h4 className="ape-picker-section">Suas {kind === "avatar" ? "decorações" : kind === "nameplate" ? "placas de identificação" : kind === "frame" ? "molduras" : "opções"}</h4>
+                <div className="ape-item-grid">
+                  {mineItems.map((item) => (
+                    <button key={item.id} className={cn("ape-item", pending === item.id && "selected")} onClick={() => setPending(item.id)}>
+                      {pending === item.id && <span className="ape-item-check"><Check size={11} strokeWidth={3} /></span>}
+                      {item.id === "none" ? (
+                        <span className="ape-item-preview" style={{ color: "var(--text-muted)" }}><X size={18} /></span>
+                      ) : <SkinThumb kind={kind} id={item.id} />}
+                      <span className="ape-item-name">{item.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                {shopLocked.length > 0 && (
+                  <>
+                    <h4 className="ape-picker-section">Exclusivo do {previewing ? "ASTRO (prévia)" : "ASTRO"}</h4>
+                    <div className="ape-item-grid">
+                      {shopLocked.map((item) => (
+                        <button key={item.id} className={cn("ape-item", "locked", pending === item.id && "selected")} onClick={() => previewing ? setPending(item.id) : onLocked(item)}>
+                          {pending === item.id && <span className="ape-item-check"><Check size={11} strokeWidth={3} /></span>}
+                          {!previewing && <span className="ape-item-lock"><LockKeyhole size={10} /></span>}
+                          <SkinThumb kind={kind} id={item.id} />
+                          <span className="ape-item-name">{item.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+                <h4 className="ape-picker-section">Veja o que há na Loja</h4>
+                <div className="ape-item-grid">
+                  {shopOwned.map((item) => (
+                    <button key={item.id} className={cn("ape-item", pending === item.id && "selected")} onClick={() => setPending(item.id)}>
+                      {pending === item.id && <span className="ape-item-check"><Check size={11} strokeWidth={3} /></span>}
+                      <SkinThumb kind={kind} id={item.id} />
+                      <span className="ape-item-name">{item.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+          <div className="ape-picker-right">
+            <MiniCard displayName={displayName} username={username} avatarSrc={avatarSrc} bannerStyle={bannerStyle} decoration={apply.decoration} nameplate={apply.nameplate} frame={apply.frame} effect={apply.effect} nameStyle={nameStyle} nameClassName={nameClassName} badge={badge} />
+            <p className="ape-edit-hint"><Pencil size={11} />Prévia em tempo real do seu perfil.</p>
+          </div>
+        </div>
+        <div className="ape-picker-foot">
+          <button className="ape-btn ape-btn-ghost" onClick={onClose}>Cancelar</button>
+          <button className="ape-btn ape-btn-accent" onClick={() => { onApply(pending); onClose(); }}>Aplicar</button>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
-function AstroPlusTierDecorations({ selectedFrame, onFrameSelect, onOpenFrames, onUpgrade, onNotify }: { selectedFrame: FrameId; onFrameSelect: (frame: FrameId) => void; onOpenFrames: () => void; onUpgrade: () => void; onNotify: (message: string) => void }) {
-  void selectedFrame; void onFrameSelect; void onOpenFrames; void onUpgrade; void onNotify;
-    void selectedFrame; void onFrameSelect; void onOpenFrames; void onUpgrade; void onNotify;
+/* ─────────────────────────── picker do estilo do nome ─────────────────────────── */
+
+function NameStylePicker({ currentColor, currentEffect, currentBadge, paid, previewing, displayName, onApply, onClose, onLocked }: {
+  currentColor: string;
+  currentEffect: NameEffect;
+  currentBadge: boolean;
+  paid: boolean;
+  previewing: boolean;
+  displayName: string;
+  onApply: (color: string, effect: NameEffect, badge: boolean) => void;
+  onClose: () => void;
+  onLocked: () => void;
+}) {
+  const [color, setColor] = useState(currentColor);
+  const [effect, setEffect] = useState<NameEffect>(currentEffect);
+  const [badge, setBadge] = useState(currentBadge);
+  const active = paid || previewing;
+  const preview = nameStyleFor(active ? color : "default", active ? effect : "none", active);
+  const effects: Array<{ id: NameEffect; label: string }> = [
+    { id: "none", label: "Sem efeito" },
+    { id: "shine", label: "Brilho" },
+    { id: "neon", label: "Neon" },
+  ];
   return (
-    <section className="decorations-section">
-      <SectionTitle icon={Sparkles} title="Decorações e molduras" description="Em breve — estamos preparando novidades." />
-      <div className="decoration-strip">
-        <div className="decoration-item" style={{ cursor: 'default', borderStyle: 'dashed' }}>
-          <span className="decoration-empty"><Sparkles size={20} /></span>
-          <b>Em breve</b>
+    <div className="ape-picker-overlay" onClick={onClose}>
+      <div className="ape-picker" onClick={(event) => event.stopPropagation()}>
+        <div className="ape-picker-head">
+          <h3>Alterar estilo do nome exibido</h3>
+          <button className="ape-close" style={{ position: "static" }} onClick={onClose} aria-label="Fechar"><X size={15} /></button>
+        </div>
+        <div className="ape-picker-body">
+          <div className="ape-picker-left">
+            <h4 className="ape-picker-section">Cor do nome</h4>
+            {!active && <p className="ape-wish-empty">Cores e efeitos de nome são exclusivos do ASTRO. Entre na prévia para experimentar.</p>}
+            <div className="ape-item-grid">
+              {NAME_COLORS.map((item) => (
+                <button key={item.id} className={cn("ape-item", color === item.id && "selected", !active && "locked")} onClick={() => active ? setColor(item.id) : onLocked()}>
+                  {color === item.id && <span className="ape-item-check"><Check size={11} strokeWidth={3} /></span>}
+                  <span className="ape-item-preview"><span className="ape-plate-sample" style={{ fontSize: 13, fontWeight: 800, color: item.color || "var(--text-primary)" }}>Ab</span></span>
+                  <span className="ape-item-name">{item.label}</span>
+                </button>
+              ))}
+            </div>
+            <h4 className="ape-picker-section">Efeito</h4>
+            <div className="ape-effect-grid">
+              {effects.map((item) => (
+                <button key={item.id} className={cn("ape-effect-option", effect === item.id && "active")} onClick={() => active ? setEffect(item.id) : onLocked()}>
+                  <span>{item.label}</span>
+                  {effect === item.id && <Check size={14} />}
+                </button>
+              ))}
+            </div>
+            <h4 className="ape-picker-section">Insígnia</h4>
+            <div className="ape-switch-row">
+              <span>Mostrar insígnia ASTRO ao lado do nome</span>
+              <button className={cn("ape-switch", badge && active && "active")} aria-label="Alternar insígnia" onClick={() => active ? setBadge(!badge) : onLocked()} />
+            </div>
+          </div>
+          <div className="ape-picker-right">
+            <div className="ape-name-style-preview">
+              <span className={preview.className} style={preview.style}>{displayName || "Seu nome"}</span>
+            </div>
+            <p className="ape-edit-hint"><Pencil size={11} />Assim seu nome aparece no perfil e no chat.</p>
+          </div>
+        </div>
+        <div className="ape-picker-foot">
+          <button className="ape-btn ape-btn-ghost" onClick={onClose}>Cancelar</button>
+          <button className="ape-btn ape-btn-accent" onClick={() => { onApply(color, effect, badge); onClose(); }}>Aplicar</button>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
-function AstroPlusUnavailable({ onUpgrade }: { onUpgrade: () => void }) {
-  return (
-    <section className="astro-plus-lock">
-      <div><LockKeyhole size={17} /><span><b>Molduras exclusivas disponíveis no ASTRO+</b><small>Assine o ASTRO+ para desbloquear molduras animadas e efeitos premium.</small></span></div>
-      <button onClick={onUpgrade}>Assinar ASTRO+</button>
-    </section>
-  );
-}
-
-function AstroPlusGoldUnavailable({ onUpgrade }: { onUpgrade: () => void }) {
-  return (
-    <section className="astro-plus-gold-lock">
-      <div><LockKeyhole size={17} /><span><b>Recursos ultra exclusivos disponíveis no ASTRO PLUS</b><small>Faça upgrade para liberar todas as molduras, efeitos e prioridades premium.</small></span></div>
-      <button onClick={onUpgrade}>Assinar ASTRO PLUS</button>
-    </section>
-  );
-}
+/* ─────────────────────────── mural (editores legados) ─────────────────────────── */
 
 function MuralItemEditor({ definition, item, index, onChange, onImageChange, onRemove }: { definition: (typeof MURAL_FIELD_DEFS)[number]; item: MuralItem; index: number; onChange: (value: string) => void; onImageChange: (image: string) => void; onRemove: () => void }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -355,8 +367,6 @@ function MuralItemEditor({ definition, item, index, onChange, onImageChange, onR
       setIsLoading(true);
       setHasError(false);
       try {
-        // Séries/atores: TVMaze (grátis, sem chave, com pôsteres). Músicas,
-        // filmes e jogos: iTunes Search (sem chave). IMDb/TMDB exigem API key.
         let image: string | undefined;
         if (definition.id === "series") {
           const response = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(term)}`, { signal: controller.signal });
@@ -376,8 +386,6 @@ function MuralItemEditor({ definition, item, index, onChange, onImageChange, onR
           const result = data.results?.[0];
           image = result?.artworkUrl600 ?? result?.artworkUrl100?.replace("100x100bb", "600x600bb");
         }
-        // Guarda anti-loop: so atualiza se a capa MUDOU (onImageChange muda de
-        // identidade a cada render do pai e re-dispararia o efeito pra sempre).
         if (image && image !== item.image) onImageChange(image);
         else if (!image) setHasError(true);
       } catch {
@@ -395,6 +403,8 @@ function MuralCategoryEditor({ definition, items, onAdd, onAutoFill, onChange, o
   return <section className="mural-category-editor"><div className="mural-category-heading"><div><strong>{definition.label}</strong><small>{items.length} {items.length === 1 ? "item" : "itens"} configurado(s)</small></div><div style={{ display: "flex", gap: 6 }}>{onAutoFill && <button className="mural-add-item-button" type="button" onClick={onAutoFill}>Usar minha atividade</button>}<button className="mural-add-item-button" type="button" onClick={onAdd}>+ Adicionar item</button></div></div>{items.length ? <div className="mural-items-list">{items.map((item, index) => <MuralItemEditor key={item.id} definition={definition} item={item} index={index} onChange={(value) => onChange(item.id, value)} onImageChange={(image) => onImageChange(item.id, image)} onRemove={() => onRemove(item.id)} />)}</div> : <p className="mural-category-empty">Adicione o primeiro item desta categoria.</p>}</section>;
 }
 
+/* ─────────────────────────── prévia usada no modal Social ─────────────────────────── */
+
 function ProfilePreview({ plan, displayName, username, about, socialStatus, statusMessage, showActivity, showServers, showMutualFriends, mural, selectedMuralFields, selectedFrame, onViewProfile, onProfileAction }: {
   plan: Plan;
   displayName: string;
@@ -411,7 +421,7 @@ function ProfilePreview({ plan, displayName, username, about, socialStatus, stat
   onViewProfile: () => void;
   onProfileAction: (action: ProfileActionId) => void;
 }) {
-  const planLabel = plan === "astroPlusGold" ? "ASTRO PLUS" : plan === "astroPlus" ? "ASTRO+" : plan === "astro" ? "ASTRO" : "GRATUITO";
+  const planLabel = planLabelOf(plan);
   const statusMeta: Record<SocialStatus, { label: string; color: string }> = {
     online: { label: "Online", color: "#22c55e" },
     away: { label: "Ausente", color: "#f59e0b" },
@@ -445,20 +455,9 @@ function ProfilePreview({ plan, displayName, username, about, socialStatus, stat
   );
 }
 
-function FramesShopModal({ plan, selectedFrame, onSelect, onClose, onNotify }: { plan: Plan; selectedFrame: FrameId; onSelect: (frame: FrameId) => void; onClose: () => void; onNotify: (message: string) => void }) {
-  const planLabel = plan === "astroPlusGold" ? "ASTRO PLUS" : plan === "astroPlus" ? "ASTRO+" : plan === "astro" ? "ASTRO" : "GRATUITO";
-  return (
-    <div className="frames-shop-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section className="frames-shop-modal" role="dialog" aria-modal="true" aria-labelledby="frames-shop-title" onMouseDown={(event) => event.stopPropagation()}>
-        <header className="frames-shop-header"><div><span className="social-modal-kicker">PERSONALIZAÇÃO DO AVATAR</span><h2 id="frames-shop-title">Loja de molduras</h2><p>Escolha uma moldura para atualizar o preview na hora.</p></div><button className="frames-shop-close" type="button" aria-label="Fechar loja de molduras" onClick={onClose}><X size={18} /></button></header>
-        <div className="frames-shop-body"><div className="frames-shop-plan-note">Seu plano atual: <b>{planLabel}</b></div><div className="frames-shop-grid">{FRAME_SHOP_OPTIONS.map((frame) => { const available = frame.plans.includes(plan); return <button key={frame.id} type="button" className={cn("frame-shop-option", selectedFrame === frame.id && "selected", !available && "locked")} onClick={() => available ? onSelect(frame.id) : onNotify(`A moldura ${frame.name} requer ${frame.note}`)}><span className={cn("frame-shop-sample", `profile-frame-${frame.id}`)}><span /></span><strong>{frame.name}</strong><small>{available ? (selectedFrame === frame.id ? "Selecionada" : frame.note) : `Disponível no ${frame.note}`}{!available && <LockKeyhole size={11} />}</small></button>; })}</div></div>
-        <footer className="frames-shop-footer"><button type="button" onClick={onClose}>Concluir</button></footer>
-      </section>
-    </div>
-  );
-}
+/* ─────────────────────────── perfil público ─────────────────────────── */
 
-export function PublicProfileModal({ plan, displayName, username, about, socialStatus, statusMessage, showActivity, showServers, showMutualFriends, mural, selectedMuralFields, selectedFrame, photoUrl, bannerUrl, isSelf, onClose, onProfileAction }: {
+export function PublicProfileModal({ plan, displayName, username, about, socialStatus, statusMessage, showActivity, showServers, showMutualFriends, mural, selectedMuralFields, selectedFrame, photoUrl, bannerUrl, isSelf, nameplateId, profileFrameId, profileEffectId, nameColorId, nameEffectId, showAstroBadge, onClose, onProfileAction }: {
   plan: Plan;
   displayName: string;
   username: string;
@@ -474,10 +473,16 @@ export function PublicProfileModal({ plan, displayName, username, about, socialS
   photoUrl?: string;
   bannerUrl?: string;
   isSelf?: boolean;
+  nameplateId?: string;
+  profileFrameId?: string;
+  profileEffectId?: string;
+  nameColorId?: string;
+  nameEffectId?: NameEffect;
+  showAstroBadge?: boolean;
   onClose: () => void;
   onProfileAction: (action: ProfileActionId) => void;
 }) {
-  const planLabel = plan === "astroPlusGold" ? "ASTRO PLUS" : plan === "astroPlus" ? "ASTRO+" : plan === "astro" ? "ASTRO" : "GRATUITO";
+  const planLabel = planLabelOf(plan);
   const statusMeta: Record<SocialStatus, { label: string; color: string }> = {
     online: { label: "Online", color: "#22c55e" },
     away: { label: "Ausente", color: "#f59e0b" },
@@ -485,21 +490,29 @@ export function PublicProfileModal({ plan, displayName, username, about, socialS
     invisible: { label: "Invisível", color: "#94a3b8" },
   };
   const visibleMural = MURAL_FIELD_DEFS.filter((definition) => selectedMuralFields.includes(definition.id));
-  const frameName = FRAME_SHOP_OPTIONS.find((frame) => frame.id === selectedFrame)?.name ?? "Nenhuma";
+  const frameName = catalogItem("avatar", selectedFrame).name;
   const avatar = photoUrl || (plan === "free" ? ASSETS.freeAvatar : plan === "astro" ? ASSETS.astroAvatar : plan === "astroPlus" ? ASSETS.astroPlusAvatar : ASSETS.astroPlusGoldAvatar);
+  const paid = plan !== "free";
+  const namePreview = nameStyleFor(paid ? (nameColorId || "default") : "default", paid ? (nameEffectId || "none") : "none", paid);
+  const plateClass = paid ? skinClass("nameplate", nameplateId || "none") : "";
+  const frameClass = paid ? skinClass("frame", profileFrameId || "none") : "";
+  const effectClass = paid ? skinClass("effect", profileEffectId || "none") : "";
   return (
     <div className="public-profile-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section className={cn("public-profile-modal", plan === "astro" && "public-profile-astro", plan === "astroPlus" && "public-profile-astro-plus", plan === "astroPlusGold" && "public-profile-astro-plus-gold")} role="dialog" aria-modal="true" aria-labelledby="public-profile-title" onMouseDown={(event) => event.stopPropagation()}>
+      <section className={cn("public-profile-modal", frameClass && "ape-card", frameClass, plan === "astro" && "public-profile-astro", plan === "astroPlus" && "public-profile-astro-plus", plan === "astroPlusGold" && "public-profile-astro-plus-gold")} role="dialog" aria-modal="true" aria-labelledby="public-profile-title" onMouseDown={(event) => event.stopPropagation()}>
+        {effectClass && <div className={cn("ape-effect-layer", effectClass)} style={{ zIndex: 5 }} />}
         <header className="public-profile-modal-header"><div><span className="social-modal-kicker">PERFIL PÚBLICO</span><h2 id="public-profile-title">{isSelf ? "Seu perfil público" : "Perfil de " + (displayName || "usuário")}</h2><p>Todas as informações configuradas pelo dono deste perfil.</p></div><button className="frames-shop-close" type="button" aria-label="Fechar perfil público" onClick={onClose}><X size={18} /></button></header>
         <div className="public-profile-body">
-          <div className="public-profile-hero"><div className="public-profile-cover" style={bannerUrl ? { backgroundImage: `url("${bannerUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center 30%' } : undefined} /><div className="public-profile-identity"><div className={cn("public-profile-avatar", `profile-frame-${selectedFrame}`)}><img src={avatar} alt={`Avatar de ${displayName || "usuário"}`} /></div><div className="public-profile-name"><span className="public-profile-plan">{planLabel}</span><h3>{displayName || "Seu nome"}</h3><p>@{username || "usuario"}</p><span className="public-profile-status"><i style={{ background: statusMeta[socialStatus].color }} />{statusMeta[socialStatus].label}</span></div><div className="public-profile-frame-note"><span>Moldura</span><strong>{frameName}</strong></div></div></div>
-          <div className="public-profile-grid"><div className="public-profile-main"><section className="public-profile-panel"><div className="public-profile-panel-heading"><span>APRESENTAÇÃO</span><Sparkles size={14} /></div>{statusMessage && <p className="public-profile-message">“{statusMessage}”</p>}<p className={cn("public-profile-about", !about && "is-empty")}>{about || "Este perfil ainda não adicionou uma apresentação."}</p>{!isSelf && <div className="profile-preview-actions public-profile-actions" aria-label="Ações do perfil"><button type="button" className="profile-action-button primary" onClick={() => onProfileAction("request")}><UserPlus size={13} />Mandar solicitação</button><button type="button" className="profile-action-button" onClick={() => onProfileAction("message")}><MessageCircle size={13} />Conversar</button><button type="button" className="profile-action-button danger" onClick={() => onProfileAction("report")}><ShieldCheck size={13} />Denunciar usuário</button></div>}</section><section className="public-profile-panel"><div className="public-profile-panel-heading"><span>MURAL</span><Sparkles size={14} /></div><div className="public-profile-mural-list">{visibleMural.length ? visibleMural.flatMap(({ id, label, fallback }) => (mural[id] || []).map((item) => <article className="public-profile-mural-widget" key={item.id}><img src={item.image} alt={`Imagem de ${item.value || label}`} /><div><span>{label}</span><strong>{item.value.trim() || fallback}</strong></div></article>)) : <p className="profile-mural-empty">Este perfil ainda não escolheu categorias para o Mural.</p>}</div></section></div><aside className="public-profile-side"><section className="public-profile-panel"><div className="public-profile-panel-heading"><span>VISIBILIDADE</span><Eye size={14} /></div><div className="public-profile-visibility-list"><span className={showActivity ? "visible" : "hidden"}>{showActivity ? "Atividade visível" : "Atividade oculta"}</span><span className={showServers ? "visible" : "hidden"}>{showServers ? "Servidores em comum" : "Servidores privados"}</span><span className={showMutualFriends ? "visible" : "hidden"}>{showMutualFriends ? "Amigos em comum" : "Amigos privados"}</span></div></section></aside></div>
+          <div className="public-profile-hero"><div className="public-profile-cover" style={bannerUrl ? { backgroundImage: `url("${bannerUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center 30%' } : undefined} /><div className="public-profile-identity"><div className={cn("public-profile-avatar", `profile-frame-${selectedFrame}`)}><img src={avatar} alt={`Avatar de ${displayName || "usuário"}`} /></div><div className="public-profile-name"><span className="public-profile-plan">{planLabel}</span><h3 className={cn("ape-plate", plateClass, namePreview.className)} style={namePreview.style}>{displayName || "Seu nome"}</h3><p>@{username || "usuario"}{paid && showAstroBadge && <span className="ape-badge-astro" style={{ marginLeft: 6, display: 'inline-flex', verticalAlign: 'middle' }}><Rocket size={13} /></span>}</p><span className="public-profile-status"><i style={{ background: statusMeta[socialStatus].color }} />{statusMeta[socialStatus].label}</span></div><div className="public-profile-frame-note"><span>Moldura</span><strong>{frameName}</strong></div></div></div>
+          <div className="public-profile-grid"><div className="public-profile-main"><section className="public-profile-panel"><div className="public-profile-panel-heading"><span>APRESENTAÇÃO</span><Sparkles size={14} /></div>{statusMessage && <p className="public-profile-message">“{statusMessage}”</p>}<p className={cn("public-profile-about", !about && "is-empty")}>{about || "Este perfil ainda não adicionou uma apresentação."}</p>{!isSelf && <div className="profile-preview-actions public-profile-actions" aria-label="Ações do perfil"><button type="button" className="profile-action-button primary" onClick={() => onProfileAction("request")}><UserPlus size={13} />Mandar solicitação</button><button type="button" className="profile-action-button" onClick={() => onProfileAction("message")}><MessageCircle size={13} />Conversar</button><button type="button" className="profile-action-button danger" onClick={() => onProfileAction("report")}><ShieldCheck size={13} />Denunciar usuário</button></div>}</section><section className="public-profile-panel"><div className="public-profile-panel-heading"><span>MURAL</span><Sparkles size={14} /></div><div className="public-profile-mural-list">{visibleMural.length ? visibleMural.flatMap(({ id, label, fallback }) => (mural[id] || []).map((item) => <article className="public-profile-mural-widget" key={item.id}><img src={item.image} alt={`Imagem de ${item.value || label}`} /><div><span>{label}</span><strong>{item.value.trim() || fallback}</strong></div></article>)) : <p className="profile-mural-empty">Este perfil ainda não escolheu categorias para o Mural.</p>}</div></section></div><aside className="public-profile-side"><section className="public-profile-panel"><div className="public-profile-panel-heading"><span>VISIBILIDADE</span><Eye size={14} /></div><div className="public-profile-visibility-list"><span className={showActivity ? "visible" : "hidden"}>{showActivity ? "Atividade visível" : "Atividade oculta"}</span><span className={showServers ? "visible" : "hidden"}>{showServers ? "Servidores em comum visíveis" : "Servidores privados"}</span><span className={showMutualFriends ? "visible" : "hidden"}>{showMutualFriends ? "Amigos em comum visíveis" : "Amigos privados"}</span></div></section></aside></div>
         </div>
         <footer className="public-profile-footer"><span>{isSelf ? "Este é o seu perfil público." : "Esta é uma visualização pública do perfil."}</span><button type="button" onClick={onClose}>Fechar perfil</button></footer>
       </section>
     </div>
   );
 }
+
+/* ─────────────────────────── modal Social (status/privacidade/mural) ─────────────────────────── */
 
 function SocialSettingsModal({ plan, displayName, username, about, selectedFrame, status, onStatusChange, statusMessage, onStatusMessageChange, showActivity, setShowActivity, showServers, setShowServers, showMutualFriends, setShowMutualFriends, mural, selectedMuralFields, onMuralFieldToggle, onMuralItemAdd, onMuralAutoFill, onMuralItemChange, onMuralImageChange, onMuralItemRemove, onClose, onNotify, onViewProfile, onProfileAction }: {
   plan: Plan;
@@ -555,107 +568,34 @@ function SocialSettingsModal({ plan, displayName, username, about, selectedFrame
     </div>
   );
 }
-function AstroPlusDecorations({ selectedFrame, onFrameSelect, onOpenFrames, onNotify }: { selectedFrame: FrameId; onFrameSelect: (frame: FrameId) => void; onOpenFrames: () => void; onNotify: (message: string) => void }) {
-  void selectedFrame; void onFrameSelect; void onOpenFrames; void onNotify;
-    void selectedFrame; void onFrameSelect; void onOpenFrames; void onNotify;
-  return (
-    <section className="decorations-section">
-      <SectionTitle icon={Sparkles} title="Decorações e molduras" description="Em breve — estamos preparando novidades." />
-      <div className="decoration-strip">
-        <div className="decoration-item" style={{ cursor: 'default', borderStyle: 'dashed' }}>
-          <span className="decoration-empty"><Sparkles size={20} /></span>
-          <b>Em breve</b>
-        </div>
-      </div>
-    </section>
-  );
-}
 
-function isAvailable(value: string) {
-  return ["Disponível", "Acesso completo", "Acesso antecipado", "Até 250 MB", "Até 1 GB", "1080p / 60 FPS", "2K / 30 FPS", "Padrão", "Ampliada", "Maior qualidade", "Acesso limitado", "Somente alguns"].includes(value);
-}
-
-function PlanColumn({ plan, onUpgrade, onDowngrade, onEditBanner }: { plan: Plan; onUpgrade: () => void; onDowngrade: () => void; onEditBanner?: () => void }) {
-  const isFree = plan === "free";
-  const isAstro = plan === "astro";
-  const isAstroPlusTier = plan === "astroPlus";
-  const isAstroPlusGold = plan === "astroPlusGold";
-  const [showResources, setShowResources] = useState(true);
-  const features = isAstroPlusGold ? astroPlusGoldFeatures : isAstroPlusTier ? astroPlusFeatures : isAstro ? astroFeatures : freeFeatures;
-  const planLabel = isAstroPlusGold ? "ASTRO PLUS" : isAstroPlusTier ? "ASTRO+" : isAstro ? "ASTRO" : "GRATUITO";
-  const planClass = isAstroPlusGold ? "astro-plus-plan-column" : isAstroPlusTier ? "astro-plus-tier-plan-column" : isAstro ? "astro-plan-column" : "";
-  const cardBannerAsset = isAstroPlusGold ? ASSETS.astroPlusGoldCardHeader : isAstroPlusTier ? ASSETS.astroPlusCardHeader : isAstro ? ASSETS.astroCardBanner : ASSETS.freeCardHeader;
-  return (
-    <aside className={cn("plan-column", planClass)}>
-      <section className={cn("plan-card plan-summary-card", isFree && "free-summary-card", isAstro && "astro-summary-card", isAstroPlusTier && "astro-plus-tier-summary-card", isAstroPlusGold && "astro-plus-summary-card")}>
-        <div className="astro-card-banner" role="img" aria-label={`Você está no plano ${planLabel}`}>
-          <img src={cardBannerAsset} alt={`Você está no plano ${planLabel}`} />
-          {onEditBanner && <button className="astro-card-banner-edit" type="button" aria-label="Editar banner" onClick={onEditBanner}><Pencil size={12} /></button>}
-        </div>
-        <div className="plan-divider" />
-        <div className="plan-resources-heading">
-          <h3>Recursos disponíveis no {planLabel}</h3>
-          <button type="button" className={cn("resources-toggle", !showResources && "is-hidden")} onClick={() => setShowResources((current) => !current)} role="switch" aria-checked={showResources}>
-            <span className="resources-toggle-track"><span className="resources-toggle-thumb" /></span>
-            <small>{showResources ? "Esconder recursos" : "Mostrar recursos"}</small>
-          </button>
-        </div>
-        {showResources && <ul className="available-list">{features.map((feature) => <li key={feature}><span className="check-dot"><Check size={10} strokeWidth={3} /></span>{feature}</li>)}</ul>}
-        {showResources && isAstroPlusTier && <ul className="locked-feature-list astro-plus-tier-locked-list">{astroPlusTierLockedFeatures.map((feature) => <LockedFeatureRow key={feature} feature={feature} targetLabel="ASTRO PLUS" />)}</ul>}
-        {showResources && isAstroPlusGold && <ul className="available-list astro-plus-gold-available-list">{astroPlusGoldLockedFeatures.map((feature) => <li key={feature}><span className="check-dot"><Check size={10} strokeWidth={3} /></span>{feature}</li>)}</ul>}
-        {isAstro && <button className="plan-switch-link" onClick={onDowngrade}>Voltar ao Gratuito</button>}
-        {isAstroPlusTier && <button className="plan-switch-link" onClick={onDowngrade}>Voltar ao ASTRO</button>}
-        {isAstroPlusGold && <button className="plan-switch-link" onClick={onDowngrade}>Voltar ao ASTRO+</button>}
-      </section>
-
-      {isAstroPlusGold ? (
-        <section className="plan-card compare-card astro-plus-gold-compare-card">
-          <h3>Comparado ao ASTRO você tem:</h3>
-          <div className="compare-table compare-table-two" role="table" aria-label="Comparação ASTRO Plus">
-            <div className="compare-row compare-head" role="row"><span>Recurso</span><span>ASTRO PLUS</span></div>
-            {astroPlusGoldComparisons.map(([label, value]) => <div className="compare-row" key={label} role="row"><span>{label}</span><span className="compare-next"><b><Check size={10} strokeWidth={3} /></b>{value}</span></div>)}
-          </div>
-        </section>
-      ) : (
-        <section className={cn("plan-card compare-card", isAstro && "astro-compare-card", isAstroPlusTier && "astro-plus-tier-compare-card")}>
-          <h3>Comparado ao {isAstroPlusTier ? "ASTRO PLUS" : isAstro ? "ASTRO+" : "ASTRO"} você tem:</h3>
-          <div className="compare-table" role="table" aria-label="Comparação de planos">
-            <div className="compare-row compare-head" role="row"><span>Recurso</span><span>{isAstroPlusTier ? "ASTRO+ (atual)" : isAstro ? "ASTRO (atual)" : "Gratuito"}</span><span className="astro-text">{isAstroPlusTier ? "ASTRO PLUS" : isAstro ? "ASTRO+" : "ASTRO"}</span></div>
-            {(isAstroPlusTier ? astroPlusTierComparisons : isAstro ? astroComparisons : [["Upload de arquivos", "Até 25 MB", "Até 250 MB"], ["Streaming (qualidade)", "720p / 30 FPS\n420p / 30 FPS", "1080p / 60 FPS"], ["Banner personalizado", "Não disponível", "Disponível"], ["Avatar animado", "Não disponível", "Disponível"], ["Molduras e efeitos", "Não disponível", "Disponível"], ["Emojis exclusivos", "Não disponível", "Disponível"], ["Insígnias exclusivas", "Não disponível", "Disponível"], ["Recursos antecipados", "Não disponível", "Disponível"], ["Acesso aos recursos Beta", "Não disponível", "Disponível"]] as const).map(([label, current, next]) => (
-              <div className="compare-row" key={label} role="row"><span>{label}</span><span className={cn("compare-free", (isAstro || isAstroPlusTier) && "compare-current")}><b className={!isAvailable(current) ? "compare-unavailable" : undefined}>{isAvailable(current) ? <Check size={10} strokeWidth={3} /> : <X size={10} strokeWidth={3} />}</b>{current}</span><span className={cn("compare-astro", (isAstro || isAstroPlusTier) && "compare-next")}><b><Check size={10} strokeWidth={3} /></b>{next}</span></div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {!isAstroPlusGold && (
-      <section className={cn("upgrade-card", isAstro && "astro-upgrade-card", isAstroPlusTier && "astro-plus-tier-upgrade-card")}>
-        <h3>{isAstroPlusTier ? "Quer mais exclusividade?" : isAstro ? "Quer mais recursos?" : "Quer mais liberdade?"}</h3>
-        <p>{isAstroPlusTier ? "Faça upgrade para ASTRO PLUS e libere todas as molduras, efeitos, streaming em 2K / 60 FPS e muito mais!" : isAstro ? "Tenha streaming em 2K / 30 FPS, upload de até 1 GB, compartilhamento em maior qualidade e muito mais!" : "Assine o ASTRO e personalize seu perfil com mais qualidade, recursos exclusivos e muito mais!"}</p>
-        <ul>{(isAstroPlusTier ? ["Upload de até 5 GB", "Streaming em 2K / 60 FPS", "Todas as molduras premium"] : isAstro ? ["Streaming em 2K / 30 FPS", "Upload de até 1 GB", "Compartilhamento de tela em maior qualidade"] : ["Upload até 250 MB", "Streaming em 1080p / 60 FPS", "Banner, avatar animado, molduras e muito mais!"]).map((feature) => <li key={feature}><Check size={13} />{feature}</li>)}</ul>
-        <button className={cn("astro-button", isAstro && "astro-plus-button", isAstroPlusTier && "astro-plus-tier-button")} onClick={onUpgrade}><Rocket size={16} />{isAstroPlusTier ? "Fazer upgrade para ASTRO PLUS" : isAstro ? "Fazer upgrade para ASTRO+" : "Assinar ASTRO"}</button>
-      </section>
-      )}
-    </aside>
-  );
-}
+/* ─────────────────────────── editor principal ─────────────────────────── */
 
 export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
   const { currentUser, updateUser } = useUserStore();
   const userSettings = (currentUser?.settings || {}) as Record<string, unknown>;
   const tier = getAstroTier(currentUser);
-  const tierToPlan: Record<AstroTier | "none", Plan> = { none: "free", astro: "astro", astro_plus: "astroPlus", astro_ultimate: "astroPlusGold" };
-  const [plan, setPlan] = useState<Plan>(tierToPlan[tier]);
-  const savedAppearance = useMemo(() => clampAppearanceToPlan(parseAppearance(userSettings), tierToPlan[tier]), [userSettings, tier]);
+  const savedPlan = TIER_TO_PLAN[tier];
+  const paid = tier !== "none";
+  const savedAppearance = useMemo(() => clampAppearanceToPlan(parseAppearance(userSettings), savedPlan), [userSettings, savedPlan]);
+
   const [displayName, setDisplayName] = useState(currentUser?.name || "");
   const [username, setUsername] = useState(currentUser?.friendCode || "");
   const [about, setAbout] = useState(currentUser?.bio || "");
   const [photoUrl, setPhotoUrl] = useState(currentUser?.photoUrl || "");
   const [bannerUrl, setBannerUrl] = useState(currentUser?.bannerUrl || "");
-  const [status, setStatus] = useState("");
-  const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
-  const [isSocialOpen, setIsSocialOpen] = useState(false);
-  const [isPublicProfileOpen, setIsPublicProfileOpen] = useState(false);
+  const [editingField, setEditingField] = useState<"name" | "username" | "about" | null>(null);
+
+  const [decoration, setDecoration] = useState(settingString(userSettings, "frame", "none"));
+  const [nameplate, setNameplate] = useState(settingString(userSettings, "nameplate", "none"));
+  const [profileFrame, setProfileFrame] = useState(settingString(userSettings, "profileFrame", "none"));
+  const [profileEffect, setProfileEffect] = useState(settingString(userSettings, "profileEffect", "none"));
+  const [accent, setAccent] = useState(currentUser?.accentColor || "#29A3FF");
+  const [nameColor, setNameColor] = useState(settingString(userSettings, "nameColor", "default"));
+  const [nameEffect, setNameEffect] = useState<NameEffect>((settingString(userSettings, "nameEffect", "none") as NameEffect) || "none");
+  const [astroBadge, setAstroBadge] = useState(userSettings.astroBadge !== false);
+  const [wishlist, setWishlist] = useState<WishlistEntry[]>(() => parseWishlist(userSettings.wishlist));
+
   const [socialStatus, setSocialStatus] = useState<SocialStatus>("online");
   const [statusMessage, setStatusMessage] = useState("");
   const [showActivity, setShowActivity] = useState(true);
@@ -677,43 +617,60 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
     if (Array.isArray(raw)) return raw.filter((id): id is MuralFieldId => id in EMPTY_MURAL)
     return []
   });
-  const [selectedFrame, setSelectedFrame] = useState<FrameId>("none");
-  const [isFramesShopOpen, setIsFramesShopOpen] = useState(false);
+
+  const [tab, setTab] = useState<"mural" | "activity" | "wishlist">("mural");
+  const [picker, setPicker] = useState<CatalogKind | "nameStyle" | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const [activity, setActivity] = useState<Array<{ app: string; seconds: number }> | null>(null);
+  const [infoBoxOpen, setInfoBoxOpen] = useState(true);
+
   const [selectedTheme, setSelectedTheme] = useState<string>(savedAppearance.theme);
   const [selectedFont, setSelectedFont] = useState<string>(savedAppearance.font);
   const [selectedBg, setSelectedBg] = useState<string>(savedAppearance.bg);
   const [selectedTextColor, setSelectedTextColor] = useState<AppearanceTextColorId>(savedAppearance.textColor);
+  const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
+  const [isSocialOpen, setIsSocialOpen] = useState(false);
+  const [isPublicProfileOpen, setIsPublicProfileOpen] = useState(false);
+
   const [cropImage, setCropImage] = useState<string | null>(null);
   const [cropShape, setCropShape] = useState<"circle" | "rect">("circle");
   const [cropAspect, setCropAspect] = useState(1);
   const [driveModal, setDriveModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState("");
   const [usernameError, setUsernameError] = useState("");
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const pendingDriveAction = useRef<"avatar" | "banner" | null>(null);
-  const hydratedUserRef = useRef<string | null>(currentUser?.id || null);
-  useEffect(() => {
-    if (!currentUser?.id || hydratedUserRef.current === currentUser.id) return;
-    hydratedUserRef.current = currentUser.id;
-    setDisplayName(currentUser.name || "");
-    setUsername(currentUser.friendCode || "");
-    setAbout(currentUser.bio || "");
-    setPhotoUrl(currentUser.photoUrl || "");
-    setBannerUrl(currentUser.bannerUrl || "");
-  }, [currentUser]);
-  const appearanceStyleMemo = useMemo(() => appearanceStyle({ theme: selectedTheme as AppearanceThemeId, font: selectedFont as AppearanceFontId, bg: selectedBg as AppearanceBgId, textColor: selectedTextColor }), [selectedTheme, selectedFont, selectedBg, selectedTextColor]);
-  const appearanceAttrs = useMemo(() => appearanceDataAttrs({ theme: selectedTheme as AppearanceThemeId, font: selectedFont as AppearanceFontId, bg: selectedBg as AppearanceBgId, textColor: selectedTextColor }), [selectedTheme, selectedFont, selectedBg, selectedTextColor]);
-  useEffect(() => {
-    const selectedOption = FRAME_SHOP_OPTIONS.find((item) => item.id === selectedFrame);
-    if (selectedOption && !selectedOption.plans.includes(plan)) setSelectedFrame("none");
-  }, [plan, selectedFrame]);
-  const isAstro = plan === "astro";
-  const isAstroPlusTier = plan === "astroPlus";
-  const isAstroPlusGold = plan === "astroPlusGold";
-  const isPaid = plan !== "free";
+  const previewSnapshot = useRef<{ decoration: string; nameplate: string; profileFrame: string; profileEffect: string; nameColor: string; nameEffect: NameEffect; astroBadge: boolean } | null>(null);
+
+  const renderPlan: Plan = previewing ? "astroPlusGold" : savedPlan;
+  const renderPaid = previewing || paid;
+  const namePreview = nameStyleFor(nameColor, nameEffect, renderPaid);
+  const avatarSrc = photoUrl ? imgSrc(photoUrl, 512) : (renderPlan === "free" ? ASSETS.freeAvatar : renderPlan === "astro" ? ASSETS.astroAvatar : renderPlan === "astroPlus" ? ASSETS.astroPlusAvatar : ASSETS.astroPlusGoldAvatar);
+  const bannerStyle = bannerUrl ? { backgroundImage: `url("${imgSrc(bannerUrl, 1200)}")` } : { backgroundImage: `linear-gradient(120deg, ${accent}88, ${accent}22)` };
+
   const displayCount = useMemo(() => `${displayName.length}/20`, [displayName]);
   const usernameCount = useMemo(() => `${username.length}/20`, [username]);
+  const memberSince = useMemo(() => {
+    const ts = Number(currentUser?.createdAt || 0);
+    return new Date(ts > 0 ? ts : Date.now()).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" });
+  }, [currentUser?.createdAt]);
+
+  useEffect(() => {
+    if (tab !== "activity" || activity !== null) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const { getTopApps } = await import("../../../services/activityService");
+        const top = await getTopApps(8);
+        if (alive) setActivity(top);
+      } catch {
+        if (alive) setActivity([]);
+      }
+    })();
+    return () => { alive = false; };
+  }, [tab, activity]);
 
   const notify = (message: string) => {
     setStatus(message);
@@ -736,9 +693,6 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
     setMural((current) => ({ ...current, [field]: [...current[field], createMuralItem(field)] }));
   };
   const updateMuralItem = (field: MuralFieldId, itemId: string, value: string) => {
-    // NAO reseta a imagem aqui: ao digitar, a capa anterior permanece ate o
-    // auto-fetch do iTunes trazer a nova (evita flash de fallback e perda de
-    // capa quando a busca falha).
     setMural((current) => ({ ...current, [field]: current[field].map((item) => item.id === itemId ? { ...item, value } : item) }));
   };
   const updateMuralImage = (field: MuralFieldId, itemId: string, image: string) => {
@@ -757,47 +711,66 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
     notify(messages[action]);
   };
 
-  const selectFrame = (frame: FrameId) => {
-    setSelectedFrame(frame);
-    setIsFramesShopOpen(false);
-    const label = FRAME_SHOP_OPTIONS.find((item) => item.id === frame)?.name ?? "Nenhuma";
-    notify(`Moldura ${label} aplicada ao preview`);
-  };
-
-  const handleUpgradeAstro = () => {
+  const openPlans = () => {
     onClose?.();
     window.dispatchEvent(new CustomEvent('friends-space:show-astro-plans'));
   };
 
-  const handleUpgradeAstroPlus = () => {
-    onClose?.();
-    window.dispatchEvent(new CustomEvent('friends-space:show-astro-plans'));
+  const enterPreview = () => {
+    previewSnapshot.current = { decoration, nameplate, profileFrame, profileEffect, nameColor, nameEffect, astroBadge };
+    setPreviewing(true);
+    notify("Prévia do ASTRO ativada");
   };
 
-  const handleUpgradeAstroPlusGold = () => {
-    onClose?.();
-    window.dispatchEvent(new CustomEvent('friends-space:show-astro-plans'));
+  const exitPreview = () => {
+    const snap = previewSnapshot.current;
+    if (snap) {
+      setDecoration(snap.decoration);
+      setNameplate(snap.nameplate);
+      setProfileFrame(snap.profileFrame);
+      setProfileEffect(snap.profileEffect);
+      setNameColor(snap.nameColor);
+      setNameEffect(snap.nameEffect);
+      setAstroBadge(snap.astroBadge);
+    }
+    previewSnapshot.current = null;
+    setPreviewing(false);
+  };
+
+  const surpriseMe = () => {
+    const randomOf = (items: CatalogItem[]) => items[Math.floor(Math.random() * items.length)].id;
+    setDecoration(randomOf(KIND_CATALOG.avatar.filter((item) => item.id !== "none")));
+    setNameplate(randomOf(KIND_CATALOG.nameplate.filter((item) => item.id !== "none")));
+    setProfileFrame(randomOf(KIND_CATALOG.frame.filter((item) => item.id !== "none")));
+    setProfileEffect(randomOf(KIND_CATALOG.effect.filter((item) => item.id !== "none")));
+    const colorItems = NAME_COLORS.filter((item) => item.color);
+    setNameColor(colorItems[Math.floor(Math.random() * colorItems.length)].id);
+    setNameEffect(Math.random() > 0.5 ? "shine" : "neon");
+    setAstroBadge(true);
+    notify("Visual surpresa aplicado (prévia)");
   };
 
   const handleCancel = () => {
-    const savedTier = getAstroTier(currentUser);
     setDisplayName(currentUser?.name || "");
     setUsername(currentUser?.friendCode || "");
     setAbout(currentUser?.bio || "");
     setPhotoUrl(currentUser?.photoUrl || "");
     setBannerUrl(currentUser?.bannerUrl || "");
-    setPlan(tierToPlan[savedTier]);
+    setDecoration(settingString(userSettings, "frame", "none"));
+    setNameplate(settingString(userSettings, "nameplate", "none"));
+    setProfileFrame(settingString(userSettings, "profileFrame", "none"));
+    setProfileEffect(settingString(userSettings, "profileEffect", "none"));
+    setAccent(currentUser?.accentColor || "#29A3FF");
+    setNameColor(settingString(userSettings, "nameColor", "default"));
+    setNameEffect((settingString(userSettings, "nameEffect", "none") as NameEffect) || "none");
+    setAstroBadge(userSettings.astroBadge !== false);
+    setWishlist(parseWishlist(userSettings.wishlist));
     setSelectedTheme(savedAppearance.theme);
     setSelectedFont(savedAppearance.font);
     setSelectedBg(savedAppearance.bg);
     setSelectedTextColor(savedAppearance.textColor);
+    setEditingField(null);
     notify("Alterações canceladas");
-  };
-
-  const previousPlan = plan === "astroPlusGold" ? "astroPlus" : plan === "astroPlus" ? "astro" : "free";
-  const restorePreviousPlan = () => {
-    setPlan(previousPlan);
-    notify(`Plano ${previousPlan === "astroPlus" ? "ASTRO+" : previousPlan === "astro" ? "ASTRO" : "Gratuito"} restaurado`);
   };
 
   const checkUsernameUnique = async (value: string) => {
@@ -827,7 +800,6 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
         reader.onerror = rej;
         reader.readAsDataURL(file);
       });
-      // GIF pula o crop (canvas mataria a animacao): usa direto.
       if (file.type === 'image/gif') {
         if (kind === "avatar") setPhotoUrl(dataUrl);
         else setBannerUrl(dataUrl);
@@ -903,6 +875,7 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
       if (typeof finalBannerUrl === "string" && finalBannerUrl.startsWith("data:image/")) {
         finalBannerUrl = await withTimeout(uploadProfileImage(finalBannerUrl, "banner"), 20000, finalBannerUrl);
       }
+      const paidNow = paid;
       const settings: Record<string, unknown> = {
         ...userSettings,
         status: socialStatus,
@@ -913,6 +886,14 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
         mural,
         muralFields: selectedMuralFields,
         pronoun: typeof userSettings.pronoun === "string" ? userSettings.pronoun : "",
+        frame: paidNow ? decoration : "none",
+        nameplate: paidNow ? nameplate : "none",
+        profileFrame: paidNow ? profileFrame : "none",
+        profileEffect: paidNow ? profileEffect : "none",
+        nameColor: paidNow ? nameColor : "default",
+        nameEffect: paidNow ? nameEffect : "none",
+        astroBadge: paidNow ? astroBadge : false,
+        wishlist,
         ...serializeAppearance({ theme: selectedTheme as AppearanceThemeId, font: selectedFont as AppearanceFontId, bg: selectedBg as AppearanceBgId, textColor: selectedTextColor }),
       };
       await updateUser({
@@ -921,6 +902,7 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
         bio: about.trim(),
         photoUrl: finalPhotoUrl,
         bannerUrl: finalBannerUrl,
+        accentColor: accent,
         settings,
       });
       notify("Alterações salvas");
@@ -932,52 +914,388 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
     }
   };
 
+  const currentOf = (kind: CatalogKind) => kind === "avatar" ? decoration : kind === "nameplate" ? nameplate : kind === "frame" ? profileFrame : profileEffect;
+  const applyOf = (kind: CatalogKind, id: string) => {
+    if (kind === "avatar") setDecoration(id);
+    else if (kind === "nameplate") setNameplate(id);
+    else if (kind === "frame") setProfileFrame(id);
+    else setProfileEffect(id);
+  };
+
+  const wishToggle = (item: CatalogItem) => {
+    setWishlist((current) => current.some((entry) => entry.kind === item.kind && entry.id === item.id)
+      ? current.filter((entry) => !(entry.kind === item.kind && entry.id === item.id))
+      : [...current, { kind: item.kind, id: item.id }]);
+  };
+
+  const wishItems = wishlist.map((entry) => ({ entry, item: catalogItem(entry.kind, entry.id) }));
+  const wishCandidates = ALL_SHOP_ITEMS.filter((item) => !wishlist.some((entry) => entry.kind === item.kind && entry.id === item.id));
+  const activityMax = Math.max(...(activity || []).map((entry) => entry.seconds), 1);
+
   return (
     <div className="fs-profile-editor">
-      <div className="fs-profile-editor-window">
-      <div className="fs-profile-editor-topbar">
-        <button className="fs-profile-editor-back" onClick={onClose}><ChevronLeft size={16} />Voltar</button>
-        <h1 className="fs-profile-editor-topbar-title">Editar perfil</h1>
-        <button className="fs-profile-editor-close" onClick={onClose} aria-label="Fechar"><X size={16} /></button>
-      </div>
-      <div className="fs-profile-editor-body">
-      <div className={cn("profile-crop-page", isPaid && "astro-profile-page", isAstroPlusTier && "astro-plus-tier-profile-page", isAstroPlusGold && "astro-plus-profile-page")} {...appearanceAttrs} style={appearanceStyleMemo}>
-      <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => openCrop(e, "avatar")} />
-      <input ref={bannerInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => openCrop(e, "banner")} />
-      <main key={plan} className="main-layout plan-state-transition">
-        <div className="editor-column">
-          <div className="editor-top-grid">
-            <ProfilePhoto plan={plan} onNotify={notify} selectedFrame={selectedFrame} photoUrl={photoUrl} onEditPhoto={requestAvatarChange} onRemovePhoto={() => setPhotoUrl("")} />
-            <section className="basic-info-section">
-              <div className="basic-info-heading">
-                <SectionTitle icon={CircleUserRound} title="Informações básicas" />
-                <div className="basic-info-actions">
-                  <button className="header-social-btn" type="button" onClick={() => setIsSocialOpen(true)}><CircleDot size={13} />Social</button>
+      <div className="ape-overlay">
+        <div className="ape-window">
+          <button className="ape-close" onClick={onClose} aria-label="Fechar"><X size={15} /></button>
 
-                </div>
+          {/* ── Coluna esquerda ── */}
+          <aside className="ape-side">
+            {previewing ? (
+              <div className="ape-preview-head">
+                <button className="ape-preview-back" onClick={exitPreview}><ArrowLeft size={15} />Prévia do ASTRO</button>
+                <p>Você está visualizando uma prévia de como seu perfil poderia ficar com o ASTRO.</p>
+                <button className="ape-btn ape-btn-light ape-btn-full" onClick={surpriseMe}><Sparkles size={14} />Surpreenda-me!</button>
               </div>
-              <label className="control-label">Nome de exibição <em>*</em><span className="text-input-wrap"><input maxLength={20} value={displayName} onChange={(event) => setDisplayName(event.target.value)} /><small>{displayCount}</small></span></label>
-              <label className="control-label">Nome de usuário <em>*</em><span className="text-input-wrap"><input maxLength={20} value={username} onChange={(event) => { setUsername(event.target.value.toUpperCase()); setUsernameError(""); }} /><small>{usernameCount}</small></span></label>
-              {usernameError && <p className="ph-username-error">{usernameError}</p>}
-              {!isPaid && <button className="username-lock-card" onClick={() => notify("No plano Gratuito, o limite é 0/1 usado")}><LockKeyhole size={17} /><span><b>Alterar nome de usuário</b><small>No plano Gratuito, você só pode alterar seu nome de usuário 1 vez.</small></span><strong>0/1 usado</strong></button>}
-              <p className="profile-link">Seu link: <b>friends.space/@{username || "usuario"}</b></p>
-            </section>
-          </div>
+            ) : (
+              <div className="ape-side-head">
+                <span className="ape-side-title">Perfil principal <ChevronDown size={14} /></span>
+                <span className="ape-side-expand"><ChevronsRight size={15} /></span>
+              </div>
+            )}
+            <div className="ape-side-scroll">
+              <button className="ape-row" onClick={() => setPicker("nameplate")}>
+                <span className="ape-row-text"><span className="ape-row-title">Placa de identificação</span><span className="ape-row-sub">{catalogItem("nameplate", nameplate).name}</span></span>
+                <span className="ape-row-tile"><span className={cn("ape-tile-plate", skinClass("nameplate", nameplate))}>{displayName || "Seu nome"}</span></span>
+              </button>
 
-          <AboutSection plan={plan} about={about} setAbout={setAbout} />
-          {isAstroPlusGold ? <AstroPlusDecorations selectedFrame={selectedFrame} onFrameSelect={selectFrame} onOpenFrames={() => setIsFramesShopOpen(true)} onNotify={notify} /> : isAstroPlusTier ? <AstroPlusTierDecorations selectedFrame={selectedFrame} onFrameSelect={selectFrame} onOpenFrames={() => setIsFramesShopOpen(true)} onUpgrade={handleUpgradeAstroPlusGold} onNotify={notify} /> : isAstro ? <AstroDecorations selectedFrame={selectedFrame} onFrameSelect={selectFrame} onOpenFrames={() => setIsFramesShopOpen(true)} onUpgrade={handleUpgradeAstroPlus} /> : <PremiumUnavailable />}
-          {isAstro && <AstroPlusUnavailable onUpgrade={handleUpgradeAstroPlus} />}
-          {isAstroPlusTier && <AstroPlusGoldUnavailable onUpgrade={handleUpgradeAstroPlusGold} />}
+              <button className="ape-row" onClick={() => setPicker("avatar")}>
+                <span className="ape-row-text"><span className="ape-row-title">Avatar e decorações</span><span className="ape-row-sub">{catalogItem("avatar", decoration).name}</span></span>
+                <span className="ape-row-tile">
+                  <span className={cn("ape-tile-circle", skinClass("avatar", decoration))}><img src={avatarSrc} alt="Avatar" /></span>
+                  <span className="ape-tile-circle ape-tile-add"><Plus size={15} /></span>
+                </span>
+              </button>
 
-          {isSocialOpen && <SocialSettingsModal plan={plan} displayName={displayName} username={username} about={about} selectedFrame={selectedFrame} status={socialStatus} onStatusChange={setSocialStatus} statusMessage={statusMessage} onStatusMessageChange={setStatusMessage} showActivity={showActivity} setShowActivity={setShowActivity} showServers={showServers} setShowServers={setShowServers} showMutualFriends={showMutualFriends} setShowMutualFriends={setShowMutualFriends} mural={mural} selectedMuralFields={selectedMuralFields} onMuralFieldToggle={toggleMuralField} onMuralItemAdd={addMuralItem} onMuralAutoFill={fillRecentFromActivity} onMuralItemChange={updateMuralItem} onMuralImageChange={updateMuralImage} onMuralItemRemove={removeMuralItem} onClose={() => setIsSocialOpen(false)} onNotify={notify} onViewProfile={() => setIsPublicProfileOpen(true)} onProfileAction={handleProfileAction} />}
-          {isPublicProfileOpen && <PublicProfileModal plan={plan} displayName={displayName} username={username} about={about} socialStatus={socialStatus} statusMessage={statusMessage} showActivity={showActivity} showServers={showServers} showMutualFriends={showMutualFriends} mural={mural} selectedMuralFields={selectedMuralFields} selectedFrame={selectedFrame} onClose={() => setIsPublicProfileOpen(false)} onProfileAction={handleProfileAction} />}
+              <div className="ape-color-row">
+                <span className="ape-row-text"><span className="ape-row-title">Cor da faixa</span><span className="ape-row-sub">Cor de destaque do perfil</span></span>
+                <input type="color" value={accent} onChange={(event) => setAccent(event.target.value)} aria-label="Cor da faixa" />
+              </div>
 
-          <div className="editor-actions"><button className="cancel-button" onClick={handleCancel} disabled={saving}>Cancelar</button><button className="save-button" onClick={() => void handleSave()} disabled={!displayName || !username || saving}>{saving ? "Salvando..." : "Salvar alterações"}</button></div>
+              <button className="ape-row" onClick={() => setPicker("frame")}>
+                <span className="ape-row-text"><span className="ape-row-title">Efeitos de perfil e molduras</span><span className="ape-row-sub">Moldura: {catalogItem("frame", profileFrame).name} · Efeito: {catalogItem("effect", profileEffect).name}</span></span>
+                <span className="ape-row-tile">
+                  <span className={cn("ape-tile-mini", "ape-card", skinClass("frame", profileFrame))}><span className="ape-tile-mini-avatar" /><span className="ape-tile-mini-name" style={{ background: accent }}>{displayName.split(" ")[0] || "Olá"}</span></span>
+                  <span className="ape-tile-mini" onClick={(event) => { event.stopPropagation(); setPicker("effect"); }}>
+                    <span className="ape-card-fill" />
+                    {profileEffect !== "none" && <span className={cn("ape-effect-layer", skinClass("effect", profileEffect))} />}
+                  </span>
+                </span>
+              </button>
+
+              {!previewing && (paid ? (
+                <button className="ape-row" onClick={openPlans}>
+                  <span className="ape-row-text"><span className="ape-row-title">ASTRO</span><span className="ape-row-sub">Gerenciar assinatura</span></span>
+                  <span className="ape-row-tile"><span className="ape-wish-count">{planLabelOf(savedPlan)}</span></span>
+                </button>
+              ) : (
+                <div className="ape-upgrade">
+                  <p className="ape-upgrade-title">Eleve seu visual, somente com <b>ASTRO</b></p>
+                  <button className="ape-btn ape-btn-light ape-btn-full" onClick={enterPreview}><Sparkles size={14} />Prévia do ASTRO</button>
+                  <button className="ape-btn ape-btn-accent ape-btn-full" style={{ marginTop: 6 }} onClick={openPlans}><Rocket size={14} />Obter o ASTRO</button>
+                </div>
+              ))}
+
+              <button className="ape-row" onClick={() => setPicker("nameStyle")}>
+                <span className="ape-row-text"><span className="ape-row-title">Estilo do nome exibido</span><span className="ape-row-sub">Cor, efeito e insígnia</span></span>
+                <span className="ape-row-tile">
+                  <span className={cn("ape-name-sample", namePreview.className, skinClass("nameplate", nameplate))} style={namePreview.style}>{displayName || "Seu nome"}</span>
+                  {renderPaid && astroBadge && <span className="ape-badge-astro"><Rocket size={13} /></span>}
+                </span>
+              </button>
+
+              <button className="ape-row" onClick={() => setIsAppearanceOpen(true)}>
+                <span className="ape-row-text"><span className="ape-row-title">Tema de perfil</span><span className="ape-row-sub">Cores, fonte e fundo</span></span>
+                <span className="ape-row-tile">
+                  {PLAN_THEMES[savedPlan].slice(0, 2).map((tid) => (
+                    <span key={tid} className="ape-tile-thumb" style={{ background: "linear-gradient(135deg, var(--accent), transparent)" }} />
+                  ))}
+                </span>
+              </button>
+
+              <button className="ape-row" onClick={requestBannerChange}>
+                <span className="ape-row-text"><span className="ape-row-title">Faixa do perfil</span><span className="ape-row-sub">Banner exibido no topo</span></span>
+                <span className="ape-row-tile"><span className="ape-tile-thumb" style={bannerStyle} /></span>
+              </button>
+
+              <button className="ape-row" onClick={() => { if (!renderPaid) { notify("Avatar animado é exclusivo do ASTRO"); return; } requestAvatarChange(); }}>
+                <span className="ape-row-text"><span className="ape-row-title">Avatar animado</span><span className="ape-row-sub">{renderPaid ? "Use um GIF para animar seu avatar" : "Disponível no ASTRO"}</span></span>
+                <span className="ape-row-tile"><span className="ape-tile-circle"><img src={avatarSrc} alt="Avatar" /></span></span>
+              </button>
+
+              <div className="ape-side-sep" />
+
+              <button className="ape-row" onClick={() => setIsSocialOpen(true)}>
+                <span className="ape-row-text"><span className="ape-row-title">Social e visibilidade</span><span className="ape-row-sub">Status, atividade e mural</span></span>
+                <span className="ape-row-tile"><ChevronsRight size={15} /></span>
+              </button>
+            </div>
+            {!previewing && (
+              <div className="ape-side-foot">
+                <button className="ape-btn ape-btn-ghost" onClick={handleCancel} disabled={saving}>Cancelar</button>
+                <button className="ape-btn ape-btn-accent" onClick={() => void handleSave()} disabled={!displayName || !username || saving}>{saving ? "Salvando..." : "Salvar alterações"}</button>
+              </div>
+            )}
+          </aside>
+
+          {/* ── Coluna central: cartão ── */}
+          <section className="ape-center">
+            <div className={cn("ape-card", skinClass("frame", profileFrame))}>
+              <div className="ape-card-inner">
+                <div className="ape-card-banner" style={bannerStyle} />
+                <div className="ape-avatar-wrap">
+                  <div className={cn("ape-avatar", skinClass("avatar", decoration))}>
+                    <img src={avatarSrc} alt="Avatar" />
+                  </div>
+                </div>
+                <div className="ape-card-body">
+                  <div className="ape-card-name-row">
+                    <div className="ape-card-name">
+                      <span className="ape-name-line">
+                        <span className={cn("ape-plate", skinClass("nameplate", nameplate))}>
+                          {editingField === "name" ? (
+                            <input
+                              className="ape-inline-input ape-display-name"
+                              style={{ fontSize: 21, fontWeight: 800, marginLeft: 0 }}
+                              autoFocus
+                              maxLength={20}
+                              value={displayName}
+                              onChange={(event) => setDisplayName(event.target.value)}
+                              onBlur={() => { if (!displayName.trim()) setDisplayName(currentUser?.name || ""); setEditingField(null); }}
+                              onKeyDown={(event) => { if (event.key === "Enter") (event.target as HTMLInputElement).blur(); if (event.key === "Escape") { setDisplayName(currentUser?.name || ""); setEditingField(null); } }}
+                            />
+                          ) : (
+                            <span className={cn("ape-display-name", namePreview.className)} style={namePreview.style} onClick={() => setEditingField("name")}>{displayName || "Seu nome"}</span>
+                          )}
+                        </span>
+                        {editingField === "name" && <span className="ape-inline-count">{displayCount}</span>}
+                        {renderPaid && astroBadge && <span className="ape-badge-astro"><Rocket size={16} /></span>}
+                      </span>
+                      <span className="ape-handle-line">
+                        {editingField === "username" ? (
+                          <input
+                            className="ape-inline-input"
+                            style={{ fontSize: 13 }}
+                            autoFocus
+                            maxLength={20}
+                            value={username}
+                            onChange={(event) => { setUsername(event.target.value.toUpperCase()); setUsernameError(""); }}
+                            onBlur={() => { if (!username.trim()) setUsername(currentUser?.friendCode || ""); setEditingField(null); }}
+                            onKeyDown={(event) => { if (event.key === "Enter") (event.target as HTMLInputElement).blur(); if (event.key === "Escape") { setUsername(currentUser?.friendCode || ""); setEditingField(null); } }}
+                          />
+                        ) : (
+                          <span className="ape-handle" onClick={() => setEditingField("username")}>@{username || "usuario"}</span>
+                        )}
+                        {editingField === "username" && <span className="ape-inline-count">{usernameCount}</span>}
+                        {editingField === "username" && usernameError && <span className="ape-inline-error">{usernameError}</span>}
+                        {!userSettings.pronoun && editingField !== "username" && <span style={{ color: "var(--text-muted)", fontSize: 12 }}>· <span style={{ cursor: "pointer" }} onClick={() => notify("Pronomes chegam em breve")}>Adicionar pronomes</span></span>}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="ape-edit-hint"><Pencil size={11} />Clique no nome, @usuário ou bio para editar.</p>
+
+                  {infoBoxOpen && (
+                    <div className="ape-info-box" style={{ marginTop: 12 }}>
+                      <Info size={15} style={{ flex: "0 0 auto", marginTop: 1, color: "var(--accent)" }} />
+                      <span>Seu perfil completo está sendo compartilhado apenas com seus amigos. Gerencie suas <b onClick={() => setIsSocialOpen(true)}>configurações de privacidade</b> a qualquer momento.</span>
+                      <button className="ape-info-close" onClick={() => setInfoBoxOpen(false)} aria-label="Fechar aviso"><X size={13} /></button>
+                    </div>
+                  )}
+
+                  <div className="ape-block-label">Sobre mim</div>
+                  {editingField === "about" ? (
+                    <textarea
+                      className="ape-about-input"
+                      autoFocus
+                      maxLength={190}
+                      value={about}
+                      onChange={(event) => setAbout(event.target.value)}
+                      onBlur={() => setEditingField(null)}
+                      onKeyDown={(event) => { if (event.key === "Escape") { setAbout(currentUser?.bio || ""); setEditingField(null); } }}
+                      placeholder="Descreva-se em três emojis"
+                    />
+                  ) : (
+                    <p className={cn("ape-about", !about && "is-empty")} onClick={() => setEditingField("about")}>{about || "Descreva-se em três emojis"}</p>
+                  )}
+
+                  <div className="ape-block-label">Membro desde</div>
+                  <p className="ape-member-since" style={{ margin: 0 }}>{memberSince}</p>
+                </div>
+                {profileEffect !== "none" && renderPaid && <span className={cn("ape-effect-layer", skinClass("effect", profileEffect))} />}
+              </div>
+            </div>
+          </section>
+
+          {/* ── Coluna direita: abas ── */}
+          <main className="ape-main">
+            <div className="ape-tabs">
+              <button className={cn("ape-tab", tab === "mural" && "active")} onClick={() => setTab("mural")}>Mural</button>
+              <button className={cn("ape-tab", tab === "activity" && "active")} onClick={() => setTab("activity")}>Atividade</button>
+              <button className={cn("ape-tab", tab === "wishlist" && "active")} onClick={() => setTab("wishlist")}>Lista de desejos</button>
+            </div>
+            <div className="ape-tab-body">
+              {tab === "mural" && (
+                <>
+                  <div className="ape-mural-lead">
+                    <h3>Personalize seu perfil com widgets</h3>
+                    <p>Explore nossa biblioteca de widgets para compartilhar mais sobre você e seus interesses.</p>
+                  </div>
+                  <div className="ape-widget-grid">
+                    {MURAL_FIELD_DEFS.map((definition) => {
+                      const selected = selectedMuralFields.includes(definition.id);
+                      return (
+                        <button key={definition.id} className={cn("ape-widget", selected && "selected")} onClick={() => toggleMuralField(definition.id)}>
+                          <img src={definition.image} alt="" loading="lazy" />
+                          <span className="ape-widget-label">{definition.label}</span>
+                          <span className="ape-widget-mark">{selected ? "✓" : "+"}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedMuralFields.length > 0 && (
+                    <div className="ape-mural-selected">
+                      {selectedMuralFields.map((field) => {
+                        const definition = MURAL_FIELD_DEFS.find((item) => item.id === field)!;
+                        return (
+                          <MuralCategoryEditor
+                            key={field}
+                            definition={definition}
+                            items={mural[field]}
+                            onAdd={() => addMuralItem(field)}
+                            onAutoFill={field === "recentGames" ? () => void fillRecentFromActivity() : undefined}
+                            onChange={(itemId, value) => updateMuralItem(field, itemId, value)}
+                            onImageChange={(itemId, image) => updateMuralImage(field, itemId, image)}
+                            onRemove={(itemId) => removeMuralItem(field, itemId)}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {tab === "activity" && (
+                <>
+                  <div className="ape-wish-head"><span className="ape-wish-count">Atividade recente</span></div>
+                  <p className="ape-activity-lead">Você verá sua atividade dos últimos 30 dias aqui. <b>Saiba mais</b></p>
+                  {activity === null ? null : activity.length === 0 ? (
+                    <p className="ape-wish-empty">Sem atividade registrada nos últimos 7 dias (só no app desktop).</p>
+                  ) : (
+                    <div className="ape-activity-list">
+                      {activity.map((entry, index) => (
+                        <div className="ape-activity-row" key={`${entry.app}-${index}`}>
+                          <span className="ape-activity-icon">{entry.app.slice(0, 1).toUpperCase()}</span>
+                          <div className="ape-activity-info">
+                            <b>{entry.app}</b>
+                            <span>{formatSeconds(entry.seconds)}</span>
+                            <div className="ape-activity-bar"><i style={{ width: `${Math.max(6, Math.round((entry.seconds / activityMax) * 100))}%` }} /></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {tab === "wishlist" && (
+                <>
+                  <div className="ape-muted-note"><Info size={14} />Apenas seus amigos poderão ver o conteúdo nesta aba</div>
+                  <div className="ape-wish-head">
+                    <span className="ape-wish-count">{wishlist.length} {wishlist.length === 1 ? "item" : "itens"}</span>
+                    <span className="ape-spacer" />
+                    <select className="ape-select" value="" onChange={(event) => {
+                      const [kind, id] = event.target.value.split(":");
+                      if (kind && id) wishToggle(catalogItem(kind as CatalogKind, id));
+                    }}>
+                      <option value="">Adicionar item</option>
+                      {(["nameplate", "avatar", "frame", "effect"] as CatalogKind[]).map((kind) => {
+                        const options = wishCandidates.filter((item) => item.kind === kind);
+                        if (!options.length) return null;
+                        return (
+                          <optgroup key={kind} label={KIND_LABEL[kind]}>
+                            {options.map((item) => <option key={`${kind}:${item.id}`} value={`${kind}:${item.id}`}>{item.name}</option>)}
+                          </optgroup>
+                        );
+                      })}
+                    </select>
+                  </div>
+                  {wishItems.length === 0 ? (
+                    <p className="ape-wish-empty">Sua lista de desejos está vazia. Adicione itens da loja para não esquecê-los.</p>
+                  ) : (
+                    <div className="ape-wish-grid">
+                      {wishItems.map(({ entry, item }) => (
+                        <div className="ape-wish-card" key={`${entry.kind}:${entry.id}`}>
+                          <button className="ape-wish-action" onClick={() => wishToggle(item)} aria-label={`Remover ${item.name}`}><X size={12} /></button>
+                          <span className="ape-wish-thumb"><SkinThumb kind={entry.kind} id={entry.id} /></span>
+                          <span className="ape-wish-name">{item.name} · {KIND_LABEL[entry.kind]}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <h4 className="ape-picker-section">Itens sugeridos para você</h4>
+                  <div className="ape-wish-grid">
+                    {wishCandidates.map((item) => (
+                      <div className="ape-wish-card" key={`${item.kind}:${item.id}`}>
+                        <button className="ape-wish-action" onClick={() => wishToggle(item)} aria-label={`Adicionar ${item.name}`}><Plus size={12} /></button>
+                        <span className="ape-wish-thumb"><SkinThumb kind={item.kind} id={item.id} /></span>
+                        <span className="ape-wish-name">{item.name} · {KIND_LABEL[item.kind]}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </main>
+
+          {previewing && (
+            <div className="ape-preview-bar">
+              <p>Você está visualizando uma prévia de como seu perfil poderia ficar com o ASTRO.</p>
+              <button className="ape-btn ape-btn-ghost" onClick={exitPreview}>Sair da prévia</button>
+              <button className="ape-btn ape-btn-accent" onClick={openPlans}><Rocket size={14} />Obter o ASTRO</button>
+            </div>
+          )}
         </div>
-        <PlanColumn plan={plan} onUpgrade={plan === "free" ? handleUpgradeAstro : plan === "astro" ? handleUpgradeAstroPlus : plan === "astroPlus" ? handleUpgradeAstroPlusGold : () => notify("Você já está no ASTRO PLUS")} onDowngrade={restorePreviousPlan} onEditBanner={isPaid ? requestBannerChange : undefined} />
-      </main>
-      {status && <div className="toast-status"><Sparkles size={14} />{status}</div>}
-      {isFramesShopOpen && <FramesShopModal plan={plan} selectedFrame={selectedFrame} onSelect={selectFrame} onClose={() => setIsFramesShopOpen(false)} onNotify={notify} />}
+
+      {picker && picker !== "nameStyle" && (
+        <CatalogPicker
+          kind={picker}
+          current={currentOf(picker)}
+          plan={savedPlan}
+          previewing={previewing}
+          displayName={displayName}
+          username={username}
+          avatarSrc={avatarSrc}
+          bannerStyle={bannerStyle}
+          decoration={decoration}
+          nameplate={nameplate}
+          frame={profileFrame}
+          effect={profileEffect}
+          nameStyle={namePreview.style}
+          nameClassName={namePreview.className}
+          badge={renderPaid && astroBadge}
+          onApply={(id) => applyOf(picker, id)}
+          onClose={() => setPicker(null)}
+          onLocked={(item) => notify(`${item.name} — ${item.detail}. Assine o ASTRO para desbloquear.`)}
+        />
+      )}
+
+      {picker === "nameStyle" && (
+        <NameStylePicker
+          currentColor={nameColor}
+          currentEffect={nameEffect}
+          currentBadge={astroBadge}
+          paid={paid}
+          previewing={previewing}
+          displayName={displayName}
+          onApply={(color, effect, badge) => { setNameColor(color); setNameEffect(effect); setAstroBadge(badge); }}
+          onClose={() => setPicker(null)}
+          onLocked={() => notify("Estilos de nome são exclusivos do ASTRO. Ative a prévia para experimentar.")}
+        />
+      )}
+
+      {isSocialOpen && <SocialSettingsModal plan={savedPlan} displayName={displayName} username={username} about={about} selectedFrame={decoration as FrameId} status={socialStatus} onStatusChange={setSocialStatus} statusMessage={statusMessage} onStatusMessageChange={setStatusMessage} showActivity={showActivity} setShowActivity={setShowActivity} showServers={showServers} setShowServers={setShowServers} showMutualFriends={showMutualFriends} setShowMutualFriends={setShowMutualFriends} mural={mural} selectedMuralFields={selectedMuralFields} onMuralFieldToggle={toggleMuralField} onMuralItemAdd={addMuralItem} onMuralAutoFill={() => void fillRecentFromActivity()} onMuralItemChange={updateMuralItem} onMuralImageChange={updateMuralImage} onMuralItemRemove={removeMuralItem} onClose={() => setIsSocialOpen(false)} onNotify={notify} onViewProfile={() => setIsPublicProfileOpen(true)} onProfileAction={handleProfileAction} />}
+
+      {isPublicProfileOpen && <PublicProfileModal plan={renderPlan} displayName={displayName} username={username} about={about} socialStatus={socialStatus} statusMessage={statusMessage} showActivity={showActivity} showServers={showServers} showMutualFriends={showMutualFriends} mural={mural} selectedMuralFields={selectedMuralFields} selectedFrame={decoration as FrameId} photoUrl={photoUrl ? imgSrc(photoUrl, 512) : undefined} bannerUrl={bannerUrl ? imgSrc(bannerUrl, 1200) : undefined} isSelf nameplateId={nameplate} profileFrameId={profileFrame} profileEffectId={profileEffect} nameColorId={nameColor} nameEffectId={nameEffect} showAstroBadge={renderPaid && astroBadge} onClose={() => setIsPublicProfileOpen(false)} onProfileAction={handleProfileAction} />}
+
       {isAppearanceOpen && (
         <div className="appearance-modal-overlay" onClick={() => setIsAppearanceOpen(false)}>
           <div className="appearance-modal" onClick={(e) => e.stopPropagation()}>
@@ -993,15 +1311,15 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
                 </div>
               </div>
               <div className="appearance-group">
-                <label>Tema de Cores ({plan.toUpperCase()})</label>
+                <label>Tema de Cores ({savedPlan.toUpperCase()})</label>
                 <div className="appearance-options-grid">
-                  {PLAN_THEMES[plan].map((tid) => (
+                  {PLAN_THEMES[savedPlan].map((tid) => (
                     <button
                       key={tid}
                       className={selectedTheme === tid ? "selected" : ""}
                       onClick={() => {
                         setSelectedTheme(tid);
-                        notify(tid === "default" ? "Tema Padrão (verde e preto) aplicado" : "Tema Branco (preto e branco) aplicado");
+                        notify(tid === "default" ? "Tema Padrão aplicado" : "Tema Branco aplicado");
                       }}
                     >
                       {tid === "default" ? "Padrão" : "Branco"}
@@ -1042,7 +1360,7 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
               <div className="appearance-group">
                 <label>Plano de Fundo (Background)</label>
                 <div className="appearance-options-grid">
-                  {PLAN_BACKGROUNDS[plan].map((bid) => (
+                  {PLAN_BACKGROUNDS[savedPlan].map((bid) => (
                     <button
                       key={bid}
                       className={selectedBg === bid ? "selected" : ""}
@@ -1063,9 +1381,11 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
           </div>
         </div>
       )}
-      </div>
-      </div>
-      </div>
+
+      <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => openCrop(e, "avatar")} />
+      <input ref={bannerInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => openCrop(e, "banner")} />
+
+      {status && <div className="toast-status"><Sparkles size={14} />{status}</div>}
       {cropImage && <ImageCropper image={cropImage} shape={cropShape} aspectRatio={cropAspect} onCrop={(dataUrl) => void handleCropDone(dataUrl)} onCancel={() => setCropImage(null)} />}
       <DriveRequiredModal
         open={driveModal}
@@ -1077,6 +1397,15 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
           else requestAvatarChange();
         }}
       />
+      </div>
     </div>
   );
+}
+
+function formatSeconds(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${Math.max(1, minutes)} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} h ${minutes % 60} min`;
+  return `${Math.floor(hours / 24)} d ${hours % 24} h`;
 }

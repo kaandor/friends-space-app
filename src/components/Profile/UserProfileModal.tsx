@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { getAstroTier, type AstroTier } from '../../utils/astro'
+import type { NameEffect } from '../../utils/nameStyle'
 import { toImageUrl } from '../../services/driveService'
 import { requestBackend } from '../../services/backend'
 import { useUserStore } from '../../stores/userStore'
 import { PublicProfileModal, type FrameId, type MuralFieldId, type MuralState, type Plan, type ProfileActionId, type SocialStatus, EMPTY_MURAL } from './ProfileEditor/ProfileEditor'
 import type { User } from '../../types'
 import './ProfileEditor/ProfileEditor.css'
+import './ProfileEditor/AstroProfileEditor.css'
 
 // Perfil publico NOVO (mesmo preview do Editar Perfil), alimentado por um User
 // real. Usado em: "Meu perfil" (isSelf) e no preview de botao direito.
@@ -62,6 +64,12 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
   })()
 
   const selectedFrame = (typeof settings.frame === 'string' ? settings.frame : 'none') as FrameId
+  const nameplateId = typeof settings.nameplate === 'string' ? settings.nameplate : 'none'
+  const profileFrameId = typeof settings.profileFrame === 'string' ? settings.profileFrame : 'none'
+  const profileEffectId = typeof settings.profileEffect === 'string' ? settings.profileEffect : 'none'
+  const nameColorId = typeof settings.nameColor === 'string' ? settings.nameColor : 'default'
+  const nameEffectId = (typeof settings.nameEffect === 'string' ? settings.nameEffect : 'none') as NameEffect
+  const showAstroBadge = tier !== 'none' && settings.astroBadge !== false
 
   const handleFollow = async () => {
     if (!me || busy) return
@@ -110,6 +118,12 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
         selectedFrame={selectedFrame}
         photoUrl={user?.photoUrl ? toImageUrl(user.photoUrl, 512) : undefined}
         bannerUrl={user?.bannerUrl ? toImageUrl(user.bannerUrl, 1200) : undefined}
+        nameplateId={nameplateId}
+        profileFrameId={profileFrameId}
+        profileEffectId={profileEffectId}
+        nameColorId={nameColorId}
+        nameEffectId={nameEffectId}
+        showAstroBadge={showAstroBadge}
         isSelf={isSelf}
         onClose={onClose}
         onProfileAction={(action) => { if (onAction) onAction(action) }}
