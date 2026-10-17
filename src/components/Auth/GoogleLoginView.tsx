@@ -1,30 +1,79 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useUserStore } from '../../stores/userStore'
 import { getGoogleClientId, getGoogleClientSecret, loadGoogleIdentityScript, parseAccessTokenFromHash, getGoogleProfileFromAccessToken, buildGoogleAuthUrl } from '../../services/googleAuth'
+import { loadKnownAccounts, removeKnownAccount, type KnownAccount } from '../../services/knownAccounts'
 import { assetUrl } from '../../utils/assets'
+
+type GsiOauth2 = {
+  initTokenClient: (config: {
+    client_id: string
+    scope: string
+    prompt?: string
+    login_hint?: string
+    callback: (resp: { access_token?: string; expires_in?: number; error?: string }) => void
+    error_callback?: (err: { type?: string }) => void
+  }) => { requestAccessToken: () => void }
+}
+
+const AVATAR_COLORS = ['#5865f2', '#3b82f6', '#0ea5e9', '#8b5cf6', '#ec4899', '#f59e0b', '#23a55a', '#ef4444']
+
+function avatarColor(id: string) {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length]
+}
+
+function AccountAvatar({ account }: { account: KnownAccount }) {
+  const [failed, setFailed] = useState(false)
+  const initial = (account.name || account.email || '?').trim().charAt(0).toUpperCase() || '?'
+  if (account.photoUrl && !failed) {
+    return (
+      <img
+        src={account.photoUrl}
+        alt=""
+        onError={() => setFailed(true)}
+        style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+      />
+    )
+  }
+  return (
+    <div style={{
+      width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+      background: avatarColor(account.googleId || account.email),
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      color: '#fff', fontWeight: 700, fontSize: 16,
+    }}>{initial}</div>
+  )
+}
 
 export function GoogleLoginView() {
   const signInWithGoogle = useUserStore(state => state.signInWithGoogle)
-    const [error, setError] = useState('')
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const clientId = getGoogleClientId()
-  const buttonRef = useRef<HTMLDivElement>(null)
-  const [gsiReady, setGsiReady] = useState(false)
-  const [showFallback, setShowFallback] = useState(false)
-  const [diagBackend, setDiagBackend] = useState('...')
-  const [staleApp, setStaleApp] = useState(false)
   const [loginStep, setLoginStep] = useState('')
+  const [staleApp, setStaleApp] = useState(false)
+  const [accounts, setAccounts] = useState<KnownAccount[]>([])
+  const [menuOpen, setMenuOpen] = useState<string | null>(null)
+  const clientId = getGoogleClientId()
+  const isElectron = typeof window !== 'undefined' && Boolean((window as unknown as { electronAPI?: { isElectron?: boolean } }).electronAPI?.isElectron)
+
+  const stars = useMemo(() => Array.from({ length: 60 }).map(() => ({
+    size: Math.random() * 2 + 0.5,
+    left: Math.random() * 100,
+    top: Math.random() * 100,
+    duration: Math.random() * 3 + 2,
+    delay: Math.random() * 2,
+  })), [])
+
   useEffect(() => {
-    let alive = true
-    void (async () => {
-      try {
-        const { pingBackend } = await import('../../services/backend')
-        const ok = await pingBackend()
-        if (alive) setDiagBackend(ok ? 'ok' : 'falha')
-      } catch { if (alive) setDiagBackend('falha') }
-    })()
-    return () => { alive = false }
-  }, [])
+    setAccounts(loadKnownAccounts())
+    // Pre-carrega o script do Google: o popup precisa abrir DENTRO do clique
+    // (sem await no meio, senao o navegador bloqueia).
+    if (!isElectron) {
+      loadGoogleIdentityScript().catch(() => { })
+    }
+  }, [isElectron])
+
   useEffect(() => {
     let alive = true
     void (async () => {
@@ -37,7 +86,46 @@ export function GoogleLoginView() {
     })()
     return () => { alive = false }
   }, [])
-  const isElectron = typeof window !== 'undefined' && Boolean((window as unknown as { electronAPI?: { isElectron?: boolean } }).electronAPI?.isElectron)
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const close = () => setMenuOpen(null)
+    window.addEventListener('click', close)
+    return () => window.removeEventListener('click', close)
+  }, [menuOpen])
+
+  // Retorno do fluxo de redirecionamento (#access_token=...) — usado quando o
+  // script do Google nao carrega.
+  useEffect(() => {
+    let cancelled = false
+    const hashToken = parseAccessTokenFromHash()
+    if (!hashToken) return
+    void (async () => {
+      try {
+        window.location.hash = ''
+        setLoading(true)
+        const profile = await getGoogleProfileFromAccessToken(hashToken)
+        if (cancelled) return
+        await signInWithGoogle(profile, undefined, hashToken)
+        setAccounts(loadKnownAccounts())
+      } catch (authError) {
+        if (!cancelled) {
+          setError(authError instanceof Error ? authError.message : 'Falha no login')
+          setLoading(false)
+        }
+      }
+    })()
+    return () => { cancelled = true }
+  }, [signInWithGoogle])
+
+  async function finishSignIn(accessToken: string) {
+    const profile = await getGoogleProfileFromAccessToken(accessToken)
+    await Promise.race([
+      signInWithGoogle(profile, undefined, accessToken),
+      new Promise((_, reject) => window.setTimeout(() => reject(new Error('Tempo esgotado (45s). Tente novamente.')), 45000)),
+    ])
+    setAccounts(loadKnownAccounts())
+  }
 
   async function signInWithElectron() {
     try {
@@ -54,6 +142,7 @@ export function GoogleLoginView() {
         ? result.profile
         : await getGoogleProfileFromAccessToken(result.accessToken)
       await signInWithGoogle(profile, undefined, result.accessToken)
+      setAccounts(loadKnownAccounts())
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : 'Falha no login')
     } finally {
@@ -61,96 +150,71 @@ export function GoogleLoginView() {
     }
   }
 
-  useEffect(() => {
-    if (gsiReady) {
-      setShowFallback(false)
+  function startGoogleLogin(loginHint?: string) {
+    setError('')
+    if (isElectron) {
+      void signInWithElectron()
       return
     }
-    const timer = window.setTimeout(() => setShowFallback(true), 6000)
-    return () => window.clearTimeout(timer)
-  }, [gsiReady])
-
-  useEffect(() => {
-    let cancelled = false
-    async function setup() {
-      if (isElectron) {
-        setShowFallback(true)
+    const run = () => {
+      const oauth2 = (window as unknown as { google?: { accounts?: { oauth2?: GsiOauth2 } } }).google?.accounts?.oauth2
+      if (!oauth2) {
+        // Ultimo recurso: redireciona para o fluxo classico do Google.
+        window.location.href = buildGoogleAuthUrl()
         return
       }
-      try {
-        const hashToken = parseAccessTokenFromHash()
-        if (hashToken) {
-          try {
-            window.location.hash = ''
-            setLoading(true)
-            const profile = await getGoogleProfileFromAccessToken(hashToken)
-            if (!cancelled) await signInWithGoogle(profile, undefined, hashToken)
-            return
-          } catch (authError) {
-            if (!cancelled) setError(authError instanceof Error ? authError.message : 'Falha no login')
-            setLoading(false)
-            return
-          }
-        }
-
-        if (!clientId) {
-          throw new Error('VITE_GOOGLE_CLIENT_ID nao configurado')
-        }
-        await loadGoogleIdentityScript()
-        if (cancelled || !window.google) return
-
-        window.google.accounts.id.initialize({
-          client_id: clientId,
-          callback: async (response) => {
+      setLoading(true)
+      setLoginStep('')
+      const tokenClient = oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'openid email profile',
+        prompt: 'select_account',
+        login_hint: loginHint,
+        callback: (resp) => {
+          void (async () => {
             try {
-              setError('')
-              setLoading(true)
-              const payload = JSON.parse(atob(response.credential.split('.')[1]))
-              const profile = {
-                googleId: payload.sub,
-                email: payload.email,
-                name: payload.name,
-                photoUrl: payload.picture || '',
+              if (!resp?.access_token) {
+                throw new Error(resp?.error === 'popup_closed' ? 'Login cancelado' : 'Falha no login')
               }
               setLoginStep('Enviando ao servidor...')
-              await Promise.race([
-                signInWithGoogle(profile, response.credential),
-                new Promise((_, reject) => window.setTimeout(() => reject(new Error('Tempo esgotado (45s). Toque novamente.') as unknown as never), 45000)),
-              ])
-              setLoginStep('')
+              await finishSignIn(resp.access_token)
             } catch (authError) {
               setError(authError instanceof Error ? authError.message : 'Falha no login')
             } finally {
               setLoading(false)
               setLoginStep('')
             }
-          },
-        })
-
-        if (buttonRef.current) {
-          buttonRef.current.innerHTML = ''
-          window.google.accounts.id.renderButton(buttonRef.current, {
-            theme: 'filled_blue',
-            size: 'large',
-            width: 320,
-            text: 'signin_with',
-            shape: 'pill',
-            logo_alignment: 'center',
-          })
-          if (!cancelled) setGsiReady(true)
-        }
-      } catch (loginError) {
-        if (!cancelled) {
-          setError(loginError instanceof Error ? loginError.message : 'Erro ao carregar Google')
-          setGsiReady(false)
-          setShowFallback(true)
-        }
+          })()
+        },
+        error_callback: (err) => {
+          setLoading(false)
+          if (err?.type !== 'popup_closed') {
+            setError('Nao foi possivel abrir o login do Google. Tente novamente.')
+          }
+        },
+      })
+      try {
+        tokenClient.requestAccessToken()
+      } catch {
+        setLoading(false)
+        setError('Falha ao abrir o login do Google')
       }
     }
+    if ((window as unknown as { google?: { accounts?: { oauth2?: GsiOauth2 } } }).google?.accounts?.oauth2) {
+      run()
+      return
+    }
+    setLoading(true)
+    loadGoogleIdentityScript()
+      .then(() => run())
+      .catch(() => { window.location.href = buildGoogleAuthUrl() })
+  }
 
-    setup()
-    return () => { cancelled = true }
-  }, [clientId, signInWithGoogle])
+  function handleRemoveAccount(googleId: string) {
+    removeKnownAccount(googleId)
+    setAccounts(loadKnownAccounts())
+    setMenuOpen(null)
+  }
 
   useEffect(() => {
     const preventCtrlWheel = (e: WheelEvent) => {
@@ -181,13 +245,6 @@ export function GoogleLoginView() {
       background: '#000',
       touchAction: 'none',
     }}>
-      <div style={{
-        position: 'relative',
-        width: 'calc(100vw / 1.35)',
-        height: 'calc(100vh / 1.35)',
-        zoom: 1.35,
-        overflow: 'hidden',
-      }}>
       <img
         src={assetUrl('login-wallpaper.jpg')}
         alt=""
@@ -203,114 +260,172 @@ export function GoogleLoginView() {
       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.25)' }} />
 
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-        {Array.from({ length: 60 }).map((_, i) => (
+        {stars.map((star, i) => (
           <div key={i} style={{
             position: 'absolute',
-            width: Math.random() * 2 + 0.5 + 'px',
-            height: Math.random() * 2 + 0.5 + 'px',
+            width: star.size + 'px',
+            height: star.size + 'px',
             background: '#fff',
             borderRadius: '50%',
             opacity: 0.4,
-            left: Math.random() * 100 + '%',
-            top: Math.random() * 100 + '%',
-            animation: `twinkle ${Math.random() * 3 + 2}s ease-in-out infinite`,
-            animationDelay: Math.random() * 2 + 's',
+            left: star.left + '%',
+            top: star.top + '%',
+            animation: `twinkle ${star.duration}s ease-in-out infinite`,
+            animationDelay: star.delay + 's',
           }} />
         ))}
       </div>
 
-      <div style={{ position: 'relative', zIndex: 10, width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(12px, 2vw, 16px)' }}>
-          <div style={{
-            width: 'min(420px, calc((100vw - 32px) / 1.35))',
-            padding: 'clamp(24px, 5vw, 48px) clamp(20px, 4vw, 40px)',
-            borderRadius: 16,
-            border: '2px solid #4ade80',
-            background: 'rgba(0,0,0,0.65)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            textAlign: 'center',
-            boxShadow: '0 0 60px rgba(74, 222, 128, 0.25), inset 0 0 40px rgba(74, 222, 128, 0.08)',
-          }}>
-            <div style={{ marginBottom: 'clamp(16px, 3vw, 32px)' }}>
-              <img src={assetUrl('Logo.png')} alt="Friends Space Beta Logo" style={{
-                width: 'clamp(84px, 14vw, 120px)',
-                height: 'clamp(108px, 19vw, 156px)',
-                objectFit: 'contain',
-                display: 'block',
-                margin: '0 auto',
-                animation: 'float 3s ease-in-out infinite',
-              }} />
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 10,
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'flex-end',
+        padding: 'clamp(16px, 2.5vw, 40px)',
+        paddingBottom: 'clamp(40px, 13vh, 150px)',
+        pointerEvents: 'none',
+      }}>
+        <main style={{
+          width: 'min(520px, 100%)',
+          pointerEvents: 'auto',
+          borderRadius: 16,
+          border: '1px solid rgba(130,175,255,0.22)',
+          background: 'linear-gradient(180deg, rgba(12,28,70,0.60), rgba(6,14,40,0.70))',
+          backdropFilter: 'blur(22px)',
+          WebkitBackdropFilter: 'blur(22px)',
+          boxShadow: '0 18px 60px rgba(0,0,0,0.45), inset 0 0 60px rgba(60,110,255,0.05)',
+          padding: 'clamp(18px, 2.2vw, 26px)',
+        }}>
+          <h1 style={{ margin: 0, color: '#fff', fontSize: 17, fontWeight: 700, letterSpacing: 0.2 }}>
+            Escolha uma conta
+          </h1>
+          <p style={{ margin: '4px 0 0', color: 'rgba(196,214,255,0.62)', fontSize: 12.5 }}>
+            Selecione uma conta para entrar ou adicione uma nova.
+          </p>
+
+          {accounts.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              {accounts.map(account => (
+                <div key={account.googleId} className="fs-login-row" style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: 10, borderRadius: 10, marginBottom: 4,
+                }}>
+                  <AccountAvatar account={account} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      color: '#fff', fontSize: 14, fontWeight: 600,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>{account.name}</div>
+                    <div style={{ marginTop: 1, color: 'rgba(170,196,255,0.60)', fontSize: 12 }}>Entre novamente.</div>
+                  </div>
+                  <button
+                    className="fs-login-entrar"
+                    onClick={() => startGoogleLogin(account.email)}
+                    disabled={loading}
+                    style={{
+                      background: 'rgba(90,140,255,0.16)',
+                      border: '1px solid rgba(140,180,255,0.35)',
+                      color: '#fff',
+                      borderRadius: 8,
+                      padding: '8px 22px',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: loading ? 'default' : 'pointer',
+                      opacity: loading ? 0.6 : 1,
+                      flexShrink: 0,
+                    }}
+                  >Entrar</button>
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
+                    <button
+                      className="fs-login-dots"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setMenuOpen(prev => prev === account.googleId ? null : account.googleId)
+                      }}
+                      style={{
+                        background: 'transparent', border: 'none',
+                        color: 'rgba(200,215,255,0.75)',
+                        fontSize: 17, lineHeight: 1, letterSpacing: 1,
+                        padding: '6px 8px', borderRadius: 8, cursor: 'pointer',
+                      }}
+                    >···</button>
+                    {menuOpen === account.googleId && (
+                      <div style={{
+                        position: 'absolute', right: 0, top: 'calc(100% + 4px)',
+                        background: 'rgba(10,20,50,0.96)',
+                        border: '1px solid rgba(130,175,255,0.25)',
+                        borderRadius: 8, padding: 4, minWidth: 140, zIndex: 30,
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                      }}>
+                        <button
+                          className="fs-login-menu-item"
+                          onClick={(e) => { e.stopPropagation(); handleRemoveAccount(account.googleId) }}
+                          style={{
+                            display: 'block', width: '100%', textAlign: 'left',
+                            background: 'transparent', border: 'none',
+                            color: '#ff9e9e', fontSize: 12.5, fontWeight: 600,
+                            padding: '8px 12px', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap',
+                          }}
+                        >Remover conta</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
+          )}
 
-            <h1 style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: 700, color: '#fff', marginBottom: 8 }}>
-              Boas-vindas de <span style={{ color: '#4ade80' }}>volta!</span>
-            </h1>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(13px, 2vw, 16px)', marginBottom: 'clamp(24px, 4vw, 40px)' }}>
-              Estamos muito animados em te ver novamente!
-            </p>
-
-            {loading && (
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, marginBottom: 16 }}>Entrando...</p>
-            )}
-
-            <div ref={buttonRef} style={{ display: 'flex', justifyContent: 'center', minHeight: 44 }} />
-
-            {!gsiReady && !loading && !error && (
-              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 12 }}>Carregando botao do Google...</p>
-            )}
-
-            {showFallback && !loading && (
-              <a
-                href={isElectron ? undefined : buildGoogleAuthUrl()}
-                onClick={(e) => { if (isElectron) { e.preventDefault(); void signInWithElectron() } else { setError('') } }}
+          <div style={{
+            marginTop: accounts.length > 0 ? 10 : 16,
+            paddingTop: accounts.length > 0 ? 6 : 0,
+            borderTop: accounts.length > 0 ? '1px solid rgba(130,175,255,0.12)' : 'none',
+          }}>
+            <button
+              className="fs-login-add"
+              onClick={() => startGoogleLogin()}
+              disabled={loading}
               style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                marginTop: 12, width: '100%', maxWidth: 320, marginLeft: 'auto', marginRight: 'auto',
-                padding: '11px 16px', borderRadius: 999, background: '#fff', color: '#333',
-                fontSize: 14, fontWeight: 600, textDecoration: 'none', border: 'none', cursor: 'pointer',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                display: 'flex', alignItems: 'center', gap: 8,
+                width: '100%', background: 'transparent', border: 'none',
+                color: 'rgba(150,190,255,0.95)', fontSize: 13.5, fontWeight: 600,
+                padding: '10px', borderRadius: 10,
+                cursor: loading ? 'default' : 'pointer',
               }}
             >
-              <svg width="18" height="18" viewBox="0 0 48 48">
-                <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.5 29.4 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.3-.1-2.6-.4-3.9z"/>
-                <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 12.8 24 12.8c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.5 29.4 4.5 24 4.5 16.4 4.5 9.9 8.6 6.3 14.7z"/>
-                <path fill="#4CAF50" d="M24 43.5c5.2 0 9.9-2 13.5-5.2l-6.2-5.2c-2 1.4-4.6 2.3-7.3 2.3-5 0-9.4-3.1-11.2-7.5l-6.5 5C9.7 39.2 16.3 43.5 24 43.5z"/>
-                <path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.7l6.2 5.2C40.7 37.2 43.5 32.5 43.5 24c0-1.3-.1-2.6-.4-3.9z"/>
-              </svg>
-              Continuar com o Google
-            </a>
-            )}
-
-            {error && (
-              <p style={{ marginTop: 20, color: '#f87171', fontSize: 13, lineHeight: 1.4 }}>{error}</p>
-            )}
-            <p style={{ marginTop: 14, color: 'rgba(255,255,255,0.35)', fontSize: 11, lineHeight: 1.5 }}>
-              backend: {diagBackend} · google: {typeof window !== 'undefined' && (window as any).google ? 'ok' : '...'} · {clientId ? clientId.slice(0, 12) + '…' : 'sem-id'}
-            </p>
-            {loading && loginStep && (
-              <p style={{ marginTop: 8, color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{loginStep}</p>
-            )}
-            {staleApp && (
-              <p style={{ marginTop: 8, color: '#f0b429', fontSize: 13, fontWeight: 700 }}>Versão antiga! Recarregue com Ctrl+Shift+R</p>
-            )}
+              <span style={{ fontSize: 17, lineHeight: 1, fontWeight: 400 }}>+</span>
+              Adicionar uma conta
+            </button>
           </div>
-        </main>
 
-        <footer style={{ padding: 'clamp(12px, 2vw, 24px) clamp(16px, 4vw, 32px)', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 12, flexShrink: 0 }}>
-          &copy; 2026 Friends Space Beta. Todos os direitos reservados.
-        </footer>
+          {loading && (
+            <p style={{ margin: '10px 0 0', color: 'rgba(196,214,255,0.7)', fontSize: 12.5, textAlign: 'center' }}>
+              {loginStep || 'Entrando...'}
+            </p>
+          )}
+          {error && (
+            <p style={{ margin: '10px 0 0', color: '#f87171', fontSize: 12.5, lineHeight: 1.4, textAlign: 'center' }}>{error}</p>
+          )}
+          {staleApp && (
+            <p style={{ margin: '8px 0 0', color: '#f0b429', fontSize: 13, fontWeight: 700, textAlign: 'center' }}>
+              Versão antiga! Recarregue com Ctrl+Shift+R
+            </p>
+          )}
+        </main>
       </div>
 
       <style>{`
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }
+        .fs-login-row:hover { background: rgba(120,160,255,0.08); }
+        .fs-login-entrar:hover:not(:disabled) { background: rgba(90,140,255,0.30) !important; }
+        .fs-login-dots:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .fs-login-add:hover:not(:disabled) { color: #fff; }
+        .fs-login-menu-item:hover { background: rgba(255,255,255,0.08); }
         @keyframes twinkle { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.8; } }
         @media (prefers-reduced-motion: reduce) {
-          @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(0); } }
           @keyframes twinkle { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.5; } }
         }
       `}</style>
-      </div>
     </div>
   )
 }

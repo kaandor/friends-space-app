@@ -4,6 +4,7 @@ import { getDb } from '../db'
 import { loadBackendState, requestBackend, setSessionToken, getSessionToken } from '../services/backend'
 import { onBackgroundTick } from '../services/backgroundTicker'
 import type { GoogleProfile } from '../services/googleAuth'
+import { addKnownAccount } from '../services/knownAccounts'
 
 const CURRENT_USER_KEY = 'friends-space:current-user-id'
 const CURRENT_PROFILE_KEY = 'friends-space:profile-id'
@@ -263,6 +264,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       accessToken,
     })
     if (requestEpoch !== authEpoch) return result.user
+    addKnownAccount(profile)
     localStorage.removeItem('friends-space:signed-out')
     localStorage.setItem(CURRENT_PROFILE_KEY, result.user.googleId || result.user.id)
     localStorage.setItem(CURRENT_USER_KEY, result.user.id)
