@@ -287,7 +287,7 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
           .fs-astro-price > div:first-child span { color: var(--text-muted); font-weight: 400; font-size: 14px; }
           .fs-astro-priceyear { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; }
           .fs-astro-priceyear span:first-child { color: var(--text-muted); font-size: 12px; }
-          .fs-astro-discount { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 999px; }
+          .fs-astro-discount { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--text-primary); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 999px; }
           .fs-astro-features { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
           .fs-astro-features li { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--text-secondary); }
           .fs-astro-check { flex-shrink: 0; margin-top: 2px; }

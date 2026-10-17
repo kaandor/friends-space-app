@@ -2823,7 +2823,7 @@
 .fs-profile-editor .mural-category-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .fs-profile-editor .mural-category-heading strong { display: block; font-size: 13.5px; color: var(--text-primary); }
 .fs-profile-editor .mural-category-heading small { color: var(--text-muted); font-size: 11.5px; }
-.fs-profile-editor .mural-add-item-button { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.fs-profile-editor .mural-add-item-button { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--accent); background: transparent; color: var(--text-primary); font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .fs-profile-editor .mural-items-list { display: flex; flex-direction: column; gap: 10px; }
 .fs-profile-editor .mural-item-editor { display: flex; gap: 10px; padding: 10px; border-radius: 10px; background: var(--bg-tertiary); border: 1px solid var(--border); }
 .fs-profile-editor .mural-category-empty { color: var(--text-muted); font-size: 12.5px; margin: 0; }

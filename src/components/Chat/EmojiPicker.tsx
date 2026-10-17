@@ -185,9 +185,9 @@ export function EmojiPicker({ onPick, onPickMedia, serverId, manageable = false,
             {manageable && serverId && (
               <div className="fs-emoji-add-cell">
                 <div className="fs-emoji-add-kinds">
-                  <button onClick={() => setAddKind('emoji')} style={{ fontWeight: addKind === 'emoji' ? 800 : 500, color: addKind === 'emoji' ? 'var(--accent)' : 'var(--text-secondary)' }}>{t('emoji.kindEmoji')}</button>
-                  <button onClick={() => setAddKind('gif')} style={{ fontWeight: addKind === 'gif' ? 800 : 500, color: addKind === 'gif' ? 'var(--accent)' : 'var(--text-secondary)' }}>{t('emoji.kindGif')}</button>
-                  <button onClick={() => setAddKind('sticker')} style={{ fontWeight: addKind === 'sticker' ? 800 : 500, color: addKind === 'sticker' ? 'var(--accent)' : 'var(--text-secondary)' }}>{t('emoji.kindSticker')}</button>
+                  <button onClick={() => setAddKind('emoji')} style={{ fontWeight: addKind === 'emoji' ? 800 : 500, color: addKind === 'emoji' ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{t('emoji.kindEmoji')}</button>
+                  <button onClick={() => setAddKind('gif')} style={{ fontWeight: addKind === 'gif' ? 800 : 500, color: addKind === 'gif' ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{t('emoji.kindGif')}</button>
+                  <button onClick={() => setAddKind('sticker')} style={{ fontWeight: addKind === 'sticker' ? 800 : 500, color: addKind === 'sticker' ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{t('emoji.kindSticker')}</button>
                 </div>
                 <button
                   className="fs-emoji-custom-item"

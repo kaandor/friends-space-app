@@ -858,12 +858,12 @@ function App() {
     const root = document.documentElement
     if (!appearance) {
       for (const key of ['data-appearance-theme', 'data-appearance-bg', 'data-appearance-font', 'data-appearance-text-color']) root.removeAttribute(key)
-      for (const key of ['--appearance-accent', '--appearance-accent-strong', '--appearance-accent-soft', '--appearance-glow', '--appearance-page-bg', '--appearance-page-image', '--appearance-font', '--appearance-text', '--accent', '--accent-hover', '--accent-dim', '--connection-dot', '--text-primary', '--text-secondary', '--text-muted', '--bg-primary', '--bg-secondary', '--bg-tertiary', '--bg-hover', '--bg-active', '--border', '--border-light', '--sans']) root.style.removeProperty(key)
+      for (const key of ['--appearance-accent', '--appearance-accent-strong', '--appearance-accent-soft', '--appearance-glow', '--appearance-page-bg', '--appearance-page-image', '--appearance-font', '--appearance-text', '--accent', '--accent-hover', '--accent-dim', '--connection-dot', '--text-primary', '--text-secondary', '--text-muted', '--text-dim', '--bg-primary', '--bg-secondary', '--bg-tertiary', '--bg-hover', '--bg-active', '--border', '--border-light', '--sans']) root.style.removeProperty(key)
       document.body.style.background = ""
       return
     }
     const style = appearanceScreenStyle(appearance, theme) as unknown as Record<string, string>
-    const managedKeys = ['--appearance-accent', '--appearance-accent-strong', '--appearance-accent-soft', '--appearance-glow', '--appearance-page-bg', '--appearance-page-image', '--appearance-font', '--appearance-text', '--accent', '--accent-hover', '--accent-dim', '--connection-dot', '--text-primary', '--text-secondary', '--text-muted', '--bg-primary', '--bg-secondary', '--bg-tertiary', '--bg-hover', '--bg-active', '--border', '--border-light', '--sans']
+    const managedKeys = ['--appearance-accent', '--appearance-accent-strong', '--appearance-accent-soft', '--appearance-glow', '--appearance-page-bg', '--appearance-page-image', '--appearance-font', '--appearance-text', '--accent', '--accent-hover', '--accent-dim', '--connection-dot', '--text-primary', '--text-secondary', '--text-muted', '--text-dim', '--bg-primary', '--bg-secondary', '--bg-tertiary', '--bg-hover', '--bg-active', '--border', '--border-light', '--sans']
     for (const key of managedKeys) {
       if (key in style) root.style.setProperty(key, String(style[key]))
       else root.style.removeProperty(key)
@@ -1632,7 +1632,7 @@ function App() {
                   onClick={() => { setCurrentServer(null); setShowUsers(false); setCurrentChannel(null) }}
                   title="Amigos"
                 >
-                  <img src={assetUrl('panther-logo.png')} alt="" style={{ width: 30, height: 30, borderRadius: 9, objectFit: 'cover', display: 'block' }} />
+                  <img src={assetUrl('penguin-logo.png')} alt="" style={{ width: 30, height: 30, borderRadius: 9, objectFit: 'cover', display: 'block' }} />
                   {totalUnread > 0 && (
                     <span style={navBadgeStyle}>
                       {totalUnread > 99 ? '99+' : totalUnread}

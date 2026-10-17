@@ -317,7 +317,7 @@ export function PostComments({ postId, initial, users, currentUserId, header }: 
                         {!open ? (
                           <button onClick={() => toggleId(repliesOpen, setRepliesOpen, c.id)}
                             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 700, padding: '4px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ display: 'inline-block', width: 20, height: 1, background: 'var(--text-muted)' }} />
+                            <span style={{ display: 'inline-block', width: 20, height: 1, background: 'var(--text-dim)' }} />
                             Mostrar {replies.length === 1 ? '1 resposta' : `${replies.length} respostas`}
                             <ChevronDown size={12} strokeWidth={2.5} />
                           </button>
@@ -325,7 +325,7 @@ export function PostComments({ postId, initial, users, currentUserId, header }: 
                           <>
                             <button onClick={() => toggleId(repliesOpen, setRepliesOpen, c.id)}
                               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 700, padding: '4px 0', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                              <span style={{ display: 'inline-block', width: 20, height: 1, background: 'var(--text-muted)' }} />
+                              <span style={{ display: 'inline-block', width: 20, height: 1, background: 'var(--text-dim)' }} />
                               Ocultar respostas
                               <ChevronUp size={12} strokeWidth={2.5} />
                             </button>

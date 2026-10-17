@@ -400,7 +400,7 @@ export default function DebugWindow({ onClose }: { onClose: () => void }) {
               </Row>
               <Row label="Controle remoto">
                 <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <b style={{ color: selftestResult ? (selftestResult.ping === 'pong ok' ? 'var(--accent)' : '#f0b232') : 'var(--text-muted)', fontSize: 12 }}>
+                  <b style={{ color: selftestResult ? (selftestResult.ping === 'pong ok' ? '#23a55a' : '#f0b232') : 'var(--text-muted)', fontSize: 12 }}>
                     {selftestRunning ? 'testando...' : selftestResult
                       ? `DC ${selftestResult.dc} · ${selftestResult.ping} · ${selftestResult.inject}`
                       : 'não testado'}

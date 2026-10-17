@@ -164,7 +164,8 @@ export function appearanceScreenStyle(appearance: AppearanceSettings, theme?: "d
     style["--appearance-text"] = vars["--appearance-text"];
     style["--text-primary"] = "var(--appearance-text)";
     style["--text-secondary"] = "color-mix(in srgb, var(--appearance-text) 82%, transparent)";
-    style["--text-muted"] = "color-mix(in srgb, var(--appearance-text) 60%, transparent)";
+    style["--text-muted"] = "var(--appearance-text)";
+    style["--text-dim"] = "color-mix(in srgb, var(--appearance-text) 60%, transparent)";
   }
   return style as unknown as CSSProperties;
 }

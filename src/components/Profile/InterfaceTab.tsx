@@ -50,14 +50,14 @@ export function InterfaceTab() {
         const on = uiEnabled(currentUser, s.key)
         return (
           <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
-            <span style={{ color: on ? 'var(--accent)' : 'var(--text-muted)' }}>{ICONS[s.key]}</span>
+            <span style={{ color: on ? 'var(--text-primary)' : 'var(--text-muted)' }}>{ICONS[s.key]}</span>
             <div style={{ flex: 1 }}>
               <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13.5 }}>{s.label}</div>
               <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{s.desc}</div>
             </div>
             <button onClick={() => void toggle(s.key)} title={on ? 'Desativar' : 'Ativar'}
               style={{ width: 44, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer', background: on ? 'var(--accent)' : 'var(--bg-tertiary)', position: 'relative', opacity: busy ? 0.6 : 1 }}>
-              <span style={{ position: 'absolute', top: 3, left: on ? 23 : 3, width: 18, height: 18, borderRadius: '50%', background: on ? '#000' : 'var(--text-muted)', transition: 'left .15s' }} />
+              <span style={{ position: 'absolute', top: 3, left: on ? 23 : 3, width: 18, height: 18, borderRadius: '50%', background: on ? '#000' : 'var(--text-dim)', transition: 'left .15s' }} />
             </button>
           </div>
         )

@@ -83,23 +83,23 @@ export function CreateChannelModal({ open, initialType = 'text', initialCategory
       <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
         <button type="button" onClick={() => setType('text')} style={card(type === 'text')}>
           <span style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Fa name="hashtag" size={16} style={{  color: type === 'text' ? 'var(--accent)' : 'var(--text-muted)' }} />
+            <Fa name="hashtag" size={16} style={{  color: type === 'text' ? 'var(--text-primary)' : 'var(--text-muted)' }} />
           </span>
           <span>
             <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>Texto</span>
             <span style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)' }}>Converse por mensagens</span>
           </span>
-          {type === 'text' && <Fa name="check" size={14} style={{ marginLeft: 'auto', color: 'var(--accent)' }} />}
+          {type === 'text' && <Fa name="check" size={14} style={{ marginLeft: 'auto', color: 'var(--text-primary)' }} />}
         </button>
         <button type="button" onClick={() => setType('voice')} style={card(type === 'voice')}>
           <span style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Fa name="volume-high" size={16} style={{  color: type === 'voice' ? 'var(--accent)' : 'var(--text-muted)' }} />
+            <Fa name="volume-high" size={16} style={{  color: type === 'voice' ? 'var(--text-primary)' : 'var(--text-muted)' }} />
           </span>
           <span>
             <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>Voz</span>
             <span style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)' }}>Converse por áudio</span>
           </span>
-          {type === 'voice' && <Fa name="check" size={14} style={{ marginLeft: 'auto', color: 'var(--accent)' }} />}
+          {type === 'voice' && <Fa name="check" size={14} style={{ marginLeft: 'auto', color: 'var(--text-primary)' }} />}
         </button>
       </div>
 

@@ -351,7 +351,7 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
                 }
               }}
               disabled={addLoading || addInput.trim().length < 2}
-              style={{ padding: '10px 14px', background: addInput.trim().length < 2 ? 'var(--bg-tertiary)' : 'var(--accent)', border: 'none', borderRadius: 8, color: addInput.trim().length < 2 ? 'var(--text-muted)' : '#fff', fontSize: 13, fontWeight: 600, cursor: addInput.trim().length < 2 ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+              style={{ padding: '10px 14px', background: addInput.trim().length < 2 ? 'var(--bg-tertiary)' : 'var(--accent)', border: 'none', borderRadius: 8, color: addInput.trim().length < 2 ? 'var(--text-dim)' : '#fff', fontSize: 13, fontWeight: 600, cursor: addInput.trim().length < 2 ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
             >
               {addLoading ? '...' : 'Adicionar'}
             </button>

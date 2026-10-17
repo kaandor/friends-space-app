@@ -680,7 +680,7 @@ ${u}`.trim().slice(0, 500)
               )}
             </div>
             <button onClick={handlePost} disabled={posting || (!composer.trim() && !attachedFile && !gifUrl.trim() && !genericFile && pollOptions.filter(o => o.trim()).length < 2)}
-              style={{ padding: '9px 22px', background: '#34d399', border: 'none', borderRadius: 999, color: '#06281c', fontWeight: 800, fontSize: 13, letterSpacing: '0.01em', cursor: 'pointer', boxShadow: '0 2px 14px rgba(52,211,153,.25)', opacity: posting || (!composer.trim() && !attachedFile && !gifUrl.trim() && !genericFile && pollOptions.filter(o => o.trim()).length < 2) ? 0.5 : 1 }}>
+              style={{ padding: '9px 22px', background: 'var(--accent)', border: 'none', borderRadius: 999, color: '#000', fontWeight: 800, fontSize: 13, letterSpacing: '0.01em', cursor: 'pointer', boxShadow: '0 2px 14px rgba(41,163,255,.25)', opacity: posting || (!composer.trim() && !attachedFile && !gifUrl.trim() && !genericFile && pollOptions.filter(o => o.trim()).length < 2) ? 0.5 : 1 }}>
               {posting ? 'Postando...' : scheduledAt ? 'Agendar' : 'Postar'}
             </button>
             {emojiOpen && (
@@ -718,7 +718,7 @@ ${u}`.trim().slice(0, 500)
         <div style={{ display: 'flex', gap: 24, padding: '0 12px', borderBottom: '1px solid var(--border)' }}>
           {([['recentes', 'Recentes'], ['mencoes', 'Menções']] as const).map(([v, label]) => (
             <button key={v} onClick={() => setView(v)}
-              style={{ padding: '10px 2px 8px', background: 'none', border: 'none', borderBottom: view === v ? '2px solid #34d399' : '2px solid transparent', cursor: 'pointer', fontWeight: 800, fontSize: 13, color: view === v ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+              style={{ padding: '10px 2px 8px', background: 'none', border: 'none', borderBottom: view === v ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer', fontWeight: 800, fontSize: 13, color: view === v ? 'var(--text-primary)' : 'var(--text-muted)' }}>
               {label}
             </button>
           ))}
@@ -746,7 +746,7 @@ ${u}`.trim().slice(0, 500)
                 <Avatar src={s.photoUrl} name={s.name} size={40} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {s.name} {s.verified && <span style={{ color: '#34d399' }}>✔</span>}
+                {s.name} {s.verified && <span style={{ color: 'var(--text-primary)' }}>✔</span>}
                   </div>
                   <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center', marginTop: 2 }}>
                     {s.category && <span style={{ fontSize: 10, fontWeight: 800, background: 'var(--accent)', color: '#000', borderRadius: 4, padding: '1px 6px' }}>{s.category}</span>}
@@ -986,14 +986,14 @@ ${u}`.trim().slice(0, 500)
             style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 12, padding: '6px 8px', flexShrink: 0 }}>✕</button>
         )}
         <button onClick={() => { if (searchInput.trim().length >= 2) { setSearchQuery(searchInput.trim()); setSearchTab('principal') } }} title="Buscar"
-          style={{ border: 'none', borderRadius: 8, background: '#34d399', color: '#06281c', fontWeight: 800, fontSize: 12, padding: '7px 14px', cursor: 'pointer', flexShrink: 0 }}>
+          style={{ border: 'none', borderRadius: 8, background: 'var(--accent)', color: '#000', fontWeight: 800, fontSize: 12, padding: '7px 14px', cursor: 'pointer', flexShrink: 0 }}>
           Buscar
         </button>
       </div>
       {uiEnabled(currentUser, 'trending') && (
       <div style={{ background: 'var(--bg-primary)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px 4px' }}>
-          <span style={{ color: '#34d399', display: 'inline-flex' }}><Clock size={15} strokeWidth={2} /></span>
+          <span style={{ color: 'var(--text-primary)', display: 'inline-flex' }}><Clock size={15} strokeWidth={2} /></span>
           <h4 style={{ color: 'var(--text-primary)', fontWeight: 800, fontSize: 15, margin: 0, flex: 1 }}>O que está acontecendo</h4>
           <span style={{ color: 'var(--text-muted)', fontSize: 16 }}>›</span>
         </div>
@@ -1030,7 +1030,7 @@ ${u}`.trim().slice(0, 500)
               Notícias do dia
             </h4>
             <button onClick={() => setNewsOpen(true)} title="Today's News — resumo das notícias" className="fs-icon-btn"
-              style={{ background: 'none', border: 'none', color: '#34d399', cursor: 'pointer', width: 28, height: 28 }}>
+              style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', width: 28, height: 28 }}>
               <Newspaper size={15} strokeWidth={2} />
             </button>
           </div>
@@ -1076,7 +1076,7 @@ ${u}`.trim().slice(0, 500)
               </span>
             ) : (
               <button onClick={() => void handleFollow(s)} disabled={joiningId === s.id}
-                style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #34d399', background: 'transparent', color: '#34d399', fontWeight: 800, fontSize: 12, cursor: 'pointer', opacity: joiningId === s.id ? 0.5 : 1, flexShrink: 0 }}>
+                style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#000', fontWeight: 800, fontSize: 12, cursor: 'pointer', opacity: joiningId === s.id ? 0.5 : 1, flexShrink: 0 }}>
                 {joiningId === s.id ? '...' : 'Seguir'}
               </button>
             )}

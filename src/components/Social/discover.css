@@ -194,7 +194,7 @@
   background: transparent;
   font-size: 12px;
 }
-.search-field input::placeholder { color: var(--text-muted); }
+.search-field input::placeholder { color: var(--text-dim); }
 .search-field button {
   display: grid;
   place-items: center;
@@ -576,7 +576,7 @@
   background: transparent;
   font-size: 11px;
 }
-.modal-search input::placeholder { color: var(--text-muted); }
+.modal-search input::placeholder { color: var(--text-dim); }
 .modal-empty {
   display: grid;
   justify-items: center;

@@ -97,7 +97,7 @@
 }
 
 .fs-edit-required {
-  color: var(--accent);
+  color: var(--text-primary);
 }
 
 .fs-edit-field input,
@@ -124,7 +124,7 @@
 
 .fs-edit-field input::placeholder,
 .fs-edit-field textarea::placeholder {
-  color: var(--text-muted);
+  color: var(--text-dim);
 }
 
 .fs-edit-field input:focus,

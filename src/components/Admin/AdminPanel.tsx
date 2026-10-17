@@ -457,7 +457,7 @@ export function AdminPanel({ open, onClose, initialTab }: { open: boolean; onClo
                           fontSize: 13, fontWeight: active ? 700 : 500, cursor: 'pointer', textAlign: 'left', marginBottom: 1,
                         }}
                       >
-                        {(() => { const I = tb.icon; return <I size={15} strokeWidth={2} style={{ color: active ? 'var(--accent)' : undefined, flexShrink: 0 }} /> })()}
+                        {(() => { const I = tb.icon; return <I size={15} strokeWidth={2} style={{ color: active ? 'var(--text-primary)' : undefined, flexShrink: 0 }} /> })()}
                         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tb.label}</span>
                         {count > 0 && (
                           <span style={{ fontSize: 10.5, fontWeight: 800, minWidth: 20, textAlign: 'center', padding: '2px 6px', borderRadius: 999, background: 'var(--accent)', color: '#04120a' }}>{count > 99 ? '99+' : count}</span>
@@ -851,7 +851,7 @@ export function AdminPanel({ open, onClose, initialTab }: { open: boolean; onClo
                 {initialLoading ? <Skeleton /> : clientErrors.length === 0 ? <Empty label="Nenhum erro nas últimas 24h. Tudo limpo." /> : clientErrors.map(e => (
                   <div key={e.id} style={{ padding: 12, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 10, marginBottom: 8 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 10.5, fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: e.where === 'debug-window' ? 'var(--accent)' : 'var(--bg-secondary)', color: e.where === 'debug-window' ? '#04120a' : 'var(--accent)', textTransform: 'uppercase' }}>
+                      <span style={{ fontSize: 10.5, fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: e.where === 'debug-window' ? 'var(--accent)' : 'var(--bg-secondary)', color: e.where === 'debug-window' ? '#04120a' : 'var(--text-primary)', textTransform: 'uppercase' }}>
                         {e.where === 'debug-window' ? '🐞 report' : e.where}
                       </span>
                       {e.code && (

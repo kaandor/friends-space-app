@@ -12,7 +12,8 @@
   --bg-active: #1a2540;
   --text-primary: #ffffff;
   --text-secondary: #a0a0a0;
-  --text-muted: #8a8a8a;
+  --text-muted: #ffffff;
+  --text-dim: #8a8a8a;
   --accent: #29A3FF;
   --accent-hover: #0B7FD4;
   --accent-dim: rgba(41, 163, 255, 0.12);
@@ -42,7 +43,8 @@
   --bg-active: #d4d7dc;
   --text-primary: #1a1a1a;
   --text-secondary: #4f545c;
-  --text-muted: #8a8a8a;
+  --text-muted: #1a1a1a;
+  --text-dim: #8a8a8a;
   --accent: #0B7FD4;
   --accent-hover: #00aa55;
   --accent-dim: rgba(11, 127, 212, 0.1);

@@ -99,7 +99,7 @@ export function UsersView() {
               )}
               <span style={{
                 width: 10, height: 10, borderRadius: '50%',
-                background: online ? 'var(--accent)' : 'var(--text-muted)',
+                background: online ? '#23a55a' : 'var(--text-dim)',
               }} />
               <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                 {online ? 'Online' : 'Offline'}
