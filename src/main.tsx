@@ -8,6 +8,11 @@ import '@fontsource/inter/800.css'
 import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { initZoomLock } from './utils/zoomLock'
+
+// Site travado em 125% de zoom (com reflow): reaplica a trava sempre que
+// a resolucao ou a janela muda (app em modo janela incluso).
+initZoomLock()
 
 const host = window.location.hostname
 if (host.endsWith('.friends-space.pages.dev') && host !== 'friends-space.pages.dev') {

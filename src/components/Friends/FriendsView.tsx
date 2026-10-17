@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, SlidersHorizontal, CheckCheck, Plus, Smile, Send, FileText } from 'lucide-react'
+import { Search, SlidersHorizontal, Plus, Smile, Send, FileText, BadgeCheck, Rocket, ShieldCheck, Gamepad2, Gift } from 'lucide-react'
 import { uiEnabled } from '../Profile/InterfaceTab'
 import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { Modal } from '../ui/Modal'
+import { UserProfileModal } from '../Profile/UserProfileModal'
 import { useUserStore, isUserOnline } from '../../stores/userStore'
 import { useFriendStore } from '../../stores/friendStore'
-import { searchDirectory } from '../../services/backend'
+import { useServerStore } from '../../stores/serverStore'
+import { searchDirectory, requestBackend } from '../../services/backend'
+import { uploadToDrive, isDriveConnected, toImageUrl } from '../../services/driveService'
 import { useIsMobile } from '../../hooks/useIsMobile'
-import { uploadToDrive, isDriveConnected } from '../../services/driveService'
 import { assertUploadLimit } from '../../utils/astro'
 import { buildFileName, detectMediaKind, extractMediaUrl, extractEmbedUrl, driveFolderFor } from '../../services/mediaDetect'
 import { MediaAttachment } from '../Chat/MediaAttachment'
@@ -33,9 +35,10 @@ function normalizeSearchValue(value: string) {
 
 export function FriendsView() {
   const { currentUser } = useUserStore()
-  const { friendUsers, directMessages, currentDMUser,
+  const { friendUsers, friends, directMessages, currentDMUser,
     loadFriends, addFriendById,
     sendDirectMessage, loadDirectMessages, setCurrentDMUser } = useFriendStore()
+  const { servers } = useServerStore()
   const { open: openUserMenu } = useUserMenuStore()
   const [addQuery, setAddQuery] = useState('')
   const [addResults, setAddResults] = useState<User[]>([])
@@ -55,6 +58,8 @@ export function FriendsView() {
   const [showAstroPlans, setShowAstroPlans] = useState(false)
   const dmFileInputRef = useRef<HTMLInputElement>(null)
   const [storyRetrySignal, setStoryRetrySignal] = useState(0)
+  const [mutualCounts, setMutualCounts] = useState({ friends: 0, servers: 0 })
+  const [showFullProfile, setShowFullProfile] = useState(false)
   const isMobile = useIsMobile(768)
   const userSettings = (currentUser?.settings || {}) as Record<string, unknown>
   const hasAstro = userSettings['astro'] === true || userSettings['astro'] === 'true'
@@ -96,6 +101,34 @@ export function FriendsView() {
       loadDirectMessages(currentUser.id, currentDMUser.id)
     }
   }, [currentDMUser, currentUser, loadDirectMessages])
+
+  useEffect(() => {
+    if (!currentUser || !currentDMUser || currentDMUser.id === currentUser.id) { setMutualCounts({ friends: 0, servers: 0 }); return }
+    let cancelled = false
+    const run = async () => {
+      try {
+        const [theirFriends, theirServers] = await Promise.all([
+          requestBackend<{ friends: { userId: string; friendId: string; status: string }[] }>('loadFriends', { userId: currentDMUser.id }),
+          requestBackend<{ id: string }[]>('loadUserServers', { userId: currentDMUser.id }),
+        ])
+        if (cancelled) return
+        const meId = currentUser.id
+        const theirIds = (theirFriends?.friends || [])
+          .filter(f => f.status === 'accepted')
+          .map(f => f.userId === currentDMUser.id ? f.friendId : f.userId)
+        const myIds = (friends || [])
+          .filter(f => f.status === 'accepted')
+          .map(f => f.userId === meId ? f.friendId : f.userId)
+        const myServerIds = new Set((servers || []).filter(s => Array.isArray((s as { members?: unknown }).members) && ((s as { members: string[] }).members.includes(meId))).map(s => s.id))
+        setMutualCounts({
+          friends: theirIds.filter(id => myIds.includes(id)).length,
+          servers: Array.isArray(theirServers) ? theirServers.filter(s => myServerIds.has(s.id)).length : 0,
+        })
+      } catch { if (!cancelled) setMutualCounts({ friends: 0, servers: 0 }) }
+    }
+    void run()
+    return () => { cancelled = true }
+  }, [currentUser, currentDMUser, friends, servers])
 
   useEffect(() => {
     if (!showAdd || addQuery.trim().length < 2) { setAddResults([]); return }
@@ -236,6 +269,16 @@ export function FriendsView() {
   const formatTime = (ts: number) => {
     const d = new Date(ts)
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+
+  const sameDay = (a: number, b: number) => {
+    const da = new Date(a)
+    const db = new Date(b)
+    return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate()
+  }
+
+  const formatDay = (ts: number) => {
+    return new Date(ts).toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' })
   }
 
   const tabs: { key: FriendsTab; label: string; badge?: number }[] = [
@@ -416,7 +459,8 @@ export function FriendsView() {
         </div>
       </div>
 
-      <div style={{ flex: 1, display: isMobile && !currentDMUser ? 'none' : 'flex', flexDirection: 'column', background: 'var(--bg-primary)', minWidth: 0, minHeight: 0, height: isMobile ? '100%' : undefined }}>
+      <div style={{ flex: 1, display: isMobile && !currentDMUser ? 'none' : 'flex', flexDirection: isMobile ? 'column' : 'row', background: 'var(--bg-primary)', minWidth: 0, minHeight: 0, height: isMobile ? '100%' : undefined }}>
+        <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         {currentDMUser ? (
           <>
             <div style={{
@@ -425,11 +469,9 @@ export function FriendsView() {
               fontWeight: 600, fontSize: 15, color: 'var(--text-primary)',
               boxShadow: '0 1px 0 var(--border)',
             }}>
+              <button onClick={() => setCurrentDMUser(null)} title="Voltar ao feed" style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', color: 'var(--text-secondary)', background: 'var(--bg-tertiary)', border: 'none', cursor: 'pointer', flexShrink: 0, fontSize: 15 }}>←</button>
               <Avatar src={currentDMUser.photoUrl} name={currentDMUser.name} size={36} />
               <span onContextMenu={(e) => { e.preventDefault(); openUserMenu(currentDMUser, e.clientX, e.clientY) }}>{currentDMUser.name}</span>
-              {isMobile && (
-                <button onClick={() => setCurrentDMUser(null)} style={{ padding: 6, borderRadius: '50%', color: 'var(--text-secondary)', background: 'var(--bg-tertiary)', flexShrink: 0 }} title="Voltar">←</button>
-              )}
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
               </div>
             </div>
@@ -441,21 +483,27 @@ export function FriendsView() {
                   <div style={{ fontSize: 12 }}>Envie uma mensagem para comecar</div>
                 </div>
               ) : (
-                directMessages.map(msg => {
+                directMessages.map((msg, idx) => {
                   const sent = msg.fromId === currentUser?.id
+                  const sender = sent ? currentUser : currentDMUser
+                  const showDay = idx === 0 || !sameDay(directMessages[idx - 1].createdAt, msg.createdAt)
                   return (
-                  <div key={msg.id} style={{ display: 'flex', gap: 8, alignSelf: sent ? 'flex-end' : 'flex-start', maxWidth: '80%', flexDirection: 'column', alignItems: sent ? 'flex-end' : 'flex-start' }}>
-                    {!sent && (
-                      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Avatar src={currentDMUser.photoUrl} name={currentDMUser.name} size={20} />
-                        {currentDMUser.name}
-                      </span>
+                  <div key={msg.id} style={{ display: 'contents' }}>
+                    {showDay && (
+                      <div style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', margin: '8px 0 4px' }}>{formatDay(msg.createdAt)}</div>
                     )}
-                    <div style={{ padding: '10px 12px', borderRadius: 14, background: sent ? 'var(--accent)' : 'var(--bg-secondary)', color: sent ? '#000' : 'var(--text-primary)', maxWidth: '100%' }}>
+                    <div style={{ display: 'flex', gap: 10, padding: '4px 0' }}>
+                      <Avatar src={sender?.photoUrl || ''} name={sender?.name || ''} size={36} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                          <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--accent)' }}>{sender?.name}</span>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatTime(msg.createdAt)}</span>
+                        </div>
+                    <div style={{ marginTop: 2, maxWidth: '100%' }}>
                       {msg.attachmentUrl ? (
                         <MediaAttachment url={msg.attachmentUrl} name={msg.attachmentName} msgId={msg.id} type={msg.attachmentType} />
                       ) : msg.type === 'text' ? (
-                        <p style={{ color: sent ? '#000' : 'var(--text-primary)', fontSize: 13, wordBreak: 'break-word', margin: 0 }}>
+                        <p style={{ color: 'var(--text-primary)', fontSize: 13, wordBreak: 'break-word', margin: 0 }}>
                           {(() => {
                             const mediaUrl = extractMediaUrl(msg.content)
                             if (mediaUrl) {
@@ -489,9 +537,8 @@ export function FriendsView() {
                       ) : msg.audioUrl && (
                         <audio controls src={msg.audioUrl} style={{ height: 36, borderRadius: 'var(--radius-sm)' }} />
                       )}
-                      <span style={{ fontSize: 10, color: sent ? '#000' : 'var(--text-secondary)', display: 'block', textAlign: 'right', marginTop: 4, opacity: sent ? 0.6 : 1 }}>
-                        {formatTime(msg.createdAt)} {sent && <CheckCheck size={13} strokeWidth={2.5} style={{ marginLeft: 2, verticalAlign: -2 }} />}
-                      </span>
+                      </div>
+                      </div>
                     </div>
                   </div>
                   )
@@ -506,6 +553,9 @@ export function FriendsView() {
                     <Plus size={16} strokeWidth={2.5} />
                   </button>
                   <input ref={dmFileInputRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handleDmFileChange} />
+                  <button onClick={() => setShowAstro(true)} className="fs-input-icon" title="Enviar presente">
+                    <Gift size={16} strokeWidth={2} />
+                  </button>
                 </div>
                 <div className="fs-chat-input-wrapper">
                   <textarea
@@ -571,31 +621,119 @@ export function FriendsView() {
           </div>
         )}
         {currentDMUser && !isMobile && (
-          <aside style={{ width: 260, flexShrink: 0, borderLeft: '1px solid var(--border)', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 18px', gap: 6, overflowY: 'auto' }}>
-            <Avatar src={currentDMUser.photoUrl || ''} name={currentDMUser.name} size={88} />
-            <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)', textAlign: 'center' }}>{currentDMUser.name}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>@{currentDMUser.friendCode || 'usuario'}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: isUserOnline(currentDMUser) ? 'var(--accent)' : 'var(--text-muted)' }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: isUserOnline(currentDMUser) ? 'var(--accent)' : 'var(--text-muted)' }} />
-              {isUserOnline(currentDMUser) ? 'Online agora' : 'Offline'}
-            </div>
-            {currentDMUser.bio && (
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', textAlign: 'center', lineHeight: 1.5, marginTop: 4 }}>{currentDMUser.bio}</div>
-            )}
-            <button
-              onClick={e => {
-                try {
-                  const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
-                  openUserMenu(currentDMUser, r.left + r.width / 2, r.top)
-                } catch { }
-              }}
-              style={{ marginTop: 12, background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
-            >
-              Ver perfil completo
-            </button>
+          <aside style={{ width: 280, flexShrink: 0, borderLeft: '1px solid var(--border)', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+            {(() => {
+              const u = currentDMUser
+              const s = (u.settings || {}) as Record<string, unknown>
+              const online = isUserOnline(u)
+              const statusKey = typeof s['status'] === 'string' ? s['status'] as string : 'online'
+              const statusMessage = typeof s['statusMessage'] === 'string' ? s['statusMessage'] as string : ''
+              const verified = Boolean(u.googleId || u.authProvider === 'google')
+              const astro = s['astro'] === true || s['astro'] === 'true'
+              const flags = (u.flags || {}) as Record<string, boolean | undefined>
+              const mural = (s['mural'] && typeof s['mural'] === 'object' ? s['mural'] : {}) as Record<string, unknown>
+              const games = Array.isArray(mural['games']) ? (mural['games'] as { image?: string; title?: string; name?: string }[]) : []
+              const isFriend = (friends || []).some(f => f.status === 'accepted' && ((f.userId === u.id) || (f.friendId === u.id)))
+              const statusColor = statusKey === 'ausente' ? '#faa81a' : statusKey === 'naoperturbe' ? '#f23f43' : statusKey === 'invisivel' ? '#80848e' : online ? '#23a55a' : '#80848e'
+              return (<>
+                <div style={{ position: 'relative', height: 110, flexShrink: 0, background: u.bannerUrl ? 'var(--bg-tertiary)' : 'var(--bg-tertiary)' }}>
+                  {u.bannerUrl && (
+                    <img src={toImageUrl(u.bannerUrl)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  )}
+                </div>
+                <div style={{ padding: '0 16px 20px', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ position: 'relative', width: 76, marginTop: -38 }}>
+                    <div style={{ borderRadius: '50%', padding: 3, background: 'var(--bg-secondary)', display: 'flex' }}>
+                      <Avatar src={u.photoUrl || ''} name={u.name} size={70} />
+                    </div>
+                    <span style={{ position: 'absolute', bottom: 4, right: 4, width: 16, height: 16, borderRadius: '50%', background: statusColor, border: '3px solid var(--bg-secondary)' }} />
+                  </div>
+                  <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)', marginTop: 8 }}>{u.name}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>@{u.friendCode || 'usuario'}</div>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+                    {verified && (
+                      <span title="Verificado" style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
+                        <BadgeCheck size={14} strokeWidth={2} />
+                      </span>
+                    )}
+                    {astro && (
+                      <span title="ASTRO" style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
+                        <Rocket size={14} strokeWidth={2} />
+                      </span>
+                    )}
+                    {(flags.dev || flags.support || flags.official) && (
+                      <span title="Equipe" style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
+                        <ShieldCheck size={14} strokeWidth={2} />
+                      </span>
+                    )}
+                  </div>
+                  {(mutualCounts.friends > 0 || mutualCounts.servers > 0) && (
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 10 }}>
+                      {mutualCounts.friends > 0 && `${mutualCounts.friends} amigo${mutualCounts.friends === 1 ? '' : 's'} mútuo${mutualCounts.friends === 1 ? '' : 's'}`}
+                      {mutualCounts.friends > 0 && mutualCounts.servers > 0 && ' · '}
+                      {mutualCounts.servers > 0 && `${mutualCounts.servers} servidor${mutualCounts.servers === 1 ? '' : 'es'} mútuo${mutualCounts.servers === 1 ? '' : 's'}`}
+                    </div>
+                  )}
+                  {statusMessage ? (
+                    <div style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 12, lineHeight: 1.4 }}>{statusMessage}</div>
+                  ) : null}
+                  {u.createdAt > 0 && (
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Membro desde</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>{new Date(u.createdAt).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                    </div>
+                  )}
+                  {games.length > 0 && (
+                    <button onClick={() => setShowFullProfile(true)} style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, width: '100%', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 10, padding: 10, cursor: 'pointer', textAlign: 'left' }}>
+                      <Gamepad2 size={16} strokeWidth={2} color="var(--accent)" />
+                      <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Coleção de Jogos</span>
+                      <span style={{ display: 'flex' }}>
+                        {games.slice(0, 3).map((g, i) => (
+                          g.image ? (
+                            <img key={i} src={toImageUrl(g.image)} alt="" style={{ width: 26, height: 26, borderRadius: 6, objectFit: 'cover', marginLeft: i === 0 ? 0 : -8, border: '2px solid var(--bg-tertiary)' }} />
+                          ) : (
+                            <span key={i} style={{ width: 26, height: 26, borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--accent)', fontSize: 11, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginLeft: i === 0 ? 0 : -8, border: '2px solid var(--bg-tertiary)' }}>
+                              {(g.title || g.name || '?').slice(0, 1).toUpperCase()}
+                            </span>
+                          )
+                        ))}
+                      </span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 16 }}>›</span>
+                    </button>
+                  )}
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>Sobre mim</div>
+                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2, lineHeight: 1.4 }}>{u.bio || 'Nada para ver aqui...'}</div>
+                  </div>
+                  {isFriend && (
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>Cargos</div>
+                      <div style={{ marginTop: 6 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 999, padding: '4px 12px' }}>Membro</span>
+                      </div>
+                    </div>
+                  )}
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>Status</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: statusColor }} />
+                      <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{online ? 'Online' : 'Offline'}</span>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowFullProfile(true)} style={{ marginTop: 16, width: '100%', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                    Ver Perfil Completo
+                  </button>
+                </div>
+              </>)
+            })()}
           </aside>
         )}
+        </div>
       </div>
+
+      {showFullProfile && currentDMUser && (
+        <UserProfileModal user={currentDMUser} isSelf={currentDMUser.id === currentUser?.id} onClose={() => setShowFullProfile(false)} />
+      )}
 
       {showAstroPlans && <AstroPlansModal onClose={() => setShowAstroPlans(false)} />}
 
