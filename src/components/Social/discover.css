@@ -6,7 +6,7 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: rgba(3, 7, 14, 0.72);
+  background: rgba(3, 5, 10, 0.72);
   backdrop-filter: blur(9px);
   -webkit-backdrop-filter: blur(9px);
   animation: discover-fade-in 0.16s ease-out;
@@ -23,58 +23,51 @@
 }
 
 .ping-discover {
+  --ping-side: #191b1f;
+  --ping-main: #232529;
+  --ping-card: #2b2d33;
+  --ping-card-hover: #33363d;
+  --ping-text: #f2f3f5;
+  --ping-muted: #a8adb7;
+  --ping-accent: #29A3FF;
   position: relative;
   display: flex;
-  width: min(1280px, 97vw);
-  height: min(88vh, 880px);
-  border-radius: 16px;
-  border: 1px solid var(--border);
-  background: var(--bg-primary);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55), 0 0 60px rgba(41, 163, 255, 0.08);
+  width: min(1360px, 97vw);
+  height: min(90vh, 900px);
+  border-radius: 14px;
+  border: 1px solid #101215;
+  background: var(--ping-main);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6), 0 0 60px rgba(41, 163, 255, 0.08);
   overflow: hidden;
   animation: ping-pop-in 0.2s ease-out;
 }
 
 .ping-side {
-  width: 292px;
+  width: 280px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 16px 14px;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border);
+  padding: 18px 10px 10px;
+  background: var(--ping-side);
   overflow: hidden;
 }
 
 .ping-side-brand {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 2px 4px;
-  color: var(--text-primary);
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 8px 14px;
 }
 
 .ping-side-brand strong {
-  font-size: 15.5px;
+  color: var(--ping-text);
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: 0.2px;
 }
 
-.ping-side-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 9px;
-  background: var(--accent);
-  color: #000;
-  flex-shrink: 0;
-}
-
 .ping-side-close {
-  margin-left: auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -83,60 +76,14 @@
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--ping-muted);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
 .ping-side-close:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.ping-side-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--bg-primary);
-  color: var(--text-muted);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.ping-side-search:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(41, 163, 255, 0.16);
-}
-
-.ping-side-search input {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: 13px;
-}
-
-.ping-side-search input::placeholder {
-  color: var(--text-muted);
-}
-
-.ping-side-search button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 2px;
-}
-
-.ping-side-search button:hover {
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ping-text);
 }
 
 .ping-side-nav {
@@ -148,181 +95,235 @@
 .ping-side-nav button {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 9px 11px;
+  padding: 9px 10px;
   border: none;
-  border-radius: 9px;
+  border-radius: 7px;
   background: transparent;
-  color: var(--text-secondary);
-  font-size: 13.5px;
-  font-weight: 700;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.13s ease, color 0.13s ease;
-}
-
-.ping-side-nav button:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.ping-side-nav button.active {
-  background: rgba(41, 163, 255, 0.14);
-  color: var(--accent);
-}
-
-.ping-side-cats {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  min-height: 0;
-  flex: 1;
-}
-
-.ping-side-cats-title {
-  padding: 0 11px;
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 1.3px;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.ping-side-cats-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  overflow-y: auto;
-  padding-right: 4px;
-  scrollbar-width: thin;
-}
-
-.ping-side-cats-list button {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  width: 100%;
-  padding: 8px 11px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 13px;
+  color: var(--ping-muted);
+  font-size: 14.5px;
   font-weight: 600;
   text-align: left;
   cursor: pointer;
   transition: background 0.13s ease, color 0.13s ease;
 }
 
-.ping-side-cats-list button:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
+.ping-side-nav button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ping-text);
 }
 
-.ping-side-cats-list button.active {
-  background: rgba(41, 163, 255, 0.14);
-  color: var(--accent);
-  font-weight: 800;
-}
-
-.ping-side-foot {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 11px;
-  border-radius: 9px;
-  background: var(--bg-tertiary);
-  color: var(--text-muted);
-  font-size: 11.5px;
+.ping-side-nav button.active {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--ping-text);
   font-weight: 700;
 }
 
-.ping-side-foot-dot {
-  width: 7px;
-  height: 7px;
+.ping-side-spacer {
+  flex: 1;
+}
+
+.ping-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.ping-user > img,
+.ping-user-char {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 8px rgba(41, 163, 255, 0.8);
+  flex-shrink: 0;
+  object-fit: cover;
+  background: var(--ping-accent);
+  color: #000;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.ping-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ping-user-info strong {
+  color: var(--ping-text);
+  font-size: 13.5px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ping-user-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ping-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.ping-user-status i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #23a55a;
+  box-shadow: 0 0 6px rgba(35, 165, 90, 0.8);
   flex-shrink: 0;
 }
 
 .ping-main {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--ping-main);
+}
+
+.ping-topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 18px 6px;
+  flex-shrink: 0;
+}
+
+.ping-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ping-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.ping-tabs button {
+  position: relative;
+  padding: 8px 10px 12px;
+  border: none;
+  background: transparent;
+  color: var(--ping-muted);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.13s ease;
+}
+
+.ping-tabs button:hover {
+  color: var(--ping-text);
+}
+
+.ping-tabs button.active {
+  color: #fff;
+  font-weight: 700;
+}
+
+.ping-tabs button.active::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 4px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--ping-accent);
+}
+
+.ping-topsearch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  width: 216px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #16181c;
+  color: var(--ping-muted);
+  transition: box-shadow 0.15s ease;
+}
+
+.ping-topsearch:focus-within {
+  box-shadow: 0 0 0 3px rgba(41, 163, 255, 0.18);
+}
+
+.ping-topsearch input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--ping-text);
+  font-size: 13.5px;
+}
+
+.ping-topsearch input::placeholder {
+  color: var(--ping-muted);
+}
+
+.ping-topsearch button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--ping-muted);
+  cursor: pointer;
+  padding: 2px;
+}
+
+.ping-topsearch button:hover {
+  color: var(--ping-text);
+}
+
+.ping-scroll {
+  flex: 1;
   overflow-y: auto;
-  background: var(--bg-primary);
 }
 
 .ping-hero {
-  position: relative;
-  min-height: 292px;
-  background-size: cover;
-  background-position: center 30%;
-  overflow: hidden;
-}
-
-.ping-hero-grad {
-  position: absolute;
-  inset: 0;
+  padding: 52px clamp(24px, 7vw, 104px) 44px;
   background:
-    linear-gradient(90deg, rgba(4, 9, 18, 0.94) 0%, rgba(4, 9, 18, 0.72) 46%, rgba(4, 9, 18, 0.28) 100%),
-    linear-gradient(180deg, rgba(4, 9, 18, 0.35) 0%, rgba(4, 9, 18, 0) 40%, rgba(4, 9, 18, 0.9) 100%);
+    radial-gradient(ellipse 130% 170% at 26% 40%, rgba(41, 163, 255, 0.5) 0%, rgba(32, 76, 168, 0.34) 36%, rgba(13, 20, 44, 0) 64%),
+    linear-gradient(180deg, #131a3f 0%, #101532 44%, var(--ping-main) 100%);
 }
 
-.ping-hero-chars {
-  position: absolute;
-  right: 2%;
-  bottom: -4%;
-  height: 106%;
-  max-width: 62%;
-  object-fit: contain;
-  object-position: right bottom;
-  filter: drop-shadow(0 16px 34px rgba(0, 0, 0, 0.55));
-  pointer-events: none;
-}
-
-.ping-hero-content {
-  position: relative;
-  z-index: 2;
-  padding: 38px 42px 34px;
-  max-width: 620px;
-}
-
-.ping-hero-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(41, 163, 255, 0.45);
-  background: rgba(41, 163, 255, 0.14);
-  color: #9fd4ff;
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 1.4px;
-}
-
-.ping-hero-content h1 {
-  margin: 14px 0 0;
+.ping-hero h1 {
+  margin: 0;
   color: #ffffff;
-  font-size: clamp(26px, 3.1vw, 38px);
+  font-size: clamp(26px, 3.1vw, 40px);
   font-weight: 900;
-  line-height: 1.06;
+  line-height: 1.05;
   letter-spacing: 0.4px;
-  text-shadow: 0 4px 22px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 4px 22px rgba(0, 0, 0, 0.45);
 }
 
-.ping-hero-content p {
-  margin: 12px 0 0;
-  color: #c8d6e8;
-  font-size: 14px;
+.ping-hero p {
+  margin: 14px 0 0;
+  color: #c7d3e4;
+  font-size: 14.5px;
   line-height: 1.5;
-  max-width: 430px;
+  max-width: 460px;
 }
 
 .ping-content {
-  padding: 24px 30px 40px;
+  padding: 24px clamp(24px, 7vw, 104px) 44px;
 }
 
 .ping-content-head {
@@ -335,17 +336,17 @@
 
 .ping-content-head h2 {
   margin: 0;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 1.8px;
+  color: var(--ping-text);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
 }
 
 .ping-content-filter {
   padding: 5px 11px;
   border-radius: 999px;
-  background: var(--bg-tertiary);
-  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ping-muted);
   font-size: 11.5px;
   font-weight: 700;
   white-space: nowrap;
@@ -356,7 +357,7 @@
 
 .ping-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(238px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -365,32 +366,36 @@
   display: flex;
   flex-direction: column;
   padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--bg-secondary);
+  border: none;
+  border-radius: 9px;
+  background: var(--ping-card);
   text-align: left;
   cursor: pointer;
   overflow: hidden;
   font-family: inherit;
-  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .ping-server-card:hover {
-  transform: translateY(-3px);
-  border-color: var(--accent);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35), 0 0 26px rgba(41, 163, 255, 0.12);
+  background: var(--ping-card-hover);
+  transform: translateY(-2px);
+}
+
+.ping-server-card:focus-visible {
+  outline: 2px solid var(--ping-accent);
+  outline-offset: 2px;
 }
 
 .ping-server-card:disabled {
   cursor: progress;
-  opacity: 0.75;
+  opacity: 0.7;
 }
 
 .ping-server-banner {
   position: relative;
   display: block;
-  height: 118px;
-  background-color: var(--bg-tertiary);
+  height: 134px;
+  background-color: #1c1e22;
   background-size: cover;
   background-position: center;
   flex-shrink: 0;
@@ -402,28 +407,33 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 44px;
+  font-size: 46px;
   font-weight: 900;
-  color: rgba(41, 163, 255, 0.32);
-  background: linear-gradient(135deg, rgba(41, 163, 255, 0.16), rgba(11, 127, 212, 0.05));
+  color: rgba(41, 163, 255, 0.3);
+  background: linear-gradient(135deg, rgba(41, 163, 255, 0.18), rgba(11, 127, 212, 0.04));
 }
 
 .ping-server-icon {
   position: absolute;
   left: 12px;
-  bottom: -20px;
+  bottom: -22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  border: 4px solid var(--bg-secondary);
-  background: var(--bg-tertiary);
-  color: var(--accent);
-  font-size: 20px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: 4px solid var(--ping-card);
+  background: #16181c;
+  color: var(--ping-accent);
+  font-size: 19px;
   font-weight: 900;
   overflow: hidden;
+  transition: border-color 0.15s ease;
+}
+
+.ping-server-card:hover .ping-server-icon {
+  border-color: var(--ping-card-hover);
 }
 
 .ping-server-icon img {
@@ -433,31 +443,11 @@
   display: block;
 }
 
-.ping-server-action {
-  position: absolute;
-  right: 10px;
-  bottom: 9px;
-  padding: 6px 13px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #000;
-  font-size: 11.5px;
-  font-weight: 800;
-  opacity: 0;
-  transform: translateY(4px);
-  transition: opacity 0.16s ease, transform 0.16s ease;
-}
-
-.ping-server-card:hover .ping-server-action {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 .ping-server-body {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 27px 14px 14px;
+  padding: 28px 13px 13px;
   min-width: 0;
 }
 
@@ -470,7 +460,7 @@
 
 .ping-server-name-row h3 {
   margin: 0;
-  color: var(--text-primary);
+  color: var(--ping-text);
   font-size: 15px;
   font-weight: 800;
   overflow: hidden;
@@ -479,13 +469,13 @@
 }
 
 .ping-verified {
-  color: var(--accent);
+  color: var(--ping-accent);
   flex-shrink: 0;
 }
 
 .ping-server-body p {
   margin: 0;
-  color: var(--text-muted);
+  color: var(--ping-muted);
   font-size: 12.5px;
   line-height: 1.45;
   display: -webkit-box;
@@ -499,7 +489,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--text-muted);
+  color: var(--ping-muted);
   font-size: 11.5px;
   font-weight: 700;
 }
@@ -522,7 +512,7 @@
   display: block;
   height: 12px;
   border-radius: 6px;
-  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-hover) 50%, var(--bg-tertiary) 75%);
+  background: linear-gradient(90deg, #33363d 25%, #3d4048 50%, #33363d 75%);
   background-size: 220% 100%;
   animation: ping-shimmer 1.3s ease-in-out infinite;
 }
@@ -538,14 +528,14 @@
   align-items: center;
   gap: 7px;
   padding: 54px 20px;
-  border: 1px dashed var(--border);
-  border-radius: 14px;
-  color: var(--text-muted);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: var(--ping-muted);
   text-align: center;
 }
 
 .ping-empty strong {
-  color: var(--text-primary);
+  color: var(--ping-text);
   font-size: 14.5px;
   font-weight: 800;
 }
@@ -561,7 +551,7 @@
   padding: 8px 18px;
   border: none;
   border-radius: 999px;
-  background: var(--accent);
+  background: var(--ping-accent);
   color: #000;
   font-size: 12.5px;
   font-weight: 800;
@@ -569,7 +559,7 @@
 }
 
 .ping-empty button:hover {
-  background: var(--accent-hover);
+  background: #0B7FD4;
   color: #fff;
 }
 
@@ -585,21 +575,24 @@
   padding: 10px 18px;
   border-radius: 999px;
   border: 1px solid rgba(41, 163, 255, 0.5);
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
+  background: #16181c;
+  color: var(--ping-text);
   font-size: 12.5px;
   font-weight: 700;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
   animation: ping-pop-in 0.18s ease-out;
 }
 
-@media (max-width: 1020px) {
-  .ping-side { width: 244px; }
-  .ping-hero-content { padding: 30px 30px 26px; }
-  .ping-content { padding: 20px 22px 32px; }
+@media (max-width: 1220px) {
+  .ping-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-@media (max-width: 860px) {
+@media (max-width: 980px) {
+  .ping-side { width: 230px; }
+  .ping-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
   .discover-modal { padding: 0; }
 
   .ping-discover {
@@ -612,30 +605,31 @@
 
   .ping-side {
     width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    padding: 12px 12px 10px;
-    gap: 10px;
+    padding: 12px 10px 8px;
   }
 
-  .ping-side-cats { flex: none; }
+  .ping-side-spacer { display: none; }
 
-  .ping-side-cats-list {
+  .ping-side-nav {
     flex-direction: row;
     overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 4px;
+    scrollbar-width: none;
   }
 
-  .ping-side-cats-list button { width: auto; white-space: nowrap; flex-shrink: 0; }
+  .ping-side-nav button { width: auto; white-space: nowrap; flex-shrink: 0; }
 
-  .ping-side-foot { display: none; }
+  .ping-user { display: none; }
 
-  .ping-hero { min-height: 208px; }
-  .ping-hero-content { padding: 22px 20px 18px; }
-  .ping-hero-content p { font-size: 12.5px; }
-  .ping-hero-chars { max-width: 54%; opacity: 0.9; }
+  .ping-topbar {
+    flex-wrap: wrap;
+    padding: 8px 12px 4px;
+  }
 
-  .ping-content { padding: 16px 14px 28px; }
+  .ping-topsearch { width: 100%; }
+
+  .ping-hero { padding: 30px 18px 26px; }
+  .ping-hero p { font-size: 13px; }
+
+  .ping-content { padding: 18px 14px 30px; }
   .ping-grid { grid-template-columns: 1fr; }
 }
