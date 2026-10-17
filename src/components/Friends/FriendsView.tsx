@@ -620,6 +620,7 @@ export function FriendsView() {
             <FeedView onDriveRequired={() => setDriveModal(true)} />
           </div>
         )}
+        </div>
         {currentDMUser && !isMobile && (
           <aside style={{ width: 280, flexShrink: 0, borderLeft: '1px solid var(--border)', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
             {(() => {
@@ -728,7 +729,6 @@ export function FriendsView() {
             })()}
           </aside>
         )}
-        </div>
       </div>
 
       {showFullProfile && currentDMUser && (

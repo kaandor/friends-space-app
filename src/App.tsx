@@ -1354,7 +1354,7 @@ function App() {
   const siteAppearance = activeUser?.settings ? clampAppearanceToPlan(parseAppearance(activeUser.settings as Record<string, unknown>), planFromUser(activeUser)) : null
 
   return (
-    <div {...(siteAppearance ? appearanceDataAttrs(siteAppearance) : {})} style={siteAppearance ? { ...appearanceScreenStyle(siteAppearance), width: '100%', height: '100dvh', display: 'flex', flexDirection: 'column' } : { width: '100%', height: '100dvh', display: 'flex', flexDirection: 'column' }}>
+    <div {...(siteAppearance ? appearanceDataAttrs(siteAppearance) : {})} style={siteAppearance ? { ...appearanceScreenStyle(siteAppearance), width: '100%', height: '100%', display: 'flex', flexDirection: 'column' } : { width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <DesktopChrome />
       {(incomingCall && !useCallStore.getState().activeCall) && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)' }}>
