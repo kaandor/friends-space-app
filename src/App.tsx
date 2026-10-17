@@ -1632,7 +1632,7 @@ function App() {
                   onClick={() => { setCurrentServer(null); setShowUsers(false); setCurrentChannel(null) }}
                   title="Amigos"
                 >
-                  <Fa name="house" size={14} />
+                  <img src={assetUrl('panther-logo.png')} alt="" style={{ width: 30, height: 30, borderRadius: 9, objectFit: 'cover', display: 'block' }} />
                   {totalUnread > 0 && (
                     <span style={navBadgeStyle}>
                       {totalUnread > 99 ? '99+' : totalUnread}
