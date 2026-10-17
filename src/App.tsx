@@ -1310,20 +1310,11 @@ function App() {
 
   if (!authReady) {
     return (
-      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(90% 70% at 50% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%), radial-gradient(70% 60% at 50% 110%, color-mix(in srgb, #5865f2 10%, transparent), transparent 60%), var(--bg-primary)' }}>
-        <div style={{ width: 360, maxWidth: 'calc(100vw - 32px)', padding: '44px 36px 34px', borderRadius: 24, border: '1px solid color-mix(in srgb, var(--accent) 25%, var(--border))', background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 92%, var(--accent) 8%), var(--bg-secondary))', boxShadow: '0 24px 70px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-          <img src={assetUrl('Logo.png')} alt="Friends Space Beta" style={{ height: 88, width: 88, objectFit: 'cover', borderRadius: '50%', border: '2px solid color-mix(in srgb, var(--accent) 60%, transparent)', boxShadow: '0 0 32px color-mix(in srgb, var(--accent) 30%, transparent), 0 10px 30px rgba(0,0,0,0.5)' }} />
-          <div style={{ textAlign: 'center' }}>
-            <h1 style={{ fontSize: 22, margin: 0, fontFamily: '"Space Grotesk", "Inter", sans-serif', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>Friends Space Beta</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', margin: '8px 0 0', fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>Carregando sua sessão</p>
-          </div>
-          <div style={{ position: 'relative', width: '100%', height: 6, borderRadius: 999, background: 'var(--bg-tertiary)', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <div className="fs-loadbar" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: '35%', borderRadius: 999, background: 'linear-gradient(90deg, var(--accent-hover), var(--accent))', boxShadow: '0 0 12px color-mix(in srgb, var(--accent) 70%, transparent)' }} />
-          </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: 11, margin: 0, opacity: 0.75 }}>Se travar aqui, recarregue com Ctrl+F5</p>
-          <LoadingWatchdog />
-        </div>
-        <style>{`@keyframes fsLoadSlide{0%{left:-35%}100%{left:100%}}.fs-loadbar{animation:fsLoadSlide 1.4s ease-in-out infinite}`}</style>
+      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26, background: 'var(--appearance-page-bg, var(--bg-primary))' }}>
+        <img src={assetUrl('penguin-loading.png')} alt="" style={{ width: 132, height: 132, objectFit: 'contain', display: 'block' }} />
+        <span className="fs-boot-dot" />
+        <LoadingWatchdog />
+        <style>{`@keyframes fsBootDotPulse{0%,100%{opacity:.2;transform:scale(.78)}50%{opacity:1;transform:scale(1)}}.fs-boot-dot{width:12px;height:12px;border-radius:50%;background:#fff;animation:fsBootDotPulse 1s ease-in-out infinite}`}</style>
       </div>
     )
   }
