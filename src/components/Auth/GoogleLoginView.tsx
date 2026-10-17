@@ -188,21 +188,17 @@ export function GoogleLoginView() {
         zoom: 1.35,
         overflow: 'hidden',
       }}>
-      <video
-        autoPlay
-        muted
-        loop
+      <img
+        src={assetUrl('login-wallpaper.jpg')}
+        alt=""
         style={{
           position: 'absolute',
           inset: 0,
           width: '100%',
           height: '100%',
           objectFit: 'cover',
-          filter: 'brightness(0.6) contrast(1.1)',
         }}
-      >
-        <source src={assetUrl('login-bg.mp4')} type="video/mp4" />
-      </video>
+      />
 
       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.25)' }} />
 
@@ -224,13 +220,6 @@ export function GoogleLoginView() {
       </div>
 
       <div style={{ position: 'relative', zIndex: 10, width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <header style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 'clamp(16px, 3vw, 24px) clamp(16px, 4vw, 32px)', flexShrink: 0 }}>
-          <img src={assetUrl('Logo.png')} alt="Friends Space Beta" style={{ width: 'clamp(44px, 6vw, 58px)', height: 'clamp(44px, 6vw, 58px)', objectFit: 'contain' }} />
-          <span style={{ color: '#fff', fontWeight: 700, fontSize: 'clamp(14px, 2vw, 18px)', letterSpacing: 1 }}>
-            FRIENDS <span style={{ color: '#4ade80' }}>SPACE</span>
-          </span>
-        </header>
-
         <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(12px, 2vw, 16px)' }}>
           <div style={{
             width: 'min(420px, calc((100vw - 32px) / 1.35))',
