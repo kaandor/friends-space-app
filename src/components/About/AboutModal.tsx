@@ -35,7 +35,7 @@ export function AboutModal({ open, onClose }: AboutModalProps) {
           <div><Fa name="lock" size={14} style={{ width: 18 }} /> Chamadas SRTP criptografadas</div>
           <div><Fa name="hard-drive" size={14} style={{ width: 18 }} /> Midia no seu Drive (FRIENDS-SPACE)</div>
         </div>
-        <button onClick={onClose} style={{ marginTop: 20, width: '100%', padding: '10px 0', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'var(--accent, #5865f2)', color: '#fff', fontWeight: 700, fontSize: 14 }}>Fechar</button>
+        <button onClick={onClose} style={{ marginTop: 20, width: '100%', padding: '10px 0', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'var(--accent, #5865f2)', color: '#000', fontWeight: 700, fontSize: 14 }}>Fechar</button>
       </div>
     </div>
   )

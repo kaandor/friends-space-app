@@ -57,7 +57,7 @@ export function PrivacyPage() {
           </Section>
         </div>
 
-        <p style={{ marginTop: 28, fontSize: 11.5, color: '#6b7280', textAlign: 'center' }}>Friends Space Beta · {base}</p>
+        <p style={{ marginTop: 28, fontSize: 11.5, color: 'var(--text-muted)', textAlign: 'center' }}>Friends Space Beta · {base}</p>
       </div>
     </div>
   )
@@ -66,8 +66,8 @@ export function PrivacyPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section style={{ background: 'var(--bg-secondary, #16181d)', border: '1px solid var(--border, #23262b)', borderRadius: 12, padding: '16px 18px' }}>
-      <h2 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 700, color: '#fff' }}>{title}</h2>
-      <div style={{ fontSize: 13.5, lineHeight: 1.8, color: '#d1d5db' }}>{children}</div>
+      <h2 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>{title}</h2>
+      <div style={{ fontSize: 13.5, lineHeight: 1.8, color: 'var(--text-secondary)' }}>{children}</div>
     </section>
   )
 }

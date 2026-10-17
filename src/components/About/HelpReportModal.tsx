@@ -83,7 +83,7 @@ export function HelpReportModal({ open, onClose }: HelpReportModalProps) {
             </p>
             <button
               onClick={() => { reset(); onClose() }}
-              style={{ padding: '11px 24px', borderRadius: 9, background: 'var(--accent, #5865f2)', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+              style={{ padding: '11px 24px', borderRadius: 9, background: 'var(--accent, #5865f2)', border: 'none', color: '#000', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
             >
               Fechar
             </button>
@@ -140,7 +140,7 @@ export function HelpReportModal({ open, onClose }: HelpReportModalProps) {
               <button
                 onClick={() => void submit()}
                 disabled={busy}
-                style={{ padding: '10px 18px', borderRadius: 10, background: 'var(--accent, #5865f2)', border: 'none', color: '#fff', fontSize: 13.5, cursor: busy ? 'default' : 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, opacity: busy ? 0.7 : 1 }}
+                style={{ padding: '10px 18px', borderRadius: 10, background: 'var(--accent, #5865f2)', border: 'none', color: '#000', fontSize: 13.5, cursor: busy ? 'default' : 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, opacity: busy ? 0.7 : 1 }}
               >
                 {busy ? <span className="inline-spinner" /> : <Fa name="paper-plane" size={12} />}
                 Enviar relato

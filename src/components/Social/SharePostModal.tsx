@@ -94,7 +94,7 @@ export function SharePostModal({ post, authorName, currentUserId, onClose, onSha
               key={n.name}
               onClick={() => openShare(n.url)}
               title={n.name}
-              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 4px', cursor: 'pointer', color: '#fff' }}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 4px', cursor: 'pointer', color: 'var(--text-primary)' }}
             >
               <span style={{ width: 36, height: 36, borderRadius: '50%', background: n.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
                 {n.icon}

@@ -249,7 +249,7 @@ export function ProfileView({ onClose, initialTab = 'perfil' }: ProfileViewProps
                 key={t.key}
                 className={`profile-tab ${tab === t.key ? 'active' : ''}`}
                 onClick={() => setTab(t.key)}
-                style={tab === t.key ? { borderColor: accentColor, color: '#fff' } : {}}
+                style={tab === t.key ? { borderColor: accentColor } : {}}
               >
                 {t.label}
               </button>

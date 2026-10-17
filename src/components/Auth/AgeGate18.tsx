@@ -131,16 +131,16 @@ export function AgeGate18() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
               <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer', background: ageChoice === 'adult' ? 'var(--bg-active)' : 'var(--bg-tertiary)', border: ageChoice === 'adult' ? '1px solid var(--accent)' : '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
                 <input type="radio" name="age" checked={ageChoice === 'adult'} onChange={() => setAgeChoice('adult')} style={{ marginTop: 3, accentColor: GREEN }} />
-                <span style={{ color: '#d1d5db', fontSize: 13, lineHeight: 1.5 }}>
-                  <b style={{ color: '#fff' }}>Tenho 18 anos ou mais</b>
+                <span style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.5 }}>
+                  <b style={{ color: 'var(--text-primary)' }}>Tenho 18 anos ou mais</b>
                   <br />
                   Confirmo que sou maior de idade.
                 </span>
               </label>
               <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer', background: ageChoice === 'minor' ? 'var(--bg-active)' : 'var(--bg-tertiary)', border: ageChoice === 'minor' ? '1px solid var(--accent)' : '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
                 <input type="radio" name="age" checked={ageChoice === 'minor'} onChange={() => setAgeChoice('minor')} style={{ marginTop: 3, accentColor: GREEN }} />
-                <span style={{ color: '#d1d5db', fontSize: 13, lineHeight: 1.5 }}>
-                  <b style={{ color: '#fff' }}>Sou menor de 18 anos (13 a 17)</b>
+                <span style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.5 }}>
+                  <b style={{ color: 'var(--text-primary)' }}>Sou menor de 18 anos (13 a 17)</b>
                   <br />
                   Vou informar os dados do pai/mae ou responsavel E os meus dados, e o responsavel vai autorizar o uso. Conteudo com filtro de seguranca reforcado.
                 </span>
@@ -224,11 +224,11 @@ export function AgeGate18() {
             {minorSubStep === 'consent' && (
               <div style={{ marginBottom: 14 }}>
                 <div style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', marginBottom: 12 }}>
-                  <h3 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <h3 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Fa name="file-signature" size={14} style={{ color: GREEN }} />
                     Autorizacao do responsavel
                   </h3>
-                  <p style={{ margin: 0, color: '#d1d5db', fontSize: 12.5, lineHeight: 1.6 }}>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 12.5, lineHeight: 1.6 }}>
                     Eu, <b>{guardianName || 'responsavel'}</b>, pai/mae ou responsavel legal, autorizo o menor <b>{childName || 'meu filho(a)'}</b> a usar o Friends Space com os filtros de seguranca reforcados. Confirmo que os dados informados sao verdadeiros.
                   </p>
                 </div>

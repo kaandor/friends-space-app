@@ -137,7 +137,7 @@ export function DownloadAppModal({ open, onClose }: DownloadAppModalProps) {
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                   width: '100%', marginTop: 'auto', minHeight: 56, padding: '14px 18px',
-                  color: '#fff', background: 'var(--accent, #5865f2)',
+                  color: '#000', background: 'var(--accent, #5865f2)',
                   border: 'none', borderRadius: 13, cursor: 'pointer',
                   fontWeight: 700, fontSize: 'clamp(17px, 1.5vw, 22px)',
                   boxShadow: '0 5px 16px rgba(0,0,0,0.15)',
