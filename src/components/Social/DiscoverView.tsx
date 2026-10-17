@@ -57,6 +57,7 @@ export function DiscoverView({ onClose }: Props) {
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [entering, setEntering] = useState<string | null>(null)
   const [notice, setNotice] = useState('')
+  const rootRef = useRef<HTMLElement>(null)
   const tabsRef = useRef<HTMLDivElement>(null)
   const tabsDrag = useRef({ active: false, moved: false, startX: 0, scrollLeft: 0 })
 
@@ -105,6 +106,16 @@ export function DiscoverView({ onClose }: Props) {
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      if (e.button !== 0) return
+      const root = rootRef.current
+      if (root && !root.contains(e.target as Node)) onClose()
+    }
+    document.addEventListener('pointerdown', onDown)
+    return () => document.removeEventListener('pointerdown', onDown)
+  }, [onClose])
+
   const showNotice = (message: string) => {
     setNotice(message)
     window.setTimeout(() => setNotice(''), 2800)
@@ -151,7 +162,7 @@ export function DiscoverView({ onClose }: Props) {
 
   return (
     <div className="discover-modal" onClick={onClose}>
-      <main className="ping-discover" onClick={e => e.stopPropagation()}>
+      <main className="ping-discover" ref={rootRef} onClick={e => e.stopPropagation()}>
         <aside className="ping-side">
           <div className="ping-side-brand">
             <strong>Descubra</strong>
