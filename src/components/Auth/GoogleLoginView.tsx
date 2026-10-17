@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useUserStore } from '../../stores/userStore'
 import { getGoogleClientId, getGoogleClientSecret, loadGoogleIdentityScript, parseAccessTokenFromHash, getGoogleProfileFromAccessToken, buildGoogleAuthUrl } from '../../services/googleAuth'
 import { loadKnownAccounts, removeKnownAccount, type KnownAccount } from '../../services/knownAccounts'
+import { setZoomLockEnabled } from '../../utils/zoomLock'
 import { assetUrl } from '../../utils/assets'
 
 type GsiOauth2 = {
@@ -73,6 +74,12 @@ export function GoogleLoginView() {
       loadGoogleIdentityScript().catch(() => { })
     }
   }, [isElectron])
+
+  // O login roda a 100%: a trava global de zoom (125%) volta ao desmontar.
+  useEffect(() => {
+    setZoomLockEnabled(false)
+    return () => setZoomLockEnabled(true)
+  }, [])
 
   useEffect(() => {
     let alive = true

@@ -8,6 +8,7 @@ import '@fontsource/inter/800.css'
 import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { initZoomLock } from './utils/zoomLock'
 
 const host = window.location.hostname
 if (host.endsWith('.friends-space.pages.dev') && host !== 'friends-space.pages.dev') {
@@ -15,6 +16,7 @@ if (host.endsWith('.friends-space.pages.dev') && host !== 'friends-space.pages.d
     'https://friends-space.pages.dev' + window.location.pathname + window.location.search + window.location.hash
   )
 } else {
+  initZoomLock()
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <ErrorBoundary>

@@ -127,7 +127,7 @@ export function MobileDiscover() {
             </button>
           ) : (
             <button onClick={() => handleJoin(s)} disabled={joiningId === s.id}
-              style={{ padding: '8px 14px', borderRadius: 999, border: 'none', background: 'var(--accent)', color: '#04120a', fontWeight: 800, fontSize: 12, cursor: 'pointer', opacity: joiningId === s.id ? 0.5 : 1 }}>
+              style={{ padding: '8px 14px', borderRadius: 999, border: 'none', background: 'var(--accent)', color: '#000', fontWeight: 800, fontSize: 12, cursor: 'pointer', opacity: joiningId === s.id ? 0.5 : 1 }}>
               {joiningId === s.id ? '...' : 'Entrar'}
             </button>
           )}

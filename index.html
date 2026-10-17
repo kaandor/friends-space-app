@@ -104,6 +104,29 @@
         </p>
       </div>
     </noscript>
+    <script>
+      // Zoom travado em 125% antes da primeira renderizacao (sem flash).
+      // Usa CSS `zoom` com reflow: o layout preenche qualquer janela.
+      // Sem sessao (login) o zoom fica em 100%: o card do login estoura com zoom.
+      (function () {
+        try {
+          var root = document.documentElement;
+          var signedOut = false;
+          try { signedOut = localStorage.getItem('friends-space:signed-out') === '1'; } catch (e) { }
+          var hasSession = false;
+          try { hasSession = !!localStorage.getItem('friends-space:current-user-id'); } catch (e) { }
+          if (signedOut || !hasSession) return;
+          var apply = function () {
+            if (window.__fsZoomDisabled) return;
+            root.style.zoom = '125%';
+          };
+          apply();
+          window.addEventListener('resize', apply);
+          window.addEventListener('orientationchange', apply);
+          document.addEventListener('fullscreenchange', apply);
+        } catch (e) { /* noop */ }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

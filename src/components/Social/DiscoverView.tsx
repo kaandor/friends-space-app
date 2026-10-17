@@ -46,17 +46,17 @@ type Theme = {
 }
 
 const themes: Theme[] = [
-  { name: 'Política', description: 'Debates e discussões políticas.', icon: Landmark, accent: '#78f238', match: (c) => norm(c) === 'politica' },
-  { name: 'Games', description: 'Jogos, novidades e comunidades.', icon: Gamepad2, accent: '#69ed42', match: (c) => norm(c) === 'games' },
-  { name: 'Amizade', description: 'Faça amigos e converse.', icon: Users, accent: '#64df5e', match: (c) => norm(c) === 'amizade' || norm(c) === 'amizades' },
-  { name: 'Tecnologia', description: 'Tech, programação e inovação.', icon: Monitor, accent: '#72f38a', match: (c) => norm(c) === 'tecnologia' || norm(c) === 'tech' },
-  { name: 'Música', description: 'Música, artistas e playlists.', icon: Music2, accent: '#7af344', match: (c) => norm(c) === 'musica' },
-  { name: 'Educação', description: 'Estudo, aprendizado e ajuda.', icon: BookOpen, accent: '#67e979', match: (c) => norm(c) === 'educacao' || norm(c) === 'educacao' },
-  { name: 'Anime & Mangá', description: 'Anime, mangá e cultura otaku.', icon: Cat, accent: '#8af44d', match: (c) => norm(c).includes('anime') },
-  { name: 'Entretenimento', description: 'Memes, vídeos e diversão.', icon: Clapperboard, accent: '#7ee64a', match: (c) => norm(c).includes('entreten') || norm(c).includes('filme') || norm(c).includes('series') || norm(c).includes('memes') },
-  { name: 'Arte & Design', description: 'Arte, design e criatividade.', icon: PenTool, accent: '#b6f55a', match: (c) => norm(c).includes('arte') || norm(c).includes('design') },
-  { name: 'Negócios', description: 'Empreendedorismo e negócios.', icon: BriefcaseBusiness, accent: '#74ec50', match: (c) => norm(c).includes('negocio') || norm(c).includes('empreend') },
-  { name: 'Esportes', description: 'Futebol e esportes em geral.', icon: Activity, accent: '#a3f264', match: (c) => norm(c).includes('esporte') || norm(c).includes('futebol') },
+  { name: 'Política', description: 'Debates e discussões políticas.', icon: Landmark, accent: '#29A3FF', match: (c) => norm(c) === 'politica' },
+  { name: 'Games', description: 'Jogos, novidades e comunidades.', icon: Gamepad2, accent: '#29A3FF', match: (c) => norm(c) === 'games' },
+  { name: 'Amizade', description: 'Faça amigos e converse.', icon: Users, accent: '#29A3FF', match: (c) => norm(c) === 'amizade' || norm(c) === 'amizades' },
+  { name: 'Tecnologia', description: 'Tech, programação e inovação.', icon: Monitor, accent: '#29A3FF', match: (c) => norm(c) === 'tecnologia' || norm(c) === 'tech' },
+  { name: 'Música', description: 'Música, artistas e playlists.', icon: Music2, accent: '#29A3FF', match: (c) => norm(c) === 'musica' },
+  { name: 'Educação', description: 'Estudo, aprendizado e ajuda.', icon: BookOpen, accent: '#29A3FF', match: (c) => norm(c) === 'educacao' || norm(c) === 'educacao' },
+  { name: 'Anime & Mangá', description: 'Anime, mangá e cultura otaku.', icon: Cat, accent: '#29A3FF', match: (c) => norm(c).includes('anime') },
+  { name: 'Entretenimento', description: 'Memes, vídeos e diversão.', icon: Clapperboard, accent: '#29A3FF', match: (c) => norm(c).includes('entreten') || norm(c).includes('filme') || norm(c).includes('series') || norm(c).includes('memes') },
+  { name: 'Arte & Design', description: 'Arte, design e criatividade.', icon: PenTool, accent: '#29A3FF', match: (c) => norm(c).includes('arte') || norm(c).includes('design') },
+  { name: 'Negócios', description: 'Empreendedorismo e negócios.', icon: BriefcaseBusiness, accent: '#29A3FF', match: (c) => norm(c).includes('negocio') || norm(c).includes('empreend') },
+  { name: 'Esportes', description: 'Futebol e esportes em geral.', icon: Activity, accent: '#29A3FF', match: (c) => norm(c).includes('esporte') || norm(c).includes('futebol') },
   { name: 'Outros', description: 'Explore outros temas.', icon: Radio, accent: '#a1aab1', match: () => true },
 ]
 

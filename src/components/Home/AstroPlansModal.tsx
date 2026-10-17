@@ -10,12 +10,12 @@ interface AstroPlansModalProps {
   onSubscribe?: (tier: AstroTier) => Promise<void> | void
 }
 
-const GREEN = '#4ade80'
+const GREEN = '#29A3FF'
 const PURPLE = '#a855f7'
 const AMBER = '#f59e0b'
 
 const PLAN_VISUAL: Record<AstroTier, { color: string; border: string; btnClass: string }> = {
-  astro: { color: GREEN, border: '#2a4a2a', btnClass: 'fs-astro-btn-green' },
+  astro: { color: GREEN, border: '#0B3E73', btnClass: 'fs-astro-btn-green' },
   astro_plus: { color: PURPLE, border: '#3a1a6a', btnClass: 'fs-astro-btn-purple' },
   astro_ultimate: { color: AMBER, border: '#4a3a0a', btnClass: 'fs-astro-btn-amber' },
 }
@@ -124,7 +124,7 @@ function SaibaMaisModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="fs-astro-modalbody">
           <div className="fs-astro-modalitem">
-            <div className="fs-astro-modalicon" style={{ background: 'rgba(74,222,128,0.1)' }}>
+            <div className="fs-astro-modalicon" style={{ background: 'rgba(41,163,255,0.1)' }}>
               <Cloud size={15} color={GREEN} />
             </div>
             <div>
@@ -243,7 +243,7 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
           .fs-astro-herox:hover { color: #fff; }
 
           .fs-astro-btn-green { background: ${GREEN}; color: #000; }
-          .fs-astro-btn-green:hover { background: #22c55e; }
+          .fs-astro-btn-green:hover { background: #0B7FD4; }
           .fs-astro-btn-purple { background: ${PURPLE}; color: #fff; }
           .fs-astro-btn-purple:hover { background: #9333ea; }
           .fs-astro-btn-amber { background: ${AMBER}; color: #000; }
@@ -251,7 +251,7 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
 
           .fs-astro-tab { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.4); color: var(--text-secondary); white-space: nowrap; cursor: pointer; transition: all .15s; }
           .fs-astro-tab:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
-          .fs-astro-tab.fs-astro-tab-active { background: rgba(74,222,128,0.2); border-color: ${GREEN}; color: ${GREEN}; }
+          .fs-astro-tab.fs-astro-tab-active { background: rgba(41,163,255,0.2); border-color: ${GREEN}; color: ${GREEN}; }
 
           .fs-astro-body { display: flex; flex-direction: column; gap: 0; padding: 20px 28px 24px; }
           @media (min-width: 1024px) { .fs-astro-body { flex-direction: row; } }
