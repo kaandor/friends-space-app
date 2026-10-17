@@ -224,7 +224,7 @@ export function GoogleLoginView() {
       background: '#000',
     }}>
       <img
-        src={assetUrl('login-wallpaper.jpg')}
+        src={assetUrl('login-wallpaper.webp')}
         alt=""
         style={{
           position: 'absolute',
@@ -261,25 +261,25 @@ export function GoogleLoginView() {
         display: 'flex',
         alignItems: 'flex-end',
         justifyContent: 'flex-end',
-        padding: 'clamp(16px, 2.5vw, 40px)',
-        paddingBottom: 'clamp(40px, 13vh, 150px)',
+        padding: 'clamp(10px, 0.8vw, 16px)',
+        paddingBottom: 'clamp(48px, 15vh, 170px)',
         pointerEvents: 'none',
       }}>
         <main style={{
-          width: 'min(520px, 100%)',
+          width: 'min(640px, calc(100vw - 32px))',
           pointerEvents: 'auto',
           borderRadius: 16,
-          border: '1px solid rgba(130,175,255,0.22)',
-          background: 'linear-gradient(180deg, rgba(12,28,70,0.60), rgba(6,14,40,0.70))',
+          border: '1px solid rgba(130,170,255,0.32)',
+          background: 'linear-gradient(180deg, rgba(46,76,158,0.55) 0%, rgba(24,42,104,0.66) 100%)',
           backdropFilter: 'blur(22px)',
           WebkitBackdropFilter: 'blur(22px)',
-          boxShadow: '0 18px 60px rgba(0,0,0,0.45), inset 0 0 60px rgba(60,110,255,0.05)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.42), 0 0 44px rgba(70,120,255,0.16)',
           padding: 'clamp(18px, 2.2vw, 26px)',
         }}>
           <h1 style={{ margin: 0, color: '#fff', fontSize: 17, fontWeight: 700, letterSpacing: 0.2 }}>
             Escolha uma conta
           </h1>
-          <p style={{ margin: '4px 0 0', color: 'rgba(196,214,255,0.62)', fontSize: 12.5 }}>
+          <p style={{ margin: '4px 0 0', color: 'rgba(196,214,255,0.72)', fontSize: 12.5 }}>
             Selecione uma conta para entrar ou adicione uma nova.
           </p>
 
@@ -296,7 +296,7 @@ export function GoogleLoginView() {
                       color: '#fff', fontSize: 14, fontWeight: 600,
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}>{account.name}</div>
-                    <div style={{ marginTop: 1, color: 'rgba(170,196,255,0.60)', fontSize: 12 }}>Entre novamente.</div>
+                    <div style={{ marginTop: 1, color: 'rgba(170,196,255,0.68)', fontSize: 12 }}>Entre novamente.</div>
                   </div>
                   <button
                     className="fs-login-entrar"
