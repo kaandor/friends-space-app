@@ -29,9 +29,9 @@ function fmtElapsed(ms: number): string {
   return `${h > 0 ? h + ':' : ''}${mm}:${String(sec).padStart(2, '0')}`
 }
 
-// Painel de voz estilo Discord na sidebar: status grande + câmera, tela,
-// YouTube junto, sons e sair.
-export function VoicePanel() {
+// Painel de voz inspirado no Discord na sidebar: status + nome da call
+// (clicavel para voltar), camera, tela, YouTube junto, sons e sair.
+export function VoicePanel({ onReturnToCall }: { onReturnToCall?: () => void }) {
   const activeCall = useCallStore(s => s.activeCall)
   const channelId = useCallStore(s => s.channelId)
   const createdAt = useCallStore(s => s.createdAt)
@@ -66,35 +66,30 @@ export function VoicePanel() {
     if (ch) { channelName = ch.name; serverName = srv.name; break }
   }
 
-  const btn: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-    background: 'var(--bg-tertiary)', color: 'var(--text-primary)',
-    border: '1px solid var(--border)', borderRadius: 8, padding: '8px 0',
-    fontSize: 12, fontWeight: 700, cursor: 'pointer', flex: 1, minWidth: 0,
-  }
-
   return (
-    <div style={{ margin: '10px 12px 0', background: 'linear-gradient(180deg, var(--bg-secondary), var(--bg-tertiary))', border: '1px solid var(--border)', borderRadius: 10, padding: 14, boxShadow: 'var(--shadow)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0, boxShadow: '0 0 8px var(--accent)' }} />
-        <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--accent)', letterSpacing: '0.02em' }}>Voz conectada</span>
-        <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+    <div style={{ margin: '10px 12px 12px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#23a55a', flexShrink: 0 }} />
+        <span style={{ fontSize: 13.5, fontWeight: 700, color: '#23a55a', letterSpacing: '0.01em' }}>Voz conectada</span>
+        <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
           {(connectedAt || createdAt) ? fmtElapsed(now - ((connectedAt || createdAt) as number)) : '--:--'}
         </span>
       </div>
-      <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3 }}>
-        {channelName}
-      </div>
-      <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
-        {serverName}{serverName ? ' · ' : ''}{participants.length} na call
-      </div>
+      <button className="vp-name" onClick={() => { try { onReturnToCall?.() } catch { } }} title="Voltar para a call">
+        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3 }}>
+          {channelName}
+        </div>
+        <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>
+          {serverName}{serverName ? ' · ' : ''}{participants.length} na call
+        </div>
+      </button>
       <div style={{ display: 'flex', gap: 6 }}>
         <div style={{ position: 'relative', flex: 1, display: 'flex', minWidth: 0 }}>
           <button
+            className={`vp-btn${cameraOn ? ' vp-active' : ''}`}
             onClick={() => { void toggleCamera() }}
             onContextMenu={e => { e.preventDefault(); setCamOpen(v => !v); if (!camOpen) void refreshCameraDevices().catch(() => { }) }}
             title="Câmera (botão direito: escolher)"
-            style={{ ...btn, background: cameraOn ? 'var(--accent)' : btn.background, color: cameraOn ? '#04120a' : btn.color }}
           >
             <Camera size={15} /> Câmera
           </button>
@@ -120,19 +115,19 @@ export function VoicePanel() {
           )}
         </div>
         <button
+          className={`vp-btn${screenSharing ? ' vp-active' : ''}`}
           onClick={() => { void toggleScreenShare() }}
           title={screenSharing ? 'Parar tela' : 'Compartilhar tela'}
-          style={{ ...btn, background: screenSharing ? 'var(--accent)' : btn.background, color: screenSharing ? '#04120a' : btn.color }}
         >
           <MonitorUp size={15} /> Tela
         </button>
       </div>
       <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-        <button onClick={() => setYtOpen(true)} title="Assistir junto (YouTube)" style={btn}>
+        <button className="vp-btn" onClick={() => setYtOpen(true)} title="Assistir junto (YouTube)">
           <Fa name="play" size={12} /> YouTube
         </button>
         <div style={{ position: 'relative', flex: 1, display: 'flex', minWidth: 0 }}>
-          <button onClick={() => setSoundsOpen(v => !v)} title="Efeitos sonoros" style={btn}>
+          <button className="vp-btn" onClick={() => setSoundsOpen(v => !v)} title="Efeitos sonoros">
             <Music size={15} /> Sons
           </button>
           {soundsOpen && (
@@ -152,8 +147,7 @@ export function VoicePanel() {
             </>
           )}
         </div>
-        <button onClick={() => { try { endCall() } catch { } }} title="Sair da call"
-          style={{ ...btn, background: '#ed4245', borderColor: '#ed4245', color: '#fff', flex: '0 0 40px' }}>
+        <button className="vp-btn vp-danger" onClick={() => { try { endCall() } catch { } }} title="Sair da call">
           <PhoneOff size={15} />
         </button>
       </div>

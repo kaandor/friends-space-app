@@ -706,6 +706,18 @@ function App() {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark')
   }, [])
 
+  const returnToCall = useCallback(() => {
+    const targetServer = servers.find(s => s.id === callServerId)
+    const targetChannel = targetServer?.channels.find(c => c.id === callChannelId)
+    if (targetChannel) {
+      setCurrentServer(targetServer ?? null)
+      setCurrentChannel(targetChannel)
+    } else if (callChannelId === 'dm') {
+      setShowUsers(true)
+      setCurrentServer(null)
+    }
+  }, [servers, callServerId, callChannelId, setCurrentServer, setCurrentChannel])
+
   useEffect(() => {
     let cancelled = false
 
@@ -850,7 +862,7 @@ function App() {
       document.body.style.background = ""
       return
     }
-    const style = appearanceScreenStyle(appearance) as unknown as Record<string, string>
+    const style = appearanceScreenStyle(appearance, theme) as unknown as Record<string, string>
     const managedKeys = ['--appearance-accent', '--appearance-accent-strong', '--appearance-accent-soft', '--appearance-glow', '--appearance-page-bg', '--appearance-page-image', '--appearance-font', '--appearance-text', '--accent', '--accent-hover', '--accent-dim', '--connection-dot', '--text-primary', '--text-secondary', '--text-muted', '--bg-primary', '--bg-secondary', '--bg-tertiary', '--bg-hover', '--bg-active', '--border', '--border-light', '--sans']
     for (const key of managedKeys) {
       if (key in style) root.style.setProperty(key, String(style[key]))
@@ -874,7 +886,7 @@ function App() {
       const latestAppearance = latest?.settings ? parseAppearance(latest.settings as Record<string, unknown>) : null
       if (!latestAppearance) body.style.background = ""
     }
-  }, [currentUser, restoredUser])
+  }, [currentUser, restoredUser, theme])
 
   // Deteccao automatica de idioma por IP: sem preferencia salva, usuarios fora
   // do Brasil comecam em ingles (backend Vercel injeta x-vercel-ip-country).
@@ -1361,7 +1373,7 @@ function App() {
   const siteAppearance = activeUser?.settings ? clampAppearanceToPlan(parseAppearance(activeUser.settings as Record<string, unknown>), planFromUser(activeUser)) : null
 
   return (
-    <div {...(siteAppearance ? appearanceDataAttrs(siteAppearance) : {})} style={siteAppearance ? { ...appearanceScreenStyle(siteAppearance), width: '100%', height: '100%', display: 'flex', flexDirection: 'column' } : { width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div {...(siteAppearance ? appearanceDataAttrs(siteAppearance) : {})} style={siteAppearance ? { ...appearanceScreenStyle(siteAppearance, theme), width: '100%', height: '100%', display: 'flex', flexDirection: 'column' } : { width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <DesktopChrome />
       {(incomingCall && !useCallStore.getState().activeCall) && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)' }}>
@@ -1538,7 +1550,7 @@ function App() {
           </div>
         </div>
       )}
-      {callActive && !(currentChannel && currentChannel.type === 'voice' && currentChannel.id === callChannelId) && (
+      {isMobile && callActive && !(currentChannel && currentChannel.type === 'voice' && currentChannel.id === callChannelId) && (
         <div style={{
           position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 2500,
           display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px',
@@ -1752,13 +1764,13 @@ function App() {
             />)}
             <div className="fs-content-row" style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
             {currentServer ? (
-              <ChannelSidebar server={currentServer} onOpenSettings={openEditServer} />
+              <ChannelSidebar server={currentServer} onOpenSettings={openEditServer} onReturnToCall={returnToCall} />
             ) : showUsers ? (
               <UsersView />
             ) : isMobile ? (
               <FeedView onDriveRequired={() => setDriveGateOpen(true)} />
             ) : (
-              <FriendsView />
+              <FriendsView onReturnToCall={returnToCall} />
             )}
 
             {currentChannel && currentChannel.type === 'text' && (

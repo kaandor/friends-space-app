@@ -18,9 +18,10 @@ interface ChannelSidebarProps {
   server: Server
   onOpenSettings: () => void
   onChannelSelect?: () => void
+  onReturnToCall?: () => void
 }
 
-export function ChannelSidebar({ server, onOpenSettings, onChannelSelect }: ChannelSidebarProps) {
+export function ChannelSidebar({ server, onOpenSettings, onChannelSelect, onReturnToCall }: ChannelSidebarProps) {
   const { currentChannel, setCurrentChannel, addChannel, renameChannel, deleteChannel, addCategory, renameCategory, deleteCategory, updateServer } = useServerStore()
   const { currentUser, users: allUsers } = useUserStore()
   const [channelSessions, setChannelSessions] = useState<CallSession[]>([])
@@ -395,7 +396,7 @@ export function ChannelSidebar({ server, onOpenSettings, onChannelSelect }: Chan
         {uncategorizedVoice.map(renderChannelRow)}
       </div>
 
-      <VoicePanel />
+      <VoicePanel onReturnToCall={onReturnToCall} />
       <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', gap: 8 }}>
         <Avatar src={currentUser?.photoUrl || ''} name={currentUser?.name || ''} size={32} />
         <div style={{ flex: 1, minWidth: 0 }}>

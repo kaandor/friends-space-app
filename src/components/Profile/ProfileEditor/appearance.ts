@@ -125,11 +125,14 @@ export function appearanceStyle(appearance: AppearanceSettings): CSSProperties {
   } as CSSProperties;
 }
 
-export function appearanceScreenStyle(appearance: AppearanceSettings): CSSProperties {
+export function appearanceScreenStyle(appearance: AppearanceSettings, theme?: "dark" | "light"): CSSProperties {
   const vars = appearanceStyle(appearance) as unknown as Record<string, string>;
+  const followTheme = theme === "light";
   const themeDefault = appearance.theme === "default";
   const bgDefault = appearance.bg === "default";
-  const textFollowsTheme = bgDefault && appearance.textColor === "default";
+  const pinAccent = !(followTheme && themeDefault);
+  const pinBg = !(followTheme && bgDefault);
+  const pinText = !(followTheme && bgDefault && appearance.textColor === "default");
   const hasImage = (APPEARANCE_BACKGROUNDS[appearance.bg] ?? APPEARANCE_BACKGROUNDS.default).image !== "none";
   const page = "var(--appearance-page-bg)";
   const style: Record<string, string> = {
@@ -140,13 +143,13 @@ export function appearanceScreenStyle(appearance: AppearanceSettings): CSSProper
     "--appearance-font": vars["--appearance-font"],
     "--sans": "var(--appearance-font)",
   };
-  if (!themeDefault) {
+  if (pinAccent) {
     style["--accent"] = "var(--appearance-accent)";
     style["--accent-hover"] = "color-mix(in srgb, var(--appearance-accent) 82%, transparent)";
     style["--accent-dim"] = "var(--appearance-accent-soft)";
     style["--connection-dot"] = "var(--appearance-accent)";
   }
-  if (!bgDefault) {
+  if (pinBg) {
     style["--appearance-page-bg"] = vars["--appearance-page-bg"];
     style["--appearance-page-image"] = vars["--appearance-page-image"];
     style["--bg-primary"] = hasImage ? `color-mix(in srgb, ${page} 88%, transparent)` : `var(--appearance-page-bg)`;
@@ -157,7 +160,7 @@ export function appearanceScreenStyle(appearance: AppearanceSettings): CSSProper
     style["--border"] = "color-mix(in srgb, var(--appearance-accent) 8%, transparent)";
     style["--border-light"] = "color-mix(in srgb, var(--appearance-accent) 13%, transparent)";
   }
-  if (!textFollowsTheme) {
+  if (pinText) {
     style["--appearance-text"] = vars["--appearance-text"];
     style["--text-primary"] = "var(--appearance-text)";
     style["--text-secondary"] = "color-mix(in srgb, var(--appearance-text) 82%, transparent)";

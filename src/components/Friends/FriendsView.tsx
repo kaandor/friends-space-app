@@ -24,6 +24,7 @@ import { AstroPlansModal } from '../Home/AstroPlansModal'
 import { StoriesBar } from '../Social/StoriesBar'
 import { FeedView } from '../Social/FeedView'
 import { AstroGiftModal } from '../Home/AstroGiftModal'
+import { VoicePanel } from '../Call/VoicePanel'
 import { useUserMenuStore } from '../../stores/userMenuStore'
 import type { User } from '../../types'
 
@@ -33,7 +34,7 @@ function normalizeSearchValue(value: string) {
 
   type FriendsTab = 'todas' | 'naonline'
 
-export function FriendsView() {
+export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void }) {
   const { currentUser } = useUserStore()
   const { friendUsers, friends, directMessages, currentDMUser,
     loadFriends, addFriendById,
@@ -457,6 +458,7 @@ export function FriendsView() {
             )
           )}
         </div>
+        <VoicePanel onReturnToCall={onReturnToCall} />
       </div>
 
       <div style={{ flex: 1, display: isMobile && !currentDMUser ? 'none' : 'flex', flexDirection: isMobile ? 'column' : 'row', background: 'var(--bg-primary)', minWidth: 0, minHeight: 0, height: isMobile ? '100%' : undefined }}>
