@@ -4,12 +4,9 @@
 // e notificações. Salva via updateUser (settings) do usuário logado.
 import { useState } from 'react'
 import {
-  Bell,
   CalendarDays,
   Check,
   Eye,
-  Gamepad2,
-  Image,
   LockKeyhole,
   Mail,
   Shield,
@@ -31,13 +28,6 @@ type PrivacyToggleKey =
   | 'publicProfile'
   | 'showBadges'
   | 'showJoinDate'
-  | 'notifFriendAlerts'
-  | 'notifDm'
-  | 'notifServerMessages'
-  | 'notifServerEvents'
-  | 'notifCallAlerts'
-  | 'notifCallInvites'
-  | 'notifAstro'
 
 type ToggleItem = {
   key: PrivacyToggleKey
@@ -51,16 +41,6 @@ const PROFILE_TOGGLES: ToggleItem[] = [
   { key: 'publicProfile', icon: Eye, title: 'Perfil público', description: 'Qualquer pessoa pode ver seu perfil público.' },
   { key: 'showBadges', icon: UsersRound, title: 'Mostrar insígnias', description: 'Exibe suas insígnias no seu perfil.' },
   { key: 'showJoinDate', icon: CalendarDays, title: 'Mostrar data de entrada', description: 'Mostra quando você entrou no Friends Space.' },
-]
-
-const NOTIFICATION_TOGGLES: ToggleItem[] = [
-  { key: 'notifFriendAlerts', icon: UserRound, title: 'Avisos de amigos (online, status)', description: 'Receba avisos quando amigos ficarem online ou mudarem de status.' },
-  { key: 'notifDm', icon: Mail, title: 'Mensagens diretas', description: 'Notificações de novas mensagens diretas.' },
-  { key: 'notifServerMessages', icon: Bell, title: 'Mensagens em servidores', description: 'Notificações de mensagens nos servidores.' },
-  { key: 'notifServerEvents', icon: Bell, title: 'Eventos de servidores', description: 'Notificações de eventos dos servidores.' },
-  { key: 'notifCallAlerts', icon: Gamepad2, title: 'Atividade em calls (entrou/saiu, tela)', description: 'Avisos de atividade em chamadas de voz/vídeo.' },
-  { key: 'notifCallInvites', icon: Bell, title: 'Convites para calls', description: 'Notificações de convites para chamadas.' },
-  { key: 'notifAstro', icon: Image, title: 'Novidades do ASTRO', description: 'Atualizações e novidades do plano ASTRO.' },
 ]
 
 interface PrivacySettingsProps {
@@ -78,13 +58,6 @@ export function PrivacySettings({ userSettings, onSaveAll }: PrivacySettingsProp
     publicProfile: boolSetting('publicProfile', true),
     showBadges: boolSetting('showBadges', true),
     showJoinDate: boolSetting('showJoinDate', true),
-    notifFriendAlerts: boolSetting('notifFriendAlerts', true),
-    notifDm: boolSetting('notifDm', true),
-    notifServerMessages: boolSetting('notifServerMessages', true),
-    notifServerEvents: boolSetting('notifServerEvents', true),
-    notifCallAlerts: boolSetting('notifCallAlerts', true),
-    notifCallInvites: boolSetting('notifCallInvites', true),
-    notifAstro: boolSetting('notifAstro', true),
   })
   const [saved, setSaved] = useState(false)
 
@@ -166,16 +139,11 @@ export function PrivacySettings({ userSettings, onSaveAll }: PrivacySettingsProp
 
       <section className="fs-privacy-card" aria-labelledby="fs-privacy-notifications-title">
         <div className="fs-privacy-section-heading">
-          <div className="fs-privacy-section-icon" aria-hidden="true"><Bell size={17} /></div>
+          <div className="fs-privacy-section-icon" aria-hidden="true"><Shield size={17} /></div>
           <div>
             <h2 id="fs-privacy-notifications-title">Notificações</h2>
-            <p>Escolha quais notificações você quer receber.</p>
+            <p>Os avisos de notificação agora ficam em Configurações → Notificações.</p>
           </div>
-        </div>
-        <div className="fs-privacy-toggle-list">
-          {NOTIFICATION_TOGGLES.map((item) => (
-            <PrivacyToggle key={item.key} item={item} enabled={toggles[item.key]} onToggle={togglePrivacy} />
-          ))}
         </div>
       </section>
 

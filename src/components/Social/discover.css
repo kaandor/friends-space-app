@@ -495,10 +495,33 @@
 .ping-server-stats {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--ping-muted);
   font-size: 11.5px;
   font-weight: 700;
+  margin-top: 2px;
+}
+
+.ping-stats-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 999px;
+  background: rgba(35, 165, 90, 0.12);
+  border: 1px solid rgba(35, 165, 90, 0.28);
+  color: #4ade80;
+}
+
+.ping-stats-online b {
+  font-weight: 800;
+  color: #6ee7a0;
+}
+
+.ping-stats-members {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .ping-online-dot {
@@ -508,6 +531,12 @@
   background: #23a55a;
   box-shadow: 0 0 7px rgba(35, 165, 90, 0.8);
   flex-shrink: 0;
+  animation: ping-online-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes ping-online-pulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(35, 165, 90, 0.7); }
+  50% { box-shadow: 0 0 12px rgba(35, 165, 90, 1); }
 }
 
 .ping-server-skeleton {

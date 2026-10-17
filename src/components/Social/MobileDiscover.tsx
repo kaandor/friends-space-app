@@ -11,6 +11,7 @@ interface Found {
   name: string
   photoUrl: string
   members: number
+  onlineCount?: number
   inviteCode: string
   verified: boolean
   member: boolean
@@ -62,7 +63,7 @@ export function MobileDiscover() {
       .sort((a, b) => ((b.members || []).length) - ((a.members || []).length))
       .map(s => ({
         id: s.id, name: s.name, photoUrl: s.photoUrl || '',
-        members: (s.members || []).length, inviteCode: s.inviteCode || '',
+        members: (s.members || []).length, onlineCount: s.onlineCount, inviteCode: s.inviteCode || '',
         verified: Boolean(s.verified),
         member: useServerStore.getState().servers.some(x => x.id === s.id),
       }))
@@ -118,7 +119,15 @@ export function MobileDiscover() {
             <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {s.name} {s.verified && <Fa name="badge-check" size={12} style={{ color: 'var(--text-primary)' }} />}
             </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.members} membro{s.members === 1 ? '' : 's'}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-muted)' }}>
+              {typeof s.onlineCount === 'number' && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#4ade80', fontWeight: 700 }}>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#23a55a', boxShadow: '0 0 6px rgba(35,165,90,.9)', flexShrink: 0 }} />
+                  {s.onlineCount} online
+                </span>
+              )}
+              <span>{s.members} membro{s.members === 1 ? '' : 's'}</span>
+            </div>
           </div>
           {s.member ? (
             <button onClick={() => { const full = useServerStore.getState().servers.find(x => x.id === s.id); if (full) setCurrentServer(full) }}

@@ -35,9 +35,11 @@ interface TopBarProps {
   onCreateServer: () => void
   onJoinServer: () => void
   backendOnline: boolean
+  // 'desktop' esconde a engrenagem e o chip de usuario (o UserDock assume)
+  variant?: 'desktop' | 'mobile'
 }
 
-export function TopBar({ activeUser, onShowPrivacy, onShowEditProfile, onShowAstro, onSignOut, onMenuClick, menuIcon = 'menu', onShowAbout, onShowHelp, onToast, servers, currentServer, onSelectServer, onShowUsers, onCreateServer, onJoinServer, backendOnline }: TopBarProps) {
+export function TopBar({ activeUser, onShowPrivacy, onShowEditProfile, onShowAstro, onSignOut, onMenuClick, menuIcon = 'menu', onShowAbout, onShowHelp, onToast, servers, currentServer, onSelectServer, onShowUsers, onCreateServer, onJoinServer, backendOnline, variant = 'mobile' }: TopBarProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showSettingsMenu, setShowSettingsMenu] = useState(false)
   const [showServerMenu, setShowServerMenu] = useState(false)
@@ -163,7 +165,13 @@ export function TopBar({ activeUser, onShowPrivacy, onShowEditProfile, onShowAst
           <button
             className="fs-icon-btn"
             title="Notificacoes"
-            onClick={() => { setShowNotifications(!showNotifications); setShowSettingsMenu(false); setShowProfileMenu(false); setShowServerMenu(false) }}
+            onClick={() => {
+              if (variant === 'desktop') {
+                try { window.dispatchEvent(new Event('friends-space:open-inbox')) } catch { }
+                return
+              }
+              setShowNotifications(!showNotifications); setShowSettingsMenu(false); setShowProfileMenu(false); setShowServerMenu(false)
+            }}
           >
             <IconNotification width={16} height={16} />
             {(pendingRequests.length + unread) > 0 && (
@@ -176,7 +184,7 @@ export function TopBar({ activeUser, onShowPrivacy, onShowEditProfile, onShowAst
               </span>
             )}
           </button>
-          {showNotifications && (
+          {variant !== 'desktop' && showNotifications && (
             <>
               <div className="fs-topbar-overlay" onClick={closeMenus} />
               <div className="fs-dropdown" style={{ minWidth: 320, maxHeight: 420, overflowY: 'auto' }}>
@@ -251,6 +259,7 @@ export function TopBar({ activeUser, onShowPrivacy, onShowEditProfile, onShowAst
           )}
         </div>
 
+        {variant !== 'desktop' && (<>
         <button
           className="fs-icon-btn"
           title="Configuracoes"
@@ -374,9 +383,12 @@ export function TopBar({ activeUser, onShowPrivacy, onShowEditProfile, onShowAst
             </div>
           </>
         )}
+        </>)}
       </div>
-      <AdminPanel open={showAdminPanel} onClose={() => setShowAdminPanel(false)} initialTab={adminTab} />
-      {showHistory && <UserHistoryModal onClose={() => setShowHistory(false)} />}
+      {variant !== 'desktop' && (<>
+        <AdminPanel open={showAdminPanel} onClose={() => setShowAdminPanel(false)} initialTab={adminTab} />
+        {showHistory && <UserHistoryModal onClose={() => setShowHistory(false)} />}
+      </>)}
     </div>
   )
 }

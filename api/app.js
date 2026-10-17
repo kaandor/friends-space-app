@@ -584,6 +584,22 @@ const applyPresence = (store, presence) => {
   return store
 }
 
+// Contagem de membros online por servidor para o Descubra. Usa o mesmo
+// criterio do cliente (heartbeat recente = lastSeenAt fresco) e ignora contas
+// com status invisivel.
+const ONLINE_WINDOW_MS = 45000
+const onlineCountOf = (store, members) => {
+  if (!Array.isArray(members) || members.length === 0) return 0
+  const ids = new Set(members)
+  let count = 0
+  for (const u of getAllUsers(store)) {
+    if (!u || !u.id || !ids.has(u.id)) continue
+    if (u.settings && u.settings.status === 'invisible') continue
+    if (u.lastSeenAt && Date.now() - u.lastSeenAt < ONLINE_WINDOW_MS) count++
+  }
+  return count
+}
+
 let presenceLoadedAt = 0
 const ensurePresence = async () => {
   // Cache de 10s: antes era carregado UMA vez por instância quente e ficava
@@ -1173,6 +1189,7 @@ const userSettingsOf = (store, userId) => {
 // Chave de configuracao (privacidade) que liga/desliga cada tipo de aviso.
 const NOTIF_SETTING_BY_TYPE = {
   dm: 'notifDm',
+  mention: 'notifMentions',
   'server-message': 'notifServerMessages',
   'server-event': 'notifServerEvents',
   'call-invite': 'notifCallInvites',
@@ -1192,6 +1209,19 @@ const NOTIF_SETTING_BY_TYPE = {
 const notifEnabled = (store, userId, key, fallback = true) => {
   const value = userSettingsOf(store, userId)[key]
   return value === undefined ? fallback : Boolean(value)
+}
+
+// Deteccao simples de mencao: "@codigo" ou "@nome" (case-insensitive).
+const userMentionedIn = (store, userId, content) => {
+  const text = String(content || '')
+  if (!text || !text.includes('@')) return false
+  const user = getAllUsers(store).find((u) => u && u.id === userId)
+  if (!user) return false
+  const lower = text.toLowerCase()
+  return [user.friendCode, user.name]
+    .filter(Boolean)
+    .map((s) => String(s).toLowerCase())
+    .some((candidate) => candidate && lower.includes('@' + candidate))
 }
 
 const addNotification = (store, n) => {
@@ -1625,7 +1655,7 @@ const actions = {
       users: getAllUsers(store).map(pubUser),
       servers: getAllServers(store).map((s) => {
         if (!s) return s
-        const base = { ...s, inviteCode: undefined, callPassword: undefined, auditLog: undefined }
+        const base = { ...s, inviteCode: undefined, callPassword: undefined, auditLog: undefined, onlineCount: onlineCountOf(store, s.members) }
         if (base.settings) {
           const st = { ...base.settings }
           delete st.bots
@@ -2600,6 +2630,19 @@ const actions = {
       for (const memberId of (server.members || [])) {
         if (memberId === message.userId) continue
         bumpUnread(store, memberId, message.channelId)
+        if (userMentionedIn(store, memberId, message.content)) {
+          addNotification(store, {
+            toUserId: memberId,
+            fromUserId: message.userId,
+            fromName: message.userName || 'Usuario',
+            fromPhoto: message.userPhoto || '',
+            type: 'mention',
+            title: `${message.userName || 'Usuario'} te mencionou em #${channel.name}`,
+            body: preview,
+            data: { serverId: server.id, channelId: message.channelId, mention: true },
+          })
+          continue
+        }
         addNotification(store, {
           toUserId: memberId,
           fromUserId: message.userId,
@@ -3124,15 +3167,16 @@ const actions = {
       const preview = String(message.content || '').slice(0, 80)
         || (message.attachmentName ? `[${message.attachmentName}]` : '')
         || (message.type === 'audio' ? '[audio]' : '')
+      const mentioned = userMentionedIn(store, message.toId, message.content)
       addNotification(store, {
         toUserId: message.toId,
         fromUserId: message.fromId,
         fromName: sender.name,
         fromPhoto: sender.photoUrl || '',
-        type: 'dm',
-        title: `${sender.name} mandou`,
+        type: mentioned ? 'mention' : 'dm',
+        title: mentioned ? `${sender.name} te mencionou` : `${sender.name} mandou`,
         body: preview,
-        data: { toId: message.toId, fromId: message.fromId },
+        data: { toId: message.toId, fromId: message.fromId, mention: mentioned },
       })
     }
     return { message }
@@ -4080,7 +4124,7 @@ const actions = {
       .filter((s) => s && s.verified)
       .sort((a, b) => ((b.members || []).length) - ((a.members || []).length))
       .slice(0, 6)
-      .map((s) => ({ id: s.id, name: s.name, photoUrl: s.photoUrl || '', members: (s.members || []).length, inviteCode: s.inviteCode || '', verified: Boolean(s.verified), member: mine.has(s.id) || s.ownerId === userId, category: String(s.category || (s.settings && s.settings.category) || '').slice(0, 40) }))
+      .map((s) => ({ id: s.id, name: s.name, photoUrl: s.photoUrl || '', members: (s.members || []).length, onlineCount: onlineCountOf(store, s.members), inviteCode: s.inviteCode || '', verified: Boolean(s.verified), member: mine.has(s.id) || s.ownerId === userId, category: String(s.category || (s.settings && s.settings.category) || '').slice(0, 40) }))
     return { ok: true, servers: list }
   },
   searchPeople: async (store, data, body) => {
@@ -4099,7 +4143,7 @@ const actions = {
     const mine = new Set(memberServerIdsOf(store, userId))
     const catOf = (s) => String(s.category || (s.settings && s.settings.category) || '')
     const tagsOf = (s) => (Array.isArray(s.tags) ? s.tags : (s.settings && Array.isArray(s.settings.tags) ? s.settings.tags : [])).map((x) => String(x))
-    const toCard = (s) => ({ id: s.id, name: s.name, photoUrl: s.photoUrl || '', members: (s.members || []).length, inviteCode: s.inviteCode || '', verified: Boolean(s.verified), member: mine.has(s.id) || s.ownerId === userId, category: catOf(s).slice(0, 40), tags: tagsOf(s).slice(0, 5), description: String(s.description || '').slice(0, 160) })
+    const toCard = (s) => ({ id: s.id, name: s.name, photoUrl: s.photoUrl || '', members: (s.members || []).length, onlineCount: onlineCountOf(store, s.members), inviteCode: s.inviteCode || '', verified: Boolean(s.verified), member: mine.has(s.id) || s.ownerId === userId, category: catOf(s).slice(0, 40), tags: tagsOf(s).slice(0, 5), description: String(s.description || '').slice(0, 160) })
     // Sem busca: top públicos (aba Servidores nunca abre vazia).
     if (!userId) return { ok: true, servers: [] }
     if (q.length < 2) {

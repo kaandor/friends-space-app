@@ -370,17 +370,23 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background:
+    radial-gradient(440px 280px at 50% -60px, color-mix(in srgb, var(--accent) 16%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 45%, transparent), transparent 240px);
 }
 
 .ape-card {
   position: relative;
   border-radius: 16px;
+  box-shadow:
+    0 22px 48px -20px rgba(0, 0, 0, 0.7),
+    0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .ape-card-inner {
   position: relative;
   border-radius: 14px;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
   background: var(--bg-secondary);
   overflow: hidden;
 }

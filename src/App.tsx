@@ -14,6 +14,8 @@ import { toImageUrl } from './services/driveService'
 import { enablePushNotifications, pushEnabledLocally } from './services/pushService'
 import { ChannelSidebar } from './components/Layout/ChannelSidebar'
 import { TopBar } from './components/Layout/TopBar'
+import { UserDock } from './components/Layout/UserDock'
+import { InboxModal } from './components/Home/InboxModal'
 import { ChatView } from './components/Chat/ChatView'
 import { CallView } from './components/Call/CallView'
 import { CallAudioLayer } from './components/Call/CallAudioLayer'
@@ -374,6 +376,7 @@ function App() {
   const [welcomePlatform, setWelcomePlatform] = useState<'site' | 'desktop'>('site')
   const [showHelpReport, setShowHelpReport] = useState(false)
   const [showDownloadApp, setShowDownloadApp] = useState(false)
+  const [showInbox, setShowInbox] = useState(false)
   const [showPrivacy, setShowPrivacy] = useState(false)
   const [showRecovery, setShowRecovery] = useState(false)
   const [deepPostId, setDeepPostId] = useState<string | null>(null)
@@ -1269,6 +1272,46 @@ function App() {
     setRestoredUser(null)
   }
 
+  // Acoes do UserDock (pill do usuario) — eventos globais para nao acoplar
+  // o dock ao estado gigante do App.
+  useEffect(() => {
+    const onOpenProfile = (e: Event) => {
+      const tab = (e as CustomEvent<string>).detail
+      if (tab === 'astro') { setShowAstro(true); return }
+      setProfileTab((tab as ProfileTab) || 'perfil')
+      setShowProfile(true)
+    }
+    const onOpenAstro = () => setShowAstro(true)
+    const onOpenPrivacy = () => setShowPrivacy(true)
+    const onOpenHelp = () => setShowHelpReport(true)
+    const onOpenAbout = () => setShowAbout(true)
+    const onSignOut = () => { void handleSignOut() }
+    const onSetTheme = (e: Event) => {
+      const value = (e as CustomEvent<string>).detail
+      if (value === 'dark' || value === 'light') setTheme(value)
+    }
+    const onOpenInbox = () => setShowInbox(true)
+    window.addEventListener('friends-space:open-profile', onOpenProfile)
+    window.addEventListener('friends-space:open-astro', onOpenAstro)
+    window.addEventListener('friends-space:open-privacy', onOpenPrivacy)
+    window.addEventListener('friends-space:open-help', onOpenHelp)
+    window.addEventListener('friends-space:open-about', onOpenAbout)
+    window.addEventListener('friends-space:sign-out', onSignOut)
+    window.addEventListener('friends-space:set-theme', onSetTheme)
+    window.addEventListener('friends-space:open-inbox', onOpenInbox)
+    return () => {
+      window.removeEventListener('friends-space:open-profile', onOpenProfile)
+      window.removeEventListener('friends-space:open-astro', onOpenAstro)
+      window.removeEventListener('friends-space:open-privacy', onOpenPrivacy)
+      window.removeEventListener('friends-space:open-help', onOpenHelp)
+      window.removeEventListener('friends-space:open-about', onOpenAbout)
+      window.removeEventListener('friends-space:sign-out', onSignOut)
+      window.removeEventListener('friends-space:set-theme', onSetTheme)
+      window.removeEventListener('friends-space:open-inbox', onOpenInbox)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const handleLeaveServer = async () => {
     const actor = currentUser || restoredUser
     const target = serverMenu?.server
@@ -1750,6 +1793,7 @@ function App() {
               }}
               onJoinServer={() => setShowJoinServer(true)}
               backendOnline={backendOnline}
+              variant="desktop"
             />)}
             <div className="fs-content-row" style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
             {currentServer ? (
@@ -1786,6 +1830,9 @@ function App() {
             )}
             </div>
             </div>
+            {!controllingCall && (!currentServer || showDiscover) && !showProfile && !showPrivacy && !showEditProfile && !showAstro && !showAstroPlans && !showAbout && !showHelpReport && !showDownloadApp && (
+              <UserDock floating aboveDiscover={showDiscover} />
+            )}
             </>
           )}
           </div>
@@ -1798,6 +1845,7 @@ function App() {
           {showEditProfile && <EditProfile onClose={() => setShowEditProfile(false)} />}
 
           {showAstroPlans && <AstroPlansModal onClose={() => setShowAstroPlans(false)} />}
+          {showInbox && <InboxModal onClose={() => setShowInbox(false)} />}
 
           <SettingsModal />
 

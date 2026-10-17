@@ -56,6 +56,7 @@ function allowed(type: string): boolean {
   const s = (me.settings || {}) as Record<string, unknown>
   const map: Record<string, string> = {
     'dm': 'notifDm',
+    'mention': 'notifMentions',
     'server-message': 'notifServerMessages',
     'server-event': 'notifServerEvents',
     'call-join': 'notifCallAlerts',

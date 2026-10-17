@@ -156,6 +156,7 @@ export interface Server {
   categories?: ServerCategory[]
   events?: ServerEvent[]
   verified?: boolean
+  onlineCount?: number
   partner?: string
   settings?: ServerSettings
   auditLog?: ServerAuditEntry[]

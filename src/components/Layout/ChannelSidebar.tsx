@@ -3,7 +3,7 @@ import type { Server, Channel, ServerCategory, CallSession } from '../../types'
 import { Hash, Volume2, Headphones, Megaphone, CalendarDays, ChevronRight, ChevronDown, Pen, Folder, Trash2 } from 'lucide-react'
 import { Avatar } from '../ui/Avatar'
 import { VoicePanel } from '../Call/VoicePanel'
-import { IconAdd, IconSettings, IconMic, IconMute, IconHeadphone, IconDeafen, IconHome } from '../../utils/icons'
+import { IconAdd, IconSettings, IconHome } from '../../utils/icons'
 import { useServerStore } from '../../stores/serverStore'
 import { useUserStore } from '../../stores/userStore'
 import { useCallStore } from '../../stores/callStore'
@@ -13,6 +13,7 @@ import { canManageServer } from '../../config/permissions'
 import { EventsModal } from '../Servers/EventsModal'
 import { ServerPostModal } from '../Social/ServerPostModal'
 import { CreateChannelModal, CreateCategoryModal, RenameCategoryModal, RenameChannelModal } from '../Servers/CreateChannelModal'
+import { UserDock } from './UserDock'
 
 interface ChannelSidebarProps {
   server: Server
@@ -37,7 +38,7 @@ export function ChannelSidebar({ server, onOpenSettings, onChannelSelect, onRetu
     return () => { alive = false; window.clearInterval(t) }
   }, [server.id])
   const { open: openUserMenu } = useUserMenuStore()
-  const { muted, deafened, activeCall, channelId: activeChannelId, participants, createdAt, screenSharing, speakingUsers, toggleMute, toggleDeafen } = useCallStore()
+  const { muted, deafened, activeCall, channelId: activeChannelId, participants, createdAt, screenSharing, speakingUsers } = useCallStore()
   const [channelModal, setChannelModal] = useState<{ open: boolean; type: 'text' | 'voice'; categoryId: string }>({ open: false, type: 'text', categoryId: '' })
   const [channelMenu, setChannelMenu] = useState<{ channel: Channel; x: number; y: number } | null>(null)
   const [moveMenuOpen, setMoveMenuOpen] = useState(false)
@@ -397,20 +398,7 @@ export function ChannelSidebar({ server, onOpenSettings, onChannelSelect, onRetu
       </div>
 
       <VoicePanel onReturnToCall={onReturnToCall} />
-      <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Avatar src={currentUser?.photoUrl || ''} name={currentUser?.name || ''} size={32} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentUser?.name || 'Usuario'}</div>
-        </div>
-        <div style={{ display: 'flex', gap: 2 }}>
-          <button onClick={toggleMute} style={{ width: 32, height: 32, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer' }} title={muted ? 'Ativar microfone' : 'Desativar microfone'}>
-            {muted ? <IconMute width={18} height={18} style={{ color: 'var(--danger)' }} /> : <IconMic width={18} height={18} />}
-          </button>
-          <button onClick={toggleDeafen} style={{ width: 32, height: 32, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer' }} title={deafened ? 'Ativar som' : 'Desativar som'}>
-            {deafened ? <IconDeafen width={18} height={18} style={{ color: 'var(--danger)' }} /> : <IconHeadphone width={18} height={18} />}
-          </button>
-        </div>
-      </div>
+      <UserDock />
 
       {channelMenu && (
         <>

@@ -260,7 +260,8 @@ export async function acquireCallMedia(mode: CallMode, quality: CallQuality, dev
   let lastError: unknown = null
   for (const attempt of attempts) {
     try {
-      return await navigator.mediaDevices.getUserMedia({ audio: attempt.audio, video })
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: attempt.audio, video })
+      return applyInputVolume(stream)
     } catch (err) {
       lastError = err
       const e = err as DOMException
@@ -271,8 +272,61 @@ export async function acquireCallMedia(mode: CallMode, quality: CallQuality, dev
   throw lastError
 }
 
+// ── Volume de entrada (ganho do microfone) ─────────────────────────────────
+// Preferencia local ('friends-space:vol-in', 0-200). Quando != 100 monta um
+// grafo WebAudio leve na captura; o slider do painel muda o ganho ao vivo.
+const INPUT_VOLUME_KEY = 'friends-space:vol-in'
+
+export function inputVolumePref(): number {
+  try {
+    const v = Number(localStorage.getItem(INPUT_VOLUME_KEY) || '100')
+    return Number.isFinite(v) ? Math.min(200, Math.max(0, v)) : 100
+  } catch {
+    return 100
+  }
+}
+
+let inputGain: { ctx: AudioContext; gain: GainNode; sourceStream: MediaStream; output: MediaStream } | null = null
+
+function closeInputGain(): void {
+  const g = inputGain
+  inputGain = null
+  if (!g) return
+  try { void g.ctx.close().catch(() => { }) } catch { }
+}
+
+export function applyInputVolume(stream: MediaStream, volume = inputVolumePref()): MediaStream {
+  closeInputGain()
+  try {
+    const audioTracks = stream.getAudioTracks()
+    if (audioTracks.length === 0 || volume === 100) return stream
+    const ctx = new AudioContext()
+    const source = ctx.createMediaStreamSource(new MediaStream(audioTracks))
+    const gain = ctx.createGain()
+    gain.gain.value = Math.min(2, Math.max(0, volume / 100))
+    const dest = ctx.createMediaStreamDestination()
+    source.connect(gain)
+    gain.connect(dest)
+    const output = new MediaStream([...dest.stream.getAudioTracks(), ...stream.getVideoTracks()])
+    inputGain = { ctx, gain, sourceStream: stream, output }
+    return output
+  } catch {
+    return stream
+  }
+}
+
+export function setInputVolume(volume: number): void {
+  const v = Math.min(2, Math.max(0, volume / 100))
+  try { if (inputGain) inputGain.gain.gain.value = v } catch { }
+}
+
 export function stopMediaStream(stream: MediaStream | null | undefined): void {
   if (!stream) return
+  const g = inputGain
+  if (g && (stream === g.output || stream.getAudioTracks().some(t => t.id === g.sourceStream.getAudioTracks()[0]?.id))) {
+    closeInputGain()
+    g.sourceStream.getTracks().forEach(track => track.stop())
+  }
   stream.getTracks().forEach(track => track.stop())
 }
 

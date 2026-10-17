@@ -1,15 +1,15 @@
 import type { CSSProperties } from 'react'
 import {
   AppWindow, ArrowDown, ArrowDownLeft, ArrowDownRight, ArrowUp, ArrowUpLeft,
-  ArrowUpRight, ArrowRight, BadgeCheck, Bitcoin, Bot, Briefcase, Bug, CalendarDays, Camera,
+  ArrowUpRight, ArrowRight, BadgeCheck, Bell, Bitcoin, Bot, Briefcase, Bug, CalendarDays, Camera,
   Check, CheckCheck, ChevronDown, ChevronRight, ChevronUp, Circle, CircleCheck,
   CircleDot, CircleHelp, CircleX, Clipboard, ClipboardList, Clock, Compass, Copy,
   DoorOpen, Download, Ellipsis, Expand, ExternalLink, FileSignature, FileText,
   Flag, Folder, FolderOpen, FolderPlus, Gamepad2, Gauge, Gavel, Globe, Grid2x2,
-  Handshake, HardDrive, Hash, Headphones, Headset, Heart, House, Image, Inbox, Info,
-  Key, Keyboard, Lightbulb, Link, ListChecks, LoaderCircle, Lock, LogIn, LogOut, Mail, MailOpen,
+  Handshake, HardDrive, Hash, Headphones, Headset, Heart, History, House, Image, Inbox, Info,
+  Key, Keyboard, Languages, Lightbulb, Link, ListChecks, LoaderCircle, Lock, LogIn, LogOut, Mail, MailOpen,
   Maximize2, Mic, MicOff, Minimize2, Monitor, MousePointer2, MoveDiagonal, MoveRight, Music,
-  Nfc, Paperclip, Pause, Pencil, Phone, PhoneOff, Play, Plug, Plus, Pointer, QrCode,
+  Nfc, Palette, Paperclip, Pause, Pencil, Phone, PhoneOff, Play, Plug, Plus, Pointer, QrCode,
   RadioTower, Reply, Rocket, RotateCcw, RotateCw, SatelliteDish, Save, Scale,
   Search, Send, Server, Settings, Shapes, Share2, Shield, ShieldHalf, ShieldUser,
   SlidersHorizontal, Smile, Stamp, Star, Code, Trash2, Clock as ClockIcon, Upload, CloudUpload,
@@ -93,6 +93,7 @@ const MAP: Record<string, LucideComp> = {
     pause: Pause,
   keyboard: Keyboard, play: Play, key: Key, briefcase: Briefcase, maximize: Maximize2,
   'fa-user': User, 'fa-briefcase': Briefcase, 'fa-maximize': Maximize2,
+  bell: Bell, palette: Palette, language: Languages, 'clock-rotate-left': History,
 }
 
 const BRANDS: Record<string, (p?: { width?: number; height?: number; className?: string; style?: CSSProperties }) => React.ReactNode> = {

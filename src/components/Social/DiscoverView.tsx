@@ -293,6 +293,7 @@ export function DiscoverView({ onClose }: Props) {
                   {featured.map(server => {
                     const member = isMember(server)
                     const count = memberCount(server)
+                    const online = typeof server.onlineCount === 'number' ? server.onlineCount : null
                     return (
                       <button
                         className="ping-server-card"
@@ -318,8 +319,15 @@ export function DiscoverView({ onClose }: Props) {
                           </span>
                           <p>{server.description || 'Comunidade no Friends Space.'}</p>
                           <span className="ping-server-stats">
-                            <span className="ping-online-dot" />
-                            {count.toLocaleString('pt-BR')} {count === 1 ? 'membro' : 'membros'}
+                            {online !== null && (
+                              <span className="ping-stats-online">
+                                <span className="ping-online-dot" />
+                                <b>{online.toLocaleString('pt-BR')}</b> online
+                              </span>
+                            )}
+                            <span className="ping-stats-members">
+                              {count.toLocaleString('pt-BR')} {count === 1 ? 'membro' : 'membros'}
+                            </span>
                           </span>
                         </span>
                       </button>
