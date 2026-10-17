@@ -247,47 +247,6 @@ function ProfilePhoto({ plan, onNotify, selectedFrame, photoUrl, onEditPhoto, on
   );
 }
 
-function LockedBanner({ onUpgrade }: { onUpgrade: () => void }) {
-  return (
-    <section className="banner-section">
-      <SectionTitle icon={Image} title="Banner do perfil" description="Recomendado: 2560x640px. Máx. 10MB." tone="neutral" />
-      <button className="locked-banner free-profile-banner" onClick={onUpgrade} aria-label="Personalização de banner disponível no ASTRO" style={{ backgroundImage: `linear-gradient(90deg, rgba(4,7,9,.28), rgba(4,7,9,.14)), url(${ASSETS.freeBanner})` }}>
-        <span className="locked-banner-content">
-          <LockKeyhole size={23} strokeWidth={1.8} />
-          <strong>Personalização de banner</strong>
-          <span className="available-note">Disponível no ASTRO.</span>
-          <small>Assine o ASTRO para enviar e usar banners personalizados.</small>
-        </span>
-      </button>
-    </section>
-  );
-}
-
-function AstroBanner({ plan, onNotify, bannerUrl, onEditBanner, onRemoveBanner }: { plan: Plan; onNotify: (message: string) => void; bannerUrl?: string; onEditBanner?: () => void; onRemoveBanner?: () => void }) {
-  const isAstroPlusTier = plan === "astroPlus";
-  const isAstroPlusGold = plan === "astroPlusGold";
-  const tierLabel = isAstroPlusGold ? "ASTRO PLUS" : isAstroPlusTier ? "ASTRO+" : "ASTRO";
-  const bannerAsset = bannerUrl ? toImageUrl(bannerUrl) : (isAstroPlusGold ? ASSETS.astroPlusGoldBanner : isAstroPlusTier ? ASSETS.astroPlusBanner : ASSETS.astroBanner);
-  const overlay = isAstroPlusGold
-    ? "rgba(49,26,1,.16), rgba(218,145,10,.10)"
-    : isAstroPlusTier
-      ? "rgba(30,12,54,.14), rgba(119,48,191,.08)"
-      : "rgba(2,16,8,.16), rgba(0,125,51,.08)";
-  return (
-    <section className={cn("banner-section astro-banner-section", isAstroPlusTier && "astro-plus-tier-banner-section", isAstroPlusGold && "astro-plus-banner-section")}>
-      <div className="astro-banner-heading">
-        <SectionTitle icon={Image} title="Banner do perfil" description={isAstroPlusGold ? "Personalize seu perfil com um banner exclusivo." : "Personalize seu perfil com um banner exclusivo. Recomendado: 2560x640px. Máx. 10MB."} />
-        <button className="banner-use-button" onClick={() => onNotify("Banner personalizado ativado")}><span>Usar banner personalizado</span><b>{tierLabel}</b></button>
-      </div>
-      {(isAstroPlusTier || isAstroPlusGold) && <p className="astro-plus-banner-recommendation">Recomendado: 2560x640px. Máx. 10MB.</p>}
-      <div className={cn("astro-banner-media", isAstroPlusTier && "astro-plus-tier-banner-media", isAstroPlusGold && "astro-plus-banner-media")} style={{ backgroundImage: `linear-gradient(90deg, ${overlay}), url(${bannerAsset})` }}>
-        <button aria-label="Editar banner" onClick={onEditBanner}><Pencil size={14} /></button>
-      </div>
-      <button className="remove-media-button banner-remove-button" onClick={onRemoveBanner}><Trash2 size={12} />Remover banner</button>
-    </section>
-  );
-}
-
 function AboutSection({ plan, about, setAbout }: { plan: Plan; about: string; setAbout: (value: string) => void }) {
   const isPaid = plan !== "free";
   const isAstroPlusTier = plan === "astroPlus";
@@ -1005,7 +964,6 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
             </section>
           </div>
 
-          {isPaid ? <AstroBanner plan={plan} onNotify={notify} bannerUrl={bannerUrl} onEditBanner={requestBannerChange} onRemoveBanner={() => setBannerUrl("")} /> : <LockedBanner onUpgrade={handleUpgradeAstro} />}
           <AboutSection plan={plan} about={about} setAbout={setAbout} />
           {isAstroPlusGold ? <AstroPlusDecorations selectedFrame={selectedFrame} onFrameSelect={selectFrame} onOpenFrames={() => setIsFramesShopOpen(true)} onNotify={notify} /> : isAstroPlusTier ? <AstroPlusTierDecorations selectedFrame={selectedFrame} onFrameSelect={selectFrame} onOpenFrames={() => setIsFramesShopOpen(true)} onUpgrade={handleUpgradeAstroPlusGold} onNotify={notify} /> : isAstro ? <AstroDecorations selectedFrame={selectedFrame} onFrameSelect={selectFrame} onOpenFrames={() => setIsFramesShopOpen(true)} onUpgrade={handleUpgradeAstroPlus} /> : <PremiumUnavailable />}
           {isAstro && <AstroPlusUnavailable onUpgrade={handleUpgradeAstroPlus} />}
@@ -1016,7 +974,7 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
 
           <div className="editor-actions"><button className="cancel-button" onClick={handleCancel} disabled={saving}>Cancelar</button><button className="save-button" onClick={() => void handleSave()} disabled={!displayName || !username || saving}>{saving ? "Salvando..." : "Salvar alterações"}</button></div>
         </div>
-        <PlanColumn plan={plan} onUpgrade={plan === "free" ? handleUpgradeAstro : plan === "astro" ? handleUpgradeAstroPlus : plan === "astroPlus" ? handleUpgradeAstroPlusGold : () => notify("Você já está no ASTRO PLUS")} onDowngrade={restorePreviousPlan} onEditBanner={requestBannerChange} />
+        <PlanColumn plan={plan} onUpgrade={plan === "free" ? handleUpgradeAstro : plan === "astro" ? handleUpgradeAstroPlus : plan === "astroPlus" ? handleUpgradeAstroPlusGold : () => notify("Você já está no ASTRO PLUS")} onDowngrade={restorePreviousPlan} onEditBanner={isPaid ? requestBannerChange : undefined} />
       </main>
       {status && <div className="toast-status"><Sparkles size={14} />{status}</div>}
       {isFramesShopOpen && <FramesShopModal plan={plan} selectedFrame={selectedFrame} onSelect={selectFrame} onClose={() => setIsFramesShopOpen(false)} onNotify={notify} />}

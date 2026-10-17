@@ -1,5 +1,5 @@
 import { Fa } from '../../utils/fa'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Server, User } from '../../types'
 import { useUserStore } from '../../stores/userStore'
 import {
@@ -257,18 +257,27 @@ export function AdminPanel({ open, onClose, initialTab }: { open: boolean; onClo
     setClientErrors(await listClientErrors())
   }, [canModerate])
 
+  const initialLoadStarted = useRef(false)
   useEffect(() => {
-    if (!open) return
+    if (!open) { initialLoadStarted.current = false; return }
+    if (initialLoadStarted.current) return
+    initialLoadStarted.current = true
     setTab(initialTab || 'overview')
     setTabQuery('')
     setInitialLoading(true)
-    void Promise.allSettled([
-      loadReports(),
-      loadServers(),
-      loadAds(),
-      loadErrors(),
-      isDevFlag ? loadCalls() : Promise.resolve(),
-      isDevFlag ? loadMod() : Promise.resolve(),
+    // Nunca deixa o painel preso no skeleton: se algum request travar,
+    // libera a tela em 6s (os dados chegam e atualizam sozinhos depois).
+    const release = new Promise<void>(resolve => window.setTimeout(resolve, 6000))
+    void Promise.race([
+      Promise.allSettled([
+        loadReports(),
+        loadServers(),
+        loadAds(),
+        loadErrors(),
+        isDevFlag ? loadCalls() : Promise.resolve(),
+        isDevFlag ? loadMod() : Promise.resolve(),
+      ]).then(() => undefined),
+      release,
     ]).finally(() => setInitialLoading(false))
   }, [open, loadReports, loadServers, loadCalls, loadMod, loadAds, loadErrors, isDevFlag, initialTab])
 

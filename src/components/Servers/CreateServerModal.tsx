@@ -189,6 +189,7 @@ export function CreateServerModal({ open, onClose, onCreate }: CreateServerModal
   const handleFile = async (mode: 'icon' | 'banner', e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    e.target.value = ''
     try {
       const dataUrl = await new Promise<string>((res, rej) => {
         const reader = new FileReader()
@@ -291,12 +292,12 @@ export function CreateServerModal({ open, onClose, onCreate }: CreateServerModal
             <input
               ref={iconInputRef} type="file" accept="image/*"
               style={{ display: 'none' }}
-              onChange={e => { e.target.value = ''; handleFile('icon', e) }}
+              onChange={e => { void handleFile('icon', e) }}
             />
             <input
               ref={bannerInputRef} type="file" accept="image/*"
               style={{ display: 'none' }}
-              onChange={e => { e.target.value = ''; handleFile('banner', e) }}
+              onChange={e => { void handleFile('banner', e) }}
             />
             <div className="csw-identity-fields">
               <label className="csw-field">

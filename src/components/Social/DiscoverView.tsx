@@ -1,41 +1,20 @@
-// DiscoverView — interface orbital de descoberta de servidores.
-// Portada de "descubra-servidores" (client/src/pages/Home.tsx) para o Friends
-// Space, plugada nos dados REAIS: directoryState -> servers (verificados,
-// categorias/temas, membros). Nenhum dado inventado: servidor so aparece se
-// existir no backend.
-import { useEffect, useMemo, useState } from 'react'
-import type { CSSProperties } from 'react'
-import type { LucideIcon } from 'lucide-react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import {
-  Activity,
-  ArrowLeft,
-  ArrowUpRight,
-  BookOpen,
-  BriefcaseBusiness,
-  Cat,
-  ChevronRight,
-  Clapperboard,
-  Compass,
-  Gamepad2,
-  Landmark,
-  Monitor,
-  Music2,
-  PenTool,
-  Radio,
-  Search,
-  ShieldCheck,
-  Sparkles,
-  Users,
+  Activity, BadgeCheck, BookOpen, BriefcaseBusiness, Cat, Clapperboard, Compass,
+  Gamepad2, Landmark, Monitor, Music2, PenTool, Radio, Search, ShieldCheck, Sparkles, Users, X,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { requestBackend } from '../../services/backend'
 import { useServerStore } from '../../stores/serverStore'
 import { useUserStore } from '../../stores/userStore'
-import { requestBackend } from '../../services/backend'
-import { toImageUrl } from '../../services/driveService'
 import { assetUrl } from '../../utils/assets'
+import { toImageUrl } from '../../services/driveService'
 import type { Server } from '../../types'
 import './discover.css'
 
-interface Props { onClose: () => void }
+interface Props {
+  onClose: () => void
+}
 
 type Theme = {
   name: string
@@ -45,13 +24,17 @@ type Theme = {
   match: (category: string) => boolean
 }
 
+function norm(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
 const themes: Theme[] = [
   { name: 'Política', description: 'Debates e discussões políticas.', icon: Landmark, accent: '#29A3FF', match: (c) => norm(c) === 'politica' },
   { name: 'Games', description: 'Jogos, novidades e comunidades.', icon: Gamepad2, accent: '#29A3FF', match: (c) => norm(c) === 'games' },
   { name: 'Amizade', description: 'Faça amigos e converse.', icon: Users, accent: '#29A3FF', match: (c) => norm(c) === 'amizade' || norm(c) === 'amizades' },
   { name: 'Tecnologia', description: 'Tech, programação e inovação.', icon: Monitor, accent: '#29A3FF', match: (c) => norm(c) === 'tecnologia' || norm(c) === 'tech' },
   { name: 'Música', description: 'Música, artistas e playlists.', icon: Music2, accent: '#29A3FF', match: (c) => norm(c) === 'musica' },
-  { name: 'Educação', description: 'Estudo, aprendizado e ajuda.', icon: BookOpen, accent: '#29A3FF', match: (c) => norm(c) === 'educacao' || norm(c) === 'educacao' },
+  { name: 'Educação', description: 'Estudo, aprendizado e ajuda.', icon: BookOpen, accent: '#29A3FF', match: (c) => norm(c) === 'educacao' || norm(c) === 'educação' },
   { name: 'Anime & Mangá', description: 'Anime, mangá e cultura otaku.', icon: Cat, accent: '#29A3FF', match: (c) => norm(c).includes('anime') },
   { name: 'Entretenimento', description: 'Memes, vídeos e diversão.', icon: Clapperboard, accent: '#29A3FF', match: (c) => norm(c).includes('entreten') || norm(c).includes('filme') || norm(c).includes('series') || norm(c).includes('memes') },
   { name: 'Arte & Design', description: 'Arte, design e criatividade.', icon: PenTool, accent: '#29A3FF', match: (c) => norm(c).includes('arte') || norm(c).includes('design') },
@@ -60,100 +43,71 @@ const themes: Theme[] = [
   { name: 'Outros', description: 'Explore outros temas.', icon: Radio, accent: '#a1aab1', match: () => true },
 ]
 
-function norm(s: string): string {
-  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+function memberCount(server: Server) {
+  return Array.isArray(server.members) ? server.members.length : 0
 }
 
 export function DiscoverView({ onClose }: Props) {
+  const { currentUser } = useUserStore()
+  const joinServer = useServerStore(s => s.joinServer)
+  const setCurrentServer = useServerStore(s => s.setCurrentServer)
+  const myServers = useServerStore(s => s.servers)
   const [servers, setServers] = useState<Server[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
-  const [selectedTheme, setSelectedTheme] = useState('Todos')
-  const [notice, setNotice] = useState('')
-  const [modal, setModal] = useState<{ title: string; kind: 'theme' | 'verified' } | null>(null)
-  const [modalQuery, setModalQuery] = useState('')
+  const [category, setCategory] = useState('Todos')
+  const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [entering, setEntering] = useState<string | null>(null)
-  const setCurrentServer = useServerStore(s => s.setCurrentServer)
-  const joinServer = useServerStore(s => s.joinServer)
-  const { currentUser } = useUserStore()
+  const [notice, setNotice] = useState('')
 
   useEffect(() => {
+    let cancelled = false
     void (async () => {
       try {
         const res = await requestBackend<{ servers: Server[] }>('directoryState', {})
-        setServers(res?.servers || [])
-      } catch { /* sem dados: tela mostra vazio honesto */ }
-      finally { setLoading(false) }
+        if (!cancelled) setServers((res?.servers || []).filter(s => s.settings?.toggles?.public !== false))
+      } catch { if (!cancelled) setServers([]) }
+      finally { if (!cancelled) setLoading(false) }
     })()
+    return () => { cancelled = true }
   }, [])
 
-  const filteredThemes = useMemo(() => {
-    const search = query.trim().toLowerCase()
-    if (!search) return themes
-    return themes.filter((theme) => `${theme.name} ${theme.description}`.toLowerCase().includes(search))
-  }, [query])
-
-  // Quantos servidores reais cada tema tem (o ultimo match "Outros" pega sobras)
-  const themeCount = (theme: Theme) => servers.filter(s => theme.match(s.category || '')).length
-  const totalMapped = themes.slice(0, -1).reduce((acc, t) => acc + themeCount(t), 0)
-  const othersCount = Math.max(servers.length - totalMapped, 0)
-
-  const verified = servers.filter(s => s.verified === true)
-
-  const serversInTheme = (theme: Theme) => {
-    const list = servers.filter(s => theme.match(s.category || ''))
-    if (theme.name === 'Outros') {
-      const mappedIds = new Set(themes.slice(0, -1).flatMap(t => servers.filter(s => t.match(s.category || '')).map(s => s.id)))
-      return servers.filter(s => !mappedIds.has(s.id))
-    }
-    return list
-  }
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   const showNotice = (message: string) => {
     setNotice(message)
     window.setTimeout(() => setNotice(''), 2800)
   }
 
-  const handleBack = () => {
-    onClose()
-    showNotice('Você está no início da descoberta.')
-  }
+  const isMember = (server: Server) => myServers.some(s => s.id === server.id)
 
-  useEffect(() => {
-    if (!modal) return
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setModal(null)
+  const featured = useMemo(() => {
+    let list = servers
+    const q = norm(query.trim())
+    if (q) list = list.filter(s => norm(s.name || '').includes(q) || norm(s.description || '').includes(q))
+    if (verifiedOnly) list = list.filter(s => s.verified === true)
+    if (category !== 'Todos') {
+      const theme = themes.find(t => t.name === category)
+      if (theme) list = list.filter(s => theme.match(s.category || ''))
     }
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
-  }, [modal])
-
-  useEffect(() => {
-    const handleEscapeClose = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !modal) onClose()
-    }
-    document.addEventListener('keydown', handleEscapeClose)
-    return () => document.removeEventListener('keydown', handleEscapeClose)
-  }, [modal, onClose])
-
-  const openThemeModal = (themeName: string) => {
-    setSelectedTheme(themeName)
-    setModalQuery('')
-    setModal({ title: themeName, kind: 'theme' })
-  }
-
-  const openVerifiedModal = () => {
-    setModalQuery('')
-    setModal({ title: 'Servidores verificados', kind: 'verified' })
-  }
+    return list.slice().sort((a, b) => memberCount(b) - memberCount(a))
+  }, [servers, query, verifiedOnly, category])
 
   const handleJoin = (server: Server) => {
     if (entering || !currentUser) return
+    if (isMember(server)) {
+      const full = useServerStore.getState().servers.find(s => s.id === server.id) || server
+      setCurrentServer(full)
+      onClose()
+      return
+    }
     setEntering(server.id)
     void (async () => {
       try {
-        // Público entra por ID (sem depender do código exposto); privado
-        // exige inviteCode.
         const r = await joinServer(server.inviteCode || '', currentUser.id, server.id)
         if (r?.ok) {
           const updated = useServerStore.getState().servers.find(s => s.id === server.id) || server
@@ -168,151 +122,172 @@ export function DiscoverView({ onClose }: Props) {
     })()
   }
 
-  const modalServers = useMemo(() => {
-    if (!modal) return []
-    const base = modal.kind === 'verified'
-      ? verified
-      : serversInTheme(themes.find(t => t.name === modal.title) || themes[themes.length - 1])
-    const q = modalQuery.trim().toLowerCase()
-    return q ? base.filter(s => s.name.toLowerCase().includes(q) || (s.description || '').toLowerCase().includes(q)) : base
-  }, [modal, modalQuery, servers, verified])
-
-  const serverList = (list: Server[]) => (
-    list.length === 0 ? (
-      <div className="empty-state"><Search size={15} />Nenhum servidor neste tema ainda.</div>
-    ) : list.map(server => (
-      <div className="server-card" key={server.id} onClick={() => handleJoin(server)} role="button" tabIndex={0}
-        onKeyDown={e => { if (e.key === 'Enter') handleJoin(server) }}>
-        <span className="server-avatar avatar-green">
-          <img src={toImageUrl(server.photoUrl || assetUrl('Logo.png'))} alt={server.name} loading="lazy" />
-        </span>
-        <span className="server-copy">
-          <span className="server-name-row">
-            <h3>{server.name}</h3>
-            {server.verified && <ShieldCheck className="verified-icon" size={12} />}
-          </span>
-          {server.description && <p>{server.description}</p>}
-          <span className="server-stats">
-            <span><Users size={10} />{(server.members || []).length}</span>
-            <span><span className="online-dot" />ativo</span>
-          </span>
-        </span>
-        <button className="join-button" type="button" onClick={e => { e.stopPropagation(); handleJoin(server) }}>
-          {entering === server.id ? 'Entrando...' : 'Entrar'}
-        </button>
-      </div>
-    ))
-  )
+  const activeFilterLabel = verifiedOnly ? 'Servidores verificados' : category !== 'Todos' ? category : 'Início'
 
   return (
     <div className="discover-modal" onClick={onClose}>
-      <main className="discover-page" style={{ '--orbit-dust': 'none' } as CSSProperties} onClick={(event) => event.stopPropagation()}>
-        <div className="discover-frame">
-        <div className="discover-layout">
-          <div className="discover-shell">
-            <button className="back-button" type="button" onClick={handleBack} aria-label="Voltar">
-              <ArrowLeft size={15} />
-              <span>Voltar</span>
+      <main className="ping-discover" onClick={e => e.stopPropagation()}>
+        <aside className="ping-side">
+          <div className="ping-side-brand">
+            <span className="ping-side-logo"><Compass size={16} strokeWidth={2.4} /></span>
+            <strong>Descubra</strong>
+            <button className="ping-side-close" type="button" onClick={onClose} aria-label="Fechar">
+              <X size={15} strokeWidth={2.4} />
             </button>
+          </div>
 
-            <section className="hero-panel" id="top" style={{ backgroundImage: `url(${assetUrl('astro-bg.png')})` }}>
-              <div className="hero-overlay" />
-              <div className="hero-scanline" />
-              <img className="hero-mascots" src={assetUrl('astro-chars.png')} alt="Mascotes alienígena e astronauta da Friends Space" />
-              <div className="hero-content">
-                <div className="eyebrow"><span className="eyebrow-line" />SUA PRÓXIMA COMUNIDADE ESTÁ AQUI</div>
-                <h1>Descubra <span>servidores</span></h1>
-                <p>Conecte-se a comunidades incríveis<br className="desktop-break" /> e faça parte de algo maior.</p>
-                <label className="search-field">
-                  <Search size={16} />
-                  <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar temas..." aria-label="Buscar temas" />
-                  {query ? <button type="button" aria-label="Limpar busca" onClick={() => setQuery('')}><span aria-hidden="true">×</span></button> : null}
-                </label>
+          <label className="ping-side-search">
+            <Search size={14} strokeWidth={2.4} />
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Buscar servidores..."
+              maxLength={80}
+              aria-label="Buscar servidores"
+            />
+            {query && (
+              <button type="button" onClick={() => setQuery('')} aria-label="Limpar busca"><X size={12} strokeWidth={2.6} /></button>
+            )}
+          </label>
+
+          <nav className="ping-side-nav">
+            <button
+              type="button"
+              className={activeFilterLabel === 'Início' && !query ? 'active' : ''}
+              onClick={() => { setCategory('Todos'); setVerifiedOnly(false) }}
+            >
+              Início
+            </button>
+            <button
+              type="button"
+              className={verifiedOnly ? 'active' : ''}
+              onClick={() => setVerifiedOnly(v => !v)}
+            >
+              <ShieldCheck size={13} strokeWidth={2.4} /> Servidores verificados
+            </button>
+          </nav>
+
+          <div className="ping-side-cats">
+            <span className="ping-side-cats-title">Categorias</span>
+            <div className="ping-side-cats-list">
+              <button type="button" className={category === 'Todos' ? 'active' : ''} onClick={() => setCategory('Todos')}>
+                <Sparkles size={13} strokeWidth={2.4} /> Todos
+              </button>
+              {themes.map(theme => {
+                const Icon = theme.icon
+                return (
+                  <button
+                    key={theme.name}
+                    type="button"
+                    className={category === theme.name ? 'active' : ''}
+                    onClick={() => setCategory(theme.name)}
+                    title={theme.description}
+                  >
+                    <Icon size={13} strokeWidth={2.4} /> {theme.name}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="ping-side-foot">
+            <span className="ping-side-foot-dot" />
+            {featured.length} {featured.length === 1 ? 'servidor' : 'servidores'} em destaque
+          </div>
+        </aside>
+
+        <section className="ping-main">
+          <div className="ping-hero" style={{ backgroundImage: `url(${assetUrl('astro-bg.png')})` }}>
+            <div className="ping-hero-grad" />
+            <img className="ping-hero-chars" src={assetUrl('astro-chars.png')} alt="" />
+            <div className="ping-hero-content">
+              <span className="ping-hero-eyebrow"><Sparkles size={13} /> SUA PRÓXIMA COMUNIDADE ESTÁ AQUI</span>
+              <h1>ENCONTRE SUA<br />COMUNIDADE NO<br />PINGUIN</h1>
+              <p>Há sempre um lugar para você: seja para jogar, ouvir música ou aprender.</p>
+            </div>
+          </div>
+
+          <div className="ping-content">
+            <div className="ping-content-head">
+              <h2>SERVIDORES EM DESTAQUE</h2>
+              <span className="ping-content-filter">
+                {query.trim() ? `Busca: "${query.trim()}"` : activeFilterLabel}
+              </span>
+            </div>
+
+            {loading ? (
+              <div className="ping-grid">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div className="ping-server-card ping-server-skeleton" key={i}>
+                    <span className="ping-server-banner" />
+                    <span className="ping-server-body">
+                      <span className="ping-skeleton-line" style={{ width: '55%' }} />
+                      <span className="ping-skeleton-line" style={{ width: '90%' }} />
+                      <span className="ping-skeleton-line" style={{ width: '40%' }} />
+                    </span>
+                  </div>
+                ))}
               </div>
-            </section>
-
-            <section className="explore-intro" aria-labelledby="explore-title">
-              <div className="section-kicker"><Sparkles size={13} /> CURADORIA DO MOMENTO</div>
-              <h2 id="explore-title">Encontre seu próximo universo.</h2>
-              <p>Explore espaços feitos para conversar, aprender e encontrar pessoas com os mesmos interesses.</p>
-            </section>
-
-            <section className="verified-section" aria-labelledby="verified-title">
-              <div className="column-heading verified-heading">
-                <div><ShieldCheck size={14} /><span id="verified-title">SERVIDORES VERIFICADOS</span></div>
-                {verified.length > 0 && (
-                  <button className="data-more" type="button" onClick={openVerifiedModal}>Ver mais <ArrowUpRight size={12} /></button>
+            ) : featured.length === 0 ? (
+              <div className="ping-empty">
+                <Search size={22} strokeWidth={2} />
+                <strong>{query.trim() ? 'Nenhum servidor encontrado.' : 'Nenhum servidor em destaque ainda.'}</strong>
+                <span>
+                  {query.trim()
+                    ? 'Tente buscar outro nome ou explore as categorias.'
+                    : 'Crie o seu servidor ou volte mais tarde — novas comunidades aparecem aqui.'}
+                </span>
+                {(query.trim() || category !== 'Todos' || verifiedOnly) && (
+                  <button type="button" onClick={() => { setQuery(''); setCategory('Todos'); setVerifiedOnly(false) }}>
+                    Limpar filtros
+                  </button>
                 )}
               </div>
-              {loading ? (
-                <div className="verified-empty"><ShieldCheck size={20} /><div><strong>Carregando servidores...</strong><span>Buscando comunidades na plataforma.</span></div></div>
-              ) : verified.length === 0 ? (
-                <div className="verified-empty">
-                  <ShieldCheck size={20} />
-                  <div><strong>Nenhum servidor verificado disponível.</strong><span>Os servidores aparecerão aqui quando a fonte de dados estiver conectada.</span></div>
-                </div>
-              ) : (
-                <div className="server-list">{serverList(verified.slice(0, 4))}</div>
-              )}
-            </section>
-
-            <section className="themes-section themes-section-primary" id="temas">
-              <div className="section-heading-row themes-heading">
-                <div>
-                  <div className="section-kicker"><Compass size={13} /> EXPLORE POR INTERESSE</div>
-                  <h2>Qual é a sua frequência?</h2>
-                </div>
-                {query ? <div className="search-result-label"><Sparkles size={13} /> {filteredThemes.length ? 'Temas encontrados' : 'Nenhum tema encontrado'}</div> : null}
-              </div>
-              <div className="theme-grid">
-                {filteredThemes.length ? filteredThemes.map((theme, index) => {
-                  const Icon = theme.icon
-                  const isSelected = selectedTheme === theme.name
-                  const count = theme.name === 'Outros' ? othersCount : themeCount(theme)
+            ) : (
+              <div className="ping-grid">
+                {featured.map(server => {
+                  const member = isMember(server)
+                  const count = memberCount(server)
                   return (
-                    <button className={isSelected ? 'theme-card selected-theme' : 'theme-card'} key={theme.name} type="button"
-                      style={{ '--theme-accent': theme.accent, '--theme-delay': `${index * 35}ms` } as CSSProperties}
-                      onClick={() => openThemeModal(theme.name)}>
-                      <span className="theme-icon"><Icon size={20} strokeWidth={2.2} /></span>
-                      <span className="theme-copy"><strong>{theme.name}</strong><small>{theme.description}</small><small className="theme-active">{count} {count === 1 ? 'servidor' : 'servidores'}</small></span>
-                      <ChevronRight className="theme-arrow" size={16} />
+                    <button
+                      className="ping-server-card"
+                      key={server.id}
+                      type="button"
+                      onClick={() => handleJoin(server)}
+                      disabled={entering === server.id}
+                      title={member ? `Abrir ${server.name}` : `Entrar em ${server.name}`}
+                    >
+                      <span
+                        className="ping-server-banner"
+                        style={server.bannerUrl ? { backgroundImage: `url(${toImageUrl(server.bannerUrl)})` } as CSSProperties : undefined}
+                      >
+                        {!server.bannerUrl && <span className="ping-server-banner-fallback">{server.name.charAt(0).toUpperCase()}</span>}
+                        <span className="ping-server-icon">
+                          {server.photoUrl ? <img src={toImageUrl(server.photoUrl)} alt="" loading="lazy" /> : server.name.charAt(0).toUpperCase()}
+                        </span>
+                        <span className="ping-server-action">{entering === server.id ? 'Entrando...' : member ? 'Abrir' : 'Entrar'}</span>
+                      </span>
+                      <span className="ping-server-body">
+                        <span className="ping-server-name-row">
+                          {server.verified && <BadgeCheck className="ping-verified" size={15} strokeWidth={2.4} />}
+                          <h3>{server.name}</h3>
+                        </span>
+                        <p>{server.description || 'Comunidade no Friends Space.'}</p>
+                        <span className="ping-server-stats">
+                          <span className="ping-online-dot" />
+                          {count} {count === 1 ? 'membro' : 'membros'}
+                        </span>
+                      </span>
                     </button>
                   )
-                }) : <div className="theme-empty"><Search size={17} /><span>Tente buscar outro tema.</span><button type="button" onClick={() => setQuery('')}>Limpar busca</button></div>}
+                })}
               </div>
-            </section>
+            )}
           </div>
-          </div>
-          </div>
-          </main>
-          {modal ? (
-          <div className="modal-backdrop" role="presentation" onMouseDown={() => setModal(null)}>
-            <section className="server-modal fs-modal-in" role="dialog" aria-modal="true" aria-labelledby="modal-title" onMouseDown={(event) => event.stopPropagation()}>
-              <div className="modal-header">
-                <div>
-                  <div className="section-kicker"><Compass size={13} /> {modal.kind === 'verified' ? 'CATÁLOGO VERIFICADO' : 'EXPLORAR TEMA'}</div>
-                  <h2 id="modal-title">{modal.title}</h2>
-                  <p>{modal.kind === 'verified' ? 'Servidores verificados disponíveis na plataforma.' : `Comunidades relacionadas a ${modal.title}.`}</p>
-                </div>
-                <button className="modal-close" type="button" aria-label="Fechar janela" onClick={() => setModal(null)}><span aria-hidden="true">×</span></button>
-              </div>
-              <label className="modal-search">
-                <Search size={16} />
-                <input value={modalQuery} onChange={(event) => setModalQuery(event.target.value)} placeholder="Buscar servidores..." aria-label="Buscar servidores" />
-              </label>
-              <div style={{ maxHeight: '46vh', overflowY: 'auto', padding: '0 24px 24px' }}>
-                {modalServers.length === 0 ? (
-                  <div className="modal-empty">
-                    <Search size={21} />
-                    <strong>{modalQuery ? 'Nenhum resultado encontrado.' : 'Nenhum servidor disponível.'}</strong>
-                    <span>Os servidores aparecerão aqui quando os dados do site estiverem conectados.</span>
-                  </div>
-                ) : serverList(modalServers)}
-              </div>
-            </section>
-          </div>
-          ) : null}
-          {notice ? <div className="notice" role="status"><Sparkles size={15} />{notice}</div> : null}
-          </div>
-          )
-          }
+        </section>
+
+        {notice && <div className="ping-notice" role="status"><Sparkles size={14} />{notice}</div>}
+      </main>
+    </div>
+  )
+}

@@ -8,6 +8,7 @@ import { Modal } from './components/ui/Modal'
 import { DataRecovery } from './components/ui/DataRecovery'
 import { PostViewModal } from './components/Social/PostViewModal'
 import { GoogleLoginView } from './components/Auth/GoogleLoginView'
+import { FirstLoginOnboarding } from './components/Auth/FirstLoginOnboarding'
 
 import { toImageUrl } from './services/driveService'
 import { enablePushNotifications, pushEnabledLocally } from './services/pushService'
@@ -1700,9 +1701,6 @@ function App() {
                 <button className="fs-nav-item fs-folder-add-btn" onClick={() => openFolderModal(null)} title="Criar pasta">
                   <Fa name="folder-plus" size={14} />
                 </button>
-                <button className="fs-nav-item fs-add-btn" onClick={() => setShowServerSearch(true)} title="Procurar servidor">
-                  <Fa name="magnifying-glass" size={14} />
-                </button>
                 <button className="fs-nav-item fs-add-btn" onClick={() => {
                   if (!isDriveConnected()) {
                     setPendingDriveAction(() => () => setShowCreateServer(true))
@@ -2114,6 +2112,7 @@ function App() {
         <GoogleLoginView />
       )}
 
+      <FirstLoginOnboarding />
 
       {toast && (
         <div style={{
