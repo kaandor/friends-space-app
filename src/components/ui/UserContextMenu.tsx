@@ -203,7 +203,7 @@ export function UserContextMenu() {
             </div>
             <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>@{user.friendCode || 'sem-codigo'}</div>
             {statusMessage && (
-              <div style={{ color: 'var(--accent)', fontSize: 11.5, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ color: 'var(--text-primary)', fontSize: 11.5, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {statusMessage}
               </div>
             )}
@@ -233,7 +233,7 @@ export function UserContextMenu() {
         )}
         {user.activityName && settings['showActivity'] !== false && user.activityPrivacy !== 'private' && (
           <div style={{ margin: '10px 0 0', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 9px', background: 'var(--bg-tertiary)', borderRadius: 8, border: '1px solid var(--border)' }}>
-            <Fa name="gamepad" size={12} style={{ color: 'var(--accent)' }} />
+            <Fa name="gamepad" size={12} style={{ color: 'var(--text-primary)' }} />
             <div style={{ minWidth: 0 }}>
               <div style={{ color: 'var(--text-primary)', fontSize: 12, fontWeight: 600 }}>{user.activityName}</div>
               {user.activityDetails && <div style={{ color: 'var(--text-muted)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.activityDetails}</div>}

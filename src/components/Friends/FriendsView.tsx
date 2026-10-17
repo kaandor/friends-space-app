@@ -294,7 +294,7 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
           {isMobile && (
             <button onClick={() => setShowAddInline(v => !v)}
               style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0 10px' }}>
-              <Plus size={15} strokeWidth={2.4} color="var(--accent)" />
+              <Plus size={15} strokeWidth={2.4} color="var(--text-primary)" />
               <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', flex: 1, textAlign: 'left' }}>Adicionar amigo</span>
               <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{showAddInline ? '▲' : '▼'}</span>
             </button>
@@ -307,7 +307,7 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
           {currentUser?.friendCode && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: '8px 12px', background: 'var(--bg-primary)', borderRadius: 8, border: '1px solid var(--border)' }}>
               <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Seu codigo:</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', flex: 1 }}>@{currentUser.friendCode}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', flex: 1 }}>@{currentUser.friendCode}</span>
               <button onClick={copyFriendCode} style={{ padding: '4px 8px', fontSize: 11, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-secondary)', cursor: 'pointer' }}>
                 Copiar
               </button>
@@ -379,7 +379,7 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
               key={t.key}
               onClick={() => setTab(t.key)}
               style={{
-                background: 'transparent', border: 'none', color: tab === t.key ? 'var(--accent)' : 'var(--text-secondary)',
+                background: 'transparent', border: 'none', color: tab === t.key ? 'var(--text-primary)' : 'var(--text-secondary)',
                 padding: '12px 0', fontSize: 14, fontWeight: 500, cursor: 'pointer', position: 'relative',
                 borderBottom: tab === t.key ? '2px solid var(--accent)' : '2px solid transparent',
                 display: 'flex', alignItems: 'center', gap: 6,
@@ -440,17 +440,17 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
                   </div>
                   <span style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontWeight: 600, fontSize: 14 }}>{user.name}</span>
-                    <span style={{ color: isUserOnline(user) ? 'var(--accent)' : 'var(--text-muted)', fontSize: 11 }}>{isUserOnline(user) ? 'Online' : 'Offline'}</span>
+                    <span style={{ color: isUserOnline(user) ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: 11 }}>{isUserOnline(user) ? 'Online' : 'Offline'}</span>
                     {(() => {
                       const s = (user.settings || {}) as Record<string, string | boolean | undefined>
                       const statusMessage = typeof s['statusMessage'] === 'string' ? s['statusMessage'] as string : ''
                       if (statusMessage) {
-                        return <span style={{ color: 'var(--accent)', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{statusMessage}</span>
+                        return <span style={{ color: 'var(--text-primary)', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{statusMessage}</span>
                       }
                       return null
                     })()}
                     {user.activityEnabled !== false && user.activityPrivacy !== 'private' && user.activityName && (
-                      <span style={{ color: 'var(--accent)', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.activityName}{user.activityDetails ? ` — ${user.activityDetails}` : ''}</span>
+                      <span style={{ color: 'var(--text-primary)', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.activityName}{user.activityDetails ? ` — ${user.activityDetails}` : ''}</span>
                     )}
                   </span>
                 </button>
@@ -498,7 +498,7 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
                       <Avatar src={sender?.photoUrl || ''} name={sender?.name || ''} size={36} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                          <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--accent)' }}>{sender?.name}</span>
+                          <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>{sender?.name}</span>
                           <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatTime(msg.createdAt)}</span>
                         </div>
                     <div style={{ marginTop: 2, maxWidth: '100%' }}>
@@ -602,7 +602,7 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
                       display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
                       fontSize: 11.5, fontWeight: 700, padding: '8px 12px', borderRadius: 8,
                       background: 'var(--bg-tertiary)', border: '1px solid var(--border)',
-                      color: 'var(--accent)', cursor: dmSending ? 'default' : 'pointer', flexShrink: 0,
+                      color: 'var(--text-primary)', cursor: dmSending ? 'default' : 'pointer', flexShrink: 0,
                     }}
                   >
                     <FileText size={13} strokeWidth={2} /> Enviar como .txt
@@ -655,17 +655,17 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
                   <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>@{u.friendCode || 'usuario'}</div>
                   <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
                     {verified && (
-                      <span title="Verificado" style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
+                      <span title="Verificado" style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)' }}>
                         <BadgeCheck size={14} strokeWidth={2} />
                       </span>
                     )}
                     {astro && (
-                      <span title="ASTRO" style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
+                      <span title="ASTRO" style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)' }}>
                         <Rocket size={14} strokeWidth={2} />
                       </span>
                     )}
                     {(flags.dev || flags.support || flags.official) && (
-                      <span title="Equipe" style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
+                      <span title="Equipe" style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)' }}>
                         <ShieldCheck size={14} strokeWidth={2} />
                       </span>
                     )}
@@ -688,14 +688,14 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
                   )}
                   {games.length > 0 && (
                     <button onClick={() => setShowFullProfile(true)} style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, width: '100%', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 10, padding: 10, cursor: 'pointer', textAlign: 'left' }}>
-                      <Gamepad2 size={16} strokeWidth={2} color="var(--accent)" />
+                      <Gamepad2 size={16} strokeWidth={2} color="var(--text-primary)" />
                       <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Coleção de Jogos</span>
                       <span style={{ display: 'flex' }}>
                         {games.slice(0, 3).map((g, i) => (
                           g.image ? (
                             <img key={i} src={toImageUrl(g.image)} alt="" style={{ width: 26, height: 26, borderRadius: 6, objectFit: 'cover', marginLeft: i === 0 ? 0 : -8, border: '2px solid var(--bg-tertiary)' }} />
                           ) : (
-                            <span key={i} style={{ width: 26, height: 26, borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--accent)', fontSize: 11, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginLeft: i === 0 ? 0 : -8, border: '2px solid var(--bg-tertiary)' }}>
+                            <span key={i} style={{ width: 26, height: 26, borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 11, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginLeft: i === 0 ? 0 : -8, border: '2px solid var(--bg-tertiary)' }}>
                               {(g.title || g.name || '?').slice(0, 1).toUpperCase()}
                             </span>
                           )

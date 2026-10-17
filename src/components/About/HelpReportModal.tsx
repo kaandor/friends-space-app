@@ -92,7 +92,7 @@ export function HelpReportModal({ open, onClose }: HelpReportModalProps) {
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
               <div style={{ width: 40, height: 40, background: 'var(--bg-hover)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Fa name="circle-question" size={18} style={{ color: 'var(--accent)' }} />
+                <Fa name="circle-question" size={18} style={{ color: 'var(--text-primary)' }} />
               </div>
               <div>
                 <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Ajuda</h2>
@@ -113,7 +113,7 @@ export function HelpReportModal({ open, onClose }: HelpReportModalProps) {
                     color: 'var(--text-primary)', fontSize: 13, cursor: 'pointer', textAlign: 'left',
                   }}
                 >
-                  <Fa name={cat.icon} size={13} style={{ color: 'var(--accent)' }} />
+                  <Fa name={cat.icon} size={13} style={{ color: 'var(--text-primary)' }} />
                   {cat.label}
                 </button>
               ))}

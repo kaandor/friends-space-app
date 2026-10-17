@@ -119,7 +119,7 @@ export function SharePostModal({ post, authorName, currentUserId, onClose, onSha
         </div>
         <button
           onClick={() => onShareStory(post)}
-          style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+          style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--text-primary)', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
         >
           <CirclePlay size={15} strokeWidth={2} /> Postar no story
         </button>

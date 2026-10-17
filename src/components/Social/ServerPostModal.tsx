@@ -72,7 +72,7 @@ export function ServerPostModal({ server, initialMode = 'post', onClose, onPubli
               const f = e.target.files?.[0]; if (f) setAttachedFile({ file: f, name: `server-${Date.now()}.${f.name.split('.').pop()}`, type: f.type })
               e.target.value = ''
             }} />
-            <button onClick={() => fileRef.current?.click()} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 18, padding: '4px 6px' }} title="Anexar mídia">
+            <button onClick={() => fileRef.current?.click()} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', fontSize: 18, padding: '4px 6px' }} title="Anexar mídia">
               <Image size={17} strokeWidth={2} />
             </button>
             {attachedFile && (

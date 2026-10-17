@@ -499,7 +499,7 @@ export function CallView() {
           )}
           {pendingScreens.map(id => (
             <div key={id} style={{ position: 'absolute', top: recordingActive ? 52 : 12, left: '50%', transform: 'translateX(-50%)', zIndex: 299, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,.72)', border: '1px solid var(--border)', borderRadius: 999, padding: '7px 16px', fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-              <Fa name="circle-notch" size={12} className="fa-spin" style={{ color: 'var(--accent)' }} />
+              <Fa name="circle-notch" size={12} className="fa-spin" style={{ color: '#fff' }} />
               {participants.find(p => p.userId === id)?.userName || 'Usuário'} está transmitindo · conectando...
             </div>
           ))}
@@ -545,7 +545,7 @@ export function CallView() {
                       title="Clique para desfazer o destaque; botao direito: volume"
                     >
                       <video id={`call-video-screen-${mosaicFocus}`} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
-                      <span className="vc-mosaic-label">{participants.find(p => p.userId === mosaicFocus)?.userName || 'Usuário'} <b style={{ color: 'var(--accent)' }}>· EM DESTAQUE</b></span>
+                      <span className="vc-mosaic-label">{participants.find(p => p.userId === mosaicFocus)?.userName || 'Usuário'} <b style={{ color: '#fff' }}>· EM DESTAQUE</b></span>
                       {isFullscreen && typeof document !== 'undefined' && document.fullscreenElement?.id === `call-fs-mosaic-${mosaicFocus}` && (
                         <button
                           className="vc-fs-exit"
@@ -774,7 +774,7 @@ export function CallView() {
             <button
               onClick={() => setQualityMenu(q => !q)}
               title="Qualidade de transmissao"
-              style={{ fontSize: 11, fontWeight: 700, color: qualityMenu ? 'var(--accent)' : 'var(--text-secondary)', background: 'rgba(0,0,0,0.4)', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 6, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+              style={{ fontSize: 11, fontWeight: 700, color: qualityMenu ? '#fff' : 'var(--text-secondary)', background: 'rgba(0,0,0,0.4)', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 6, display: 'inline-flex', alignItems: 'center', gap: 5 }}
             >
               {preferredQuality} {preferredFps} · {preferredBitrate >= 1000 ? `${(preferredBitrate / 1000).toFixed(preferredBitrate % 1000 === 0 ? 0 : 1)} Mbps` : `${preferredBitrate} kbps`} <Fa name="gauge-high" size={10} />
             </button>
@@ -939,7 +939,7 @@ export function CallView() {
               <button
                 key={device.deviceId}
                 onClick={() => { setSelectedMic(device.deviceId); localStorage.setItem('friends-space:mic', device.deviceId); void switchMicDevice(device.deviceId).catch(() => { }); setMicMenu(null) }}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: selectedMic === device.deviceId ? 'var(--accent)' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: selectedMic === device.deviceId ? '#fff' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}
               >
                 <Fa name="microphone" size={12} style={{  opacity: selectedMic === device.deviceId ? 1 : 0.3 }} />
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{device.label}</span>
@@ -949,7 +949,7 @@ export function CallView() {
               <button
                 onClick={() => { void setCleanAudioEnabled(!isCleanAudioEnabledPref()).catch(() => { }); setMicMenu(null) }}
                 title="Remove ruido de fundo com IA (RNNoise). Vale na hora e nas proximas calls."
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: isCleanAudioEnabledPref() ? 'var(--accent)' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: isCleanAudioEnabledPref() ? '#fff' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}
               >
                 <Fa name="wand-magic-sparkles" size={12} style={{  opacity: isCleanAudioEnabledPref() ? 1 : 0.3 }} />
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{isCleanAudioEnabledPref() ? 'Áudio limpo ativado' : 'Áudio limpo (BETA)'}</span>
@@ -971,7 +971,7 @@ export function CallView() {
               <>
                 <div style={{ padding: '7px 10px 3px', color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Modo da camera</div>
                 {([['casual', 'Casual'], ['empresa', 'Empresa'], ['full', 'Tela cheia']] as [CameraMode, string][]).map(([value, label]) => (
-                  <button key={value} onClick={() => { setCameraMode(value); setCamMenu(null) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: getCameraMode() === value ? 'var(--accent)' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
+                  <button key={value} onClick={() => { setCameraMode(value); setCamMenu(null) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: getCameraMode() === value ? '#fff' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}>
                     <Fa name={value === 'casual' ? 'user' : value === 'empresa' ? 'briefcase' : 'maximize'} size={12} />
                     {label}
                   </button>
@@ -981,7 +981,7 @@ export function CallView() {
                     <div style={{ padding: '7px 10px 3px', color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Posicao</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                       {CAMERA_POSITIONS.map(pos => (
-                        <button key={pos.value} onClick={() => { setCameraPosition(pos.value); setCamMenu(null) }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px', borderRadius: 6, color: getCameraPosition() === pos.value ? 'var(--accent)' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 12, cursor: 'pointer' }} title={pos.label}>
+                        <button key={pos.value} onClick={() => { setCameraPosition(pos.value); setCamMenu(null) }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px', borderRadius: 6, color: getCameraPosition() === pos.value ? '#fff' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 12, cursor: 'pointer' }} title={pos.label}>
                           <Fa name={pos.icon} size={10} />
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pos.label}</span>
                         </button>
@@ -1041,7 +1041,7 @@ export function CallView() {
                 <button key={user.id} onClick={() => { void inviteToCall(user.id); setAddMenu(false); setAddQuery('') }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', borderRadius: 6, background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, color: 'var(--text-primary)', cursor: 'pointer' }} onMouseEnter={e => (e.currentTarget.style.background = '#1a1b1e')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   <Avatar src={user.photoUrl} name={user.name} size={30} />
                   <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</span>
-                  <Fa name="user-plus" size={12} style={{ color: 'var(--accent)' }} />
+                  <Fa name="user-plus" size={12} style={{ color: '#fff' }} />
                 </button>
               ))}
             </div>
@@ -1064,7 +1064,7 @@ export function CallView() {
             {(['480p', '720p', '1080p', '2k', '4k'] as const).map(quality => {
               const blocked = isQualityBlocked(currentUser, quality)
               return (
-                <button key={quality} disabled={blocked} onClick={() => { setPreferredQuality(quality); setQualityMenu(false) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: preferredQuality === quality ? 'var(--accent)' : blocked ? '#4a4d52' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: blocked ? 'not-allowed' : 'pointer', opacity: blocked ? 0.55 : 1 }} title={blocked ? `Qualidade bloqueada no seu plano ${getStreamPlanLabel(currentUser).label}. Assine ASTRO+ para liberar.` : undefined}>
+                <button key={quality} disabled={blocked} onClick={() => { setPreferredQuality(quality); setQualityMenu(false) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: preferredQuality === quality ? '#fff' : blocked ? '#4a4d52' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: blocked ? 'not-allowed' : 'pointer', opacity: blocked ? 0.55 : 1 }} title={blocked ? `Qualidade bloqueada no seu plano ${getStreamPlanLabel(currentUser).label}. Assine ASTRO+ para liberar.` : undefined}>
                   {preferredQuality === quality ? '?' : (blocked ? <Fa name="lock" size={11} style={{ width: 16, color: '#4a4d52' }} /> : <span style={{ width: 16 }} />)}
                   {quality}
                   {blocked && <span style={{ marginLeft: 'auto', fontSize: 10, color: '#4a4d52' }}>bloqueado</span>}
@@ -1075,7 +1075,7 @@ export function CallView() {
             {([30, 60] as const).map(fps => {
               const blocked = fps > getMaxStreamFps(currentUser)
               return (
-                <button key={fps} disabled={blocked} onClick={() => { void setPreferredFps(fps); setQualityMenu(false) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: preferredFps === fps ? 'var(--accent)' : blocked ? '#4a4d52' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: blocked ? 'not-allowed' : 'pointer', opacity: blocked ? 0.55 : 1 }} title={blocked ? '60 FPS bloqueado no seu plano. Assine ASTRO para liberar.' : undefined}>
+                <button key={fps} disabled={blocked} onClick={() => { void setPreferredFps(fps); setQualityMenu(false) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: preferredFps === fps ? '#fff' : blocked ? '#4a4d52' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: blocked ? 'not-allowed' : 'pointer', opacity: blocked ? 0.55 : 1 }} title={blocked ? '60 FPS bloqueado no seu plano. Assine ASTRO para liberar.' : undefined}>
                   {preferredFps === fps ? '?' : (blocked ? <Fa name="lock" size={11} style={{ width: 16, color: '#4a4d52' }} /> : <span style={{ width: 16 }} />)}
                   {fps} fps
                   {blocked && <span style={{ marginLeft: 'auto', fontSize: 10, color: '#4a4d52' }}>bloqueado</span>}
@@ -1086,7 +1086,7 @@ export function CallView() {
             {([2000, 4000, 6000, 8000, 12000, 16000, 25000, 35000, 45000] as const).map(kbps => {
               const bitrateBlocked = kbps > getMaxBitrateKbps(currentUser)
               return (
-              <button key={kbps} disabled={bitrateBlocked} onClick={() => { void setPreferredBitrate(kbps); setQualityMenu(false) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: preferredBitrate === kbps ? 'var(--accent)' : bitrateBlocked ? '#4a4d52' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: bitrateBlocked ? 'not-allowed' : 'pointer', opacity: bitrateBlocked ? 0.55 : 1 }} title={bitrateBlocked ? 'Bitrate bloqueado no seu plano. Assine ASTRO+ para liberar.' : undefined}>
+              <button key={kbps} disabled={bitrateBlocked} onClick={() => { void setPreferredBitrate(kbps); setQualityMenu(false) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: preferredBitrate === kbps ? '#fff' : bitrateBlocked ? '#4a4d52' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: bitrateBlocked ? 'not-allowed' : 'pointer', opacity: bitrateBlocked ? 0.55 : 1 }} title={bitrateBlocked ? 'Bitrate bloqueado no seu plano. Assine ASTRO+ para liberar.' : undefined}>
                 {preferredBitrate === kbps ? '?' : (bitrateBlocked ? <Fa name="lock" size={11} style={{ width: 16, color: '#4a4d52' }} /> : <span style={{ width: 16 }} />)}
                 {kbps >= 1000 ? `${(kbps / 1000).toFixed(kbps % 1000 === 0 ? 0 : 1)} Mbps` : `${kbps} kbps`}
                 {bitrateBlocked && <span style={{ marginLeft: 'auto', fontSize: 10, color: '#4a4d52' }}>bloqueado</span>}
@@ -1123,7 +1123,7 @@ export function CallView() {
           ))}
           {Object.keys(remoteScreenStreams).map(userId => (
             <div key={`vol-screen-${userId}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0' }}>
-              <Fa name="display" size={12} style={{  color: 'var(--accent)', width: 20, textAlign: 'center' }} />
+              <Fa name="display" size={12} style={{  color: '#fff', width: 20, textAlign: 'center' }} />
               <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, color: 'var(--text-secondary)' }}>Tela de {participants.find(p => p.userId === userId)?.userName || 'Alguém'}</span>
               <VolumeSlider value={clampVolume(volumes[`screen:${userId}`])} onChange={v => setScreenVolume(userId, v)} />
               <span style={{ fontSize: 10, color: 'var(--text-secondary)', width: 30, textAlign: 'right' }}>{Math.round(clampVolume(volumes[`screen:${userId}`]) * 100)}%</span>
@@ -1157,7 +1157,7 @@ export function CallView() {
 
       {controlRequests.length > 0 && (
         <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 230, width: 'min(380px, calc(100vw - 32px))', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 12, padding: 24, textAlign: 'center', color: 'var(--text-primary)', boxShadow: '0 16px 48px rgba(0,0,0,0.6)' }}>
-          <Fa name="hand-pointer" size={28} style={{  color: 'var(--accent)', marginBottom: 10 }} />
+          <Fa name="hand-pointer" size={28} style={{  color: '#fff', marginBottom: 10 }} />
           <h3 style={{ margin: '0 0 8px', fontSize: 17 }}>{controlRequests[0].userName || 'Alguem'} quer controlar seu PC</h3>
           <p style={{ margin: '0 0 14px', fontSize: 13, color: 'var(--text-secondary)' }}>Aceitar permite o acesso abaixo, pelo tempo escolhido.</p>
 <div style={{ textAlign: 'left', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', margin: '0 0 16px' }}>

@@ -116,7 +116,7 @@ export function CreateChannelModal({ open, initialType = 'text', initialCategory
       />
       {type === 'text' && name.trim() && (
         <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '6px 0 0' }}>
-          Vai ficar assim: <code style={{ color: 'var(--accent)' }}># {slugPreview(name)}</code>
+          Vai ficar assim: <code style={{ color: 'var(--text-primary)' }}># {slugPreview(name)}</code>
         </p>
       )}
 
@@ -285,7 +285,7 @@ export function RenameChannelModal({ open, currentName, channelType, onClose, on
   return (
     <Modal open={open} onClose={onClose} title={`Renomear canal de ${channelType === 'text' ? 'texto' : 'voz'}`}>
       <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Fa name={channelType === 'text' ? 'hashtag' : 'volume-high'} size={13} style={{ color: 'var(--accent)' }} />
+        <Fa name={channelType === 'text' ? 'hashtag' : 'volume-high'} size={13} style={{ color: 'var(--text-primary)' }} />
         {channelType === 'text' ? 'O nome fica em minúsculo com - no lugar de espaço.' : 'Dê o nome que você quiser.'}
       </p>
       <Input
@@ -298,7 +298,7 @@ export function RenameChannelModal({ open, currentName, channelType, onClose, on
       />
       {channelType === 'text' && name.trim() && (
         <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '6px 0 0' }}>
-          Vai ficar assim: <code style={{ color: 'var(--accent)' }}># {slugPreview(name)}</code>
+          Vai ficar assim: <code style={{ color: 'var(--text-primary)' }}># {slugPreview(name)}</code>
         </p>
       )}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 18 }}>

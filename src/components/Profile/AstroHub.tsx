@@ -150,7 +150,7 @@ export function AstroHub() {
       <button onClick={() => { if (paid) setShowWorkshop(true); else setShowPlans(true) }}
         style={{ width: '100%', marginTop: 10, display: 'flex', alignItems: 'center', gap: 11, padding: '13px 14px', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 14, cursor: 'pointer', textAlign: 'left' }}>
         <span style={{ width: 32, height: 32, borderRadius: 10, background: 'color-mix(in srgb, var(--accent) 14%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Palette size={16} strokeWidth={2} color="var(--accent)" />
+          <Palette size={16} strokeWidth={2} color="var(--text-primary)" />
         </span>
         <span style={{ flex: 1 }}>
           <span style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 800, fontSize: 13.5 }}>Workshop de temas</span>
@@ -165,7 +165,7 @@ export function AstroHub() {
         ) : (
           <div onClick={() => setShowPlans(true)}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 14, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 14, cursor: 'pointer' }}>
-            <Lock size={16} strokeWidth={2} color="var(--accent)" />
+            <Lock size={16} strokeWidth={2} color="var(--text-primary)" />
             <div style={{ flex: 1 }}>
               <div style={{ color: 'var(--text-primary)', fontWeight: 800, fontSize: 13.5 }}>Minha assinatura</div>
               <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Renovar, reembolsar, trocar plano, pagamento e suporte.</div>
@@ -185,7 +185,7 @@ export function AstroHub() {
 // Reaproveitado no lock do workshop quando gratuito
 export function AstroLockTag() {
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 14%, transparent)', borderRadius: 999, padding: '3px 9px', marginLeft: 8, verticalAlign: 2 }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, color: 'var(--text-primary)', background: 'color-mix(in srgb, var(--accent) 14%, transparent)', borderRadius: 999, padding: '3px 9px', marginLeft: 8, verticalAlign: 2 }}>
       <Lock size={10} strokeWidth={3} /> ASTRO
     </span>
   )

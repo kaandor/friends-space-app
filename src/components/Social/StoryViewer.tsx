@@ -215,7 +215,7 @@ export function StoryViewer({ group, onClose, onDelete, onMessage, onOpenPost, o
           onClick={(e) => { e.stopPropagation(); if (item.sharedPostId && onOpenPost) onOpenPost(item.sharedPostId) }}
           style={{ margin: '10px 16px 0', background: 'rgba(20,20,28,.92)', border: '1px solid rgba(255,255,255,.12)', borderRadius: 12, padding: 10, cursor: 'pointer', textAlign: 'left', maxWidth: 400, width: 'calc(100% - 32px)', color: '#fff' }}
         >
-          <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, marginBottom: 4 }}>Post compartilhado · ver e comentar</div>
+          <div style={{ fontSize: 11, color: '#fff', fontWeight: 700, marginBottom: 4 }}>Post compartilhado · ver e comentar</div>
           <div style={{ fontSize: 12, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {sharedPost ? sharedPost.content : 'Carregando post...'}
           </div>
@@ -273,7 +273,7 @@ export function StoryViewer({ group, onClose, onDelete, onMessage, onOpenPost, o
         )}
         {item.sharedPostId && onOpenPost && (
           <button onClick={(e) => { e.stopPropagation(); if (item.sharedPostId) onOpenPost(item.sharedPostId) }} title="Ver post"
-            style={{ background: 'rgba(0,0,0,.45)', border: 'none', borderRadius: 999, padding: '8px 12px', color: 'var(--accent)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            style={{ background: 'rgba(0,0,0,.45)', border: 'none', borderRadius: 999, padding: '8px 12px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
             Ver post
           </button>
         )}

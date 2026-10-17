@@ -525,12 +525,12 @@ export function ChatView({ channel }: ChatViewProps) {
                 >
                   {!sameUser && !sent && (
                     <span
-                      style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+                      style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
                       onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); openUserMenu(msgUser, e.clientX, e.clientY) }}
                     >
                       <Avatar src={msg.userPhoto} name={msg.userName} size={20} />
                       <span className={nameClassOf(msgUser)} style={nameStyleOf(msgUser)}>{msg.userName}</span>
-                      {hasAstroBadge(msgUser) && <Rocket size={11} strokeWidth={2.5} color="var(--accent)" />}
+                      {hasAstroBadge(msgUser) && <Rocket size={11} strokeWidth={2.5} color="var(--text-primary)" />}
                       {isBotMsg(msg) && botBadge(false)}
                     </span>
                   )}
@@ -611,9 +611,9 @@ export function ChatView({ channel }: ChatViewProps) {
 
       {replyTo && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)' }}>
-          <Fa name="reply" size={14} style={{ color: 'var(--accent)' }} />
+          <Fa name="reply" size={14} style={{ color: 'var(--text-primary)' }} />
           <div style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            Respondendo a <b style={{ color: 'var(--accent)' }}>{replyTo.userName}</b>: {replyTo.content.slice(0, 120)}
+            Respondendo a <b style={{ color: 'var(--text-primary)' }}>{replyTo.userName}</b>: {replyTo.content.slice(0, 120)}
           </div>
           <button onClick={() => setReplyTo(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><Fa name="xmark" size={14} /></button>
         </div>
@@ -683,7 +683,7 @@ export function ChatView({ channel }: ChatViewProps) {
                 display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
                 fontSize: 11.5, fontWeight: 700, padding: '8px 12px', borderRadius: 8,
                 background: 'var(--bg-tertiary)', border: '1px solid var(--border)',
-                color: 'var(--accent)', cursor: sending ? 'default' : 'pointer', flexShrink: 0,
+                color: 'var(--text-primary)', cursor: sending ? 'default' : 'pointer', flexShrink: 0,
               }}
             >
               <Fa name="file-lines" size={14} /> Enviar como .txt

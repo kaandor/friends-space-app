@@ -220,10 +220,10 @@ export function ChannelSidebar({ server, onOpenSettings, onChannelSelect, onRetu
           <Volume2 size={16} strokeWidth={2} />
           <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{channel.name}</span>
           {isCallHere && callDuration && (
-            <span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, flexShrink: 0 }}>{callDuration}</span>
+            <span style={{ fontSize: 11, color: 'var(--text-primary)', fontWeight: 600, flexShrink: 0 }}>{callDuration}</span>
           )}
           {!isCallHere && otherSessionMembers.length > 0 && (
-            <span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, flexShrink: 0 }}>{otherSessionMembers.length}</span>
+            <span style={{ fontSize: 11, color: 'var(--text-primary)', fontWeight: 700, flexShrink: 0 }}>{otherSessionMembers.length}</span>
           )}
         </button>
         {shownMembers.length > 0 && (
@@ -510,7 +510,7 @@ export function ChannelSidebar({ server, onOpenSettings, onChannelSelect, onRetu
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               <span style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Hash size={14} strokeWidth={2} style={{ color: 'var(--accent)' }} />
+                <Hash size={14} strokeWidth={2} style={{ color: 'var(--text-primary)' }} />
               </span>
               Criar canal
             </button>
@@ -521,7 +521,7 @@ export function ChannelSidebar({ server, onOpenSettings, onChannelSelect, onRetu
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               <span style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Folder size={14} strokeWidth={2} style={{ color: 'var(--accent)' }} />
+                <Folder size={14} strokeWidth={2} style={{ color: 'var(--text-primary)' }} />
               </span>
               Criar categoria
             </button>

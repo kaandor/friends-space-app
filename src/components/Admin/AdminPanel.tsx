@@ -54,7 +54,7 @@ function ModalHeader({ icon: Icon, title, subtitle, onClose, action }: { icon?: 
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
       {Icon && (
         <span style={{ width: 38, height: 38, borderRadius: 11, background: 'color-mix(in srgb, var(--accent) 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Icon size={18} style={{ color: 'var(--accent)' }} />
+          <Icon size={18} style={{ color: 'var(--text-primary)' }} />
         </span>
       )}
       <div style={{ minWidth: 0, flex: 1 }}>
@@ -87,7 +87,7 @@ function ReportCard({ report, onRespond, onBan }: {
   return (
     <div style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 10, padding: 12, marginBottom: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 10.5, fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: 'var(--bg-secondary)', color: 'var(--accent)', textTransform: 'uppercase' }}>{TYPE_LABEL[report.type] || report.type}</span>
+        <span style={{ fontSize: 10.5, fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: 'var(--bg-secondary)', color: 'var(--text-primary)', textTransform: 'uppercase' }}>{TYPE_LABEL[report.type] || report.type}</span>
         <span style={{ fontSize: 11, color: report.status === 'pending' ? AMBER : GREEN, fontWeight: 700 }}>
           {report.status === 'pending' ? 'Pendente' : 'Respondida'}
         </span>
@@ -412,8 +412,8 @@ export function AdminPanel({ open, onClose, initialTab }: { open: boolean; onClo
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '2px 8px 14px' }}>
               <span style={{ width: 34, height: 34, borderRadius: 10, background: 'color-mix(in srgb, var(--accent) 16%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {isDevFlag
-                  ? <Code2 size={17} strokeWidth={2.5} style={{ color: 'var(--accent)' }} />
-                  : <Fa name="headset" size={15} style={{ color: 'var(--accent)' }} />}
+                  ? <Code2 size={17} strokeWidth={2.5} style={{ color: 'var(--text-primary)' }} />
+                  : <Fa name="headset" size={15} style={{ color: 'var(--text-primary)' }} />}
               </span>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2 }}>{isDevFlag ? 'Painel Dev' : 'Painel Suporte'}</div>

@@ -99,7 +99,7 @@ export function AppearanceModal({ onClose }: Props) {
               ))}
             </div>
           </div>
-          {msg && <p style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 700 }}>{msg}</p>}
+          {msg && <p style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 700 }}>{msg}</p>}
         </div>
         <div className="appearance-modal-footer">
           <button onClick={() => void save()} disabled={saving}>{saving ? 'Salvando...' : 'Concluir'}</button>

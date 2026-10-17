@@ -116,7 +116,7 @@ export function MobileDiscover() {
           <Avatar src={s.photoUrl} name={s.name} size={44} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {s.name} {s.verified && <Fa name="badge-check" size={12} style={{ color: 'var(--accent)' }} />}
+              {s.name} {s.verified && <Fa name="badge-check" size={12} style={{ color: 'var(--text-primary)' }} />}
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.members} membro{s.members === 1 ? '' : 's'}</div>
           </div>

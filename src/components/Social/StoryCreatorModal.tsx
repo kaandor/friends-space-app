@@ -165,11 +165,11 @@ export function StoryCreatorModal({ mediaUrl, mediaType, initialPhotos, sharedPo
           </div>
           {sharedPost && (
             <div style={{ position: 'absolute', top: 64, left: 16, right: 16, background: 'rgba(18,18,26,.94)', borderRadius: 14, padding: 12, border: '1px solid rgba(255,255,255,.12)', boxShadow: '0 8px 24px rgba(0,0,0,.5)' }}>
-              <div style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 800, letterSpacing: 0.5, marginBottom: 5 }}>{sharedPostAuthorName || 'Post'}</div>
+              <div style={{ fontSize: 10, color: '#fff', fontWeight: 800, letterSpacing: 0.5, marginBottom: 5 }}>{sharedPostAuthorName || 'Post'}</div>
               <div style={{ fontSize: 12.5, color: '#fff', lineHeight: 1.45, display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                 {sharedPost.content}
               </div>
-              <div style={{ fontSize: 10.5, color: 'var(--accent)', marginTop: 6, fontWeight: 700 }}>Ver post →</div>
+              <div style={{ fontSize: 10.5, color: '#fff', marginTop: 6, fontWeight: 700 }}>Ver post →</div>
             </div>
           )}
           {text.trim() ? (

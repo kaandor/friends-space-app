@@ -183,7 +183,7 @@ export function TopBar({ activeUser, onShowPrivacy, onShowEditProfile, onShowAst
                 <div className="fs-dropdown-header">
                   <h4>{t('notifs.friendRequests')}</h4>
                   {unread > 0 && (
-                    <button onClick={() => void markAllRead()} style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                    <button onClick={() => void markAllRead()} style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
                       Marcar todas como lidas
                     </button>
                   )}
@@ -353,7 +353,7 @@ export function TopBar({ activeUser, onShowPrivacy, onShowEditProfile, onShowAst
               </button>
               {onShowAstro && (
                 <button className="fs-dropdown-item" onClick={() => { closeMenus(); onShowAstro() }}>
-                  <Rocket size={15} strokeWidth={2} color="var(--accent)" /> <b style={{ color: 'var(--accent)' }}>Astro</b>
+                  <Rocket size={15} strokeWidth={2} color="var(--text-primary)" /> <b style={{ color: 'var(--text-primary)' }}>Astro</b>
                 </button>
               )}
               {canOpenAdminPanel(me) && (

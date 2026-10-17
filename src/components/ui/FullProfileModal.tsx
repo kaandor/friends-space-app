@@ -78,7 +78,7 @@ function WallSection({ ownerId, meId, canPost }: WallSectionProps) {
   return (
     <div style={{ marginTop: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <Fa name="clipboard" size={13} style={{ color: 'var(--accent)' }} />
+        <Fa name="clipboard" size={13} style={{ color: 'var(--text-primary)' }} />
         <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13 }}>Mural</span>
         <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{posts.length}</span>
       </div>
@@ -239,7 +239,7 @@ export function FullProfileModal({ user, onClose }: { user: User; onClose: () =>
           </div>
 
           {statusMessage && (
-            <div style={{ marginTop: 10, color: 'var(--accent)', fontSize: 13 }}>{statusMessage}</div>
+            <div style={{ marginTop: 10, color: 'var(--text-primary)', fontSize: 13 }}>{statusMessage}</div>
           )}
 
           {user.bio && (
@@ -269,7 +269,7 @@ export function FullProfileModal({ user, onClose }: { user: User; onClose: () =>
           {/* Atividade */}
           {user.activityName && settings['showActivity'] !== false && (
             <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'var(--bg-tertiary)', borderRadius: 8, border: '1px solid var(--border)' }}>
-              <Fa name="gamepad" size={14} style={{ color: 'var(--accent)' }} />
+              <Fa name="gamepad" size={14} style={{ color: 'var(--text-primary)' }} />
               <div style={{ minWidth: 0 }}>
                 <div style={{ color: 'var(--text-primary)', fontSize: 12, fontWeight: 600 }}>{user.activityName}</div>
                 {user.activityDetails && <div style={{ color: 'var(--text-muted)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.activityDetails}</div>}
@@ -294,7 +294,7 @@ export function FullProfileModal({ user, onClose }: { user: User; onClose: () =>
           {user.id !== meId && (
             <div style={{ marginTop: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <Fa name="user-group" size={13} style={{ color: 'var(--accent)' }} />
+                <Fa name="user-group" size={13} style={{ color: 'var(--text-primary)' }} />
                 <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13 }}>Amigos em comum</span>
                 <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{mutualFriends.length}</span>
               </div>
@@ -317,7 +317,7 @@ export function FullProfileModal({ user, onClose }: { user: User; onClose: () =>
           {user.id !== meId && (
             <div style={{ marginTop: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <Fa name="server" size={13} style={{ color: 'var(--accent)' }} />
+                <Fa name="server" size={13} style={{ color: 'var(--text-primary)' }} />
                 <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13 }}>Servidores em comum</span>
                 <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{mutualServers.length}</span>
               </div>

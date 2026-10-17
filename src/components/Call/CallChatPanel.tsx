@@ -155,7 +155,7 @@ export function CallChatPanel({ channel, onClose }: { channel: Channel; onClose:
           const sent = msg.userId === currentUser?.id
           return (
             <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: sent ? 'flex-end' : 'flex-start' }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
                 <Avatar src={msg.userPhoto} name={msg.userName} size={16} />
                 {msg.userName}
               </span>
@@ -189,7 +189,7 @@ export function CallChatPanel({ channel, onClose }: { channel: Channel; onClose:
           placeholder={`Mensagem para ${channel.name}`}
           style={{ flex: 1, minWidth: 0, background: 'var(--bg-secondary)', border: 'none', borderRadius: 8, padding: '8px 10px', color: 'var(--text-primary)', fontSize: 12.5, outline: 'none' }}
         />
-        <button onClick={() => setShowEmoji(s => !s)} title="Emojis" style={{ background: 'transparent', border: 'none', color: showEmoji ? 'var(--accent)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 15, padding: 4 }}><Fa name="face-smile" size={14} /></button>
+        <button onClick={() => setShowEmoji(s => !s)} title="Emojis" style={{ background: 'transparent', border: 'none', color: showEmoji ? '#fff' : 'var(--text-muted)', cursor: 'pointer', fontSize: 15, padding: 4 }}><Fa name="face-smile" size={14} /></button>
         <button onClick={() => void send()} disabled={sending} title="Enviar" style={{ background: 'var(--accent)', border: 'none', color: '#000', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Fa name="paper-plane" size={14} /></button>
       </div>
     </div>

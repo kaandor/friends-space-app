@@ -747,7 +747,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'rgba(0,0,0,0.6)' }} />
           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 151, width: 'min(380px, calc(100vw - 32px))', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 12, padding: 24, textAlign: 'center', color: 'var(--text-primary)' }}>
-            <Fa name="mouse-pointer" size={26} style={{  color: 'var(--accent)', marginBottom: 12 }} />
+            <Fa name="mouse-pointer" size={26} style={{  color: '#fff', marginBottom: 12 }} />
             <h3 style={{ margin: '0 0 8px', fontSize: 17 }}>{controlRequests[0].userName || 'Alguem'}</h3>
             <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, margin: '0 0 14px' }}>quer controlar seu PC. So aceite se confiar nesta pessoa.</p>
 <div style={{ textAlign: 'left', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', margin: '0 0 16px' }}>
@@ -795,7 +795,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
               <button
                 key={device.deviceId}
                 onClick={() => { setSelectedMic(device.deviceId); localStorage.setItem('friends-space:mic', device.deviceId); void switchMicDevice(device.deviceId).catch(() => { }); setMicMenu(null) }}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: selectedMic === device.deviceId ? 'var(--accent)' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: selectedMic === device.deviceId ? '#fff' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}
               >
                 <Fa name="microphone" size={12} style={{  opacity: selectedMic === device.deviceId ? 1 : 0.3 }} />
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{device.label}</span>
@@ -820,7 +820,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
                   window.dispatchEvent(new Event('friends-space:output-changed'))
                   setOutMenu(null)
                 }}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: selectedOutput === device.deviceId ? 'var(--accent)' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6, color: selectedOutput === device.deviceId ? '#fff' : 'var(--text-secondary)', background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer' }}
               >
                 <Fa name="headphones" size={12} style={{  opacity: selectedOutput === device.deviceId ? 1 : 0.3 }} />
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{device.label}</span>

@@ -450,11 +450,11 @@ ${u}`.trim().slice(0, 500)
       if (part.startsWith('#')) {
         const tag = part.toLowerCase()
         return <button key={i} onClick={() => setActiveHashtag(activeHashtag === tag ? '' : tag)}
-          style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', fontWeight: 600, cursor: 'pointer', fontSize: 'inherit', fontFamily: 'inherit' }}>{part}</button>
+          style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-primary)', fontWeight: 600, cursor: 'pointer', fontSize: 'inherit', fontFamily: 'inherit' }}>{part}</button>
       }
       // URL inline
       if (URL_RE.test(part)) {
-        return <span key={i} style={{ color: 'var(--accent)', wordBreak: 'break-all' }}>{part}</span>
+        return <span key={i} style={{ color: 'var(--text-primary)', wordBreak: 'break-all' }}>{part}</span>
       }
       return <span key={i}>{part}</span>
     })
@@ -497,7 +497,7 @@ ${u}`.trim().slice(0, 500)
             {trending.slice(0, 3).map(t => (
               <button key={t.tag} onClick={() => setActiveHashtag(activeHashtag === t.tag ? '' : t.tag)}
                 style={{ display: 'flex', width: '100%', alignItems: 'baseline', gap: 8, background: 'none', border: 'none', cursor: 'pointer', padding: '8px 14px', textAlign: 'left' }}>
-                <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 13 }}>{t.tag}</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13 }}>{t.tag}</span>
                 <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{t.count} posts</span>
               </button>
             ))}
@@ -517,7 +517,7 @@ ${u}`.trim().slice(0, 500)
                   <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.members} membros</div>
                 </div>
                 <button onClick={() => void handleFollow(s)} disabled={joiningId === s.id}
-                  style={{ padding: '6px 14px', borderRadius: 999, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', fontWeight: 800, fontSize: 12, cursor: 'pointer', opacity: joiningId === s.id ? 0.5 : 1, flexShrink: 0 }}>
+                  style={{ padding: '6px 14px', borderRadius: 999, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--text-primary)', fontWeight: 800, fontSize: 12, cursor: 'pointer', opacity: joiningId === s.id ? 0.5 : 1, flexShrink: 0 }}>
                   {joiningId === s.id ? '...' : 'Seguir'}
                 </button>
               </div>
@@ -546,7 +546,7 @@ ${u}`.trim().slice(0, 500)
               </div>
             </div>
               {firstUrl(composer) && (
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4, padding: '3px 8px', borderRadius: 999, background: 'var(--bg-tertiary)', fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4, padding: '3px 8px', borderRadius: 999, background: 'var(--bg-tertiary)', fontSize: 11, color: 'var(--text-primary)', fontWeight: 600 }}>
                   🔗 Link detectado
                 </div>
               )}
@@ -563,7 +563,7 @@ ${u}`.trim().slice(0, 500)
                   ))}
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     {pollOptions.length < 4 && (
-                      <button onClick={() => setPollOptions(o => [...o, ''])} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>+ Adicionar opção</button>
+                      <button onClick={() => setPollOptions(o => [...o, ''])} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>+ Adicionar opção</button>
                     )}
                     <span style={{ flex: 1 }} />
                     <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Duração:</span>
@@ -585,13 +585,13 @@ ${u}`.trim().slice(0, 500)
               {(scheduledAt || location.trim() || promoted) && (
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
                   {scheduledAt && (
-                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', background: 'var(--bg-tertiary)', borderRadius: 999, padding: '4px 10px' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', background: 'var(--bg-tertiary)', borderRadius: 999, padding: '4px 10px' }}>
                       🕒 {new Date(scheduledAt).toLocaleDateString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       <button onClick={() => setScheduledAt('')} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', marginLeft: 4 }}>✕</button>
                     </span>
                   )}
                   {location.trim() && (
-                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', background: 'var(--bg-tertiary)', borderRadius: 999, padding: '4px 10px' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', background: 'var(--bg-tertiary)', borderRadius: 999, padding: '4px 10px' }}>
                       📍 {location.trim().slice(0, 30)}
                       <button onClick={() => setLocation('')} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', marginLeft: 4 }}>✕</button>
                     </span>
@@ -751,7 +751,7 @@ ${u}`.trim().slice(0, 500)
                   <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center', marginTop: 2 }}>
                     {s.category && <span style={{ fontSize: 10, fontWeight: 800, background: 'var(--accent)', color: '#000', borderRadius: 4, padding: '1px 6px' }}>{s.category}</span>}
                     {(s.tags || []).slice(0, 3).map(tag => (
-                      <span key={tag} style={{ fontSize: 10, color: 'var(--accent)' }}>#{tag}</span>
+                      <span key={tag} style={{ fontSize: 10, color: 'var(--text-primary)' }}>#{tag}</span>
                     ))}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{s.members} membro{s.members === 1 ? '' : 's'}{s.description ? ` · ${s.description.slice(0, 60)}` : ''}</div>
@@ -792,7 +792,7 @@ ${u}`.trim().slice(0, 500)
                       return (
                         <>
                           <span className={nameClassOf(au)} style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--text-primary)', letterSpacing: '-0.005em', ...nameStyleOf(au) }}>{authorOf(post).name}</span>
-                          {hasAstroBadge(au) && <Rocket size={12} strokeWidth={2.5} color="var(--accent)" style={{ flexShrink: 0 }} />}
+                          {hasAstroBadge(au) && <Rocket size={12} strokeWidth={2.5} color="var(--text-primary)" style={{ flexShrink: 0 }} />}
                         </>
                       )
                     })()}
@@ -844,7 +844,7 @@ ${u}`.trim().slice(0, 500)
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
                       {post.location && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>📍 {post.location}</span>}
                       {post.promoted && <span style={{ fontSize: 10, fontWeight: 800, background: 'var(--accent)', color: '#000', borderRadius: 4, padding: '1px 6px' }}>📣 DIVULGADO</span>}
-                      {(post.scheduledFor || 0) > Date.now() && <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--accent)' }}>🕒 AGENDADO</span>}
+                      {(post.scheduledFor || 0) > Date.now() && <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-primary)' }}>🕒 AGENDADO</span>}
                     </div>
                   )}
                   {post.poll && <PollView post={post} currentUserId={currentUser?.id || ''} onVoted={p => setPosts(ps => ps.map(x => x.id === p.id ? p : x))} />}
@@ -1008,14 +1008,14 @@ ${u}`.trim().slice(0, 500)
                 onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                 <span style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: 12, minWidth: 16 }}>{idx + 1}</span>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <span style={{ color: activeHashtag === t.tag ? 'var(--accent)' : 'var(--text-primary)', fontWeight: 700, fontSize: 13 }}>{t.tag}</span>
+                  <span style={{ color: activeHashtag === t.tag ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: 700, fontSize: 13 }}>{t.tag}</span>
                   <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>{t.count} posts</div>
                 </div>
                 <span style={{ color: 'var(--text-muted)', fontSize: 16 }}>›</span>
               </button>
             ))}
             {activeHashtag && (
-              <button onClick={() => setActiveHashtag('')} style={{ padding: '10px 14px', background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 12, fontWeight: 600, textAlign: 'left' }}>
+              <button onClick={() => setActiveHashtag('')} style={{ padding: '10px 14px', background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', fontSize: 12, fontWeight: 600, textAlign: 'left' }}>
                 Limpar filtro
               </button>
             )}
@@ -1047,7 +1047,7 @@ ${u}`.trim().slice(0, 500)
             </div>
           ))}
           {visibleNews.length > 5 && (
-            <button onClick={() => setShowAllNews(s => !s)} style={{ padding: '10px 14px', background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 12, fontWeight: 600, textAlign: 'left' }}>
+            <button onClick={() => setShowAllNews(s => !s)} style={{ padding: '10px 14px', background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', fontSize: 12, fontWeight: 600, textAlign: 'left' }}>
               {showAllNews ? 'Ver menos' : 'Ver mais'}
             </button>
           )}
@@ -1066,7 +1066,7 @@ ${u}`.trim().slice(0, 500)
             <Avatar src={s.photoUrl} name={s.name} size={36} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {s.name} {s.verified && <span style={{ color: 'var(--accent)' }}>✔</span>}
+                {s.name} {s.verified && <span style={{ color: 'var(--text-primary)' }}>✔</span>}
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.category ? `${s.category} · ` : ''}{s.members} membro{s.members === 1 ? '' : 's'}</div>
             </div>
@@ -1083,7 +1083,7 @@ ${u}`.trim().slice(0, 500)
           </div>
         ))}
         {suggested.length > 3 && (
-          <button onClick={() => setShowAllSug(v => !v)} style={{ padding: '10px 14px', background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 12, fontWeight: 600, textAlign: 'left' }}>
+          <button onClick={() => setShowAllSug(v => !v)} style={{ padding: '10px 14px', background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', fontSize: 12, fontWeight: 600, textAlign: 'left' }}>
             {showAllSug ? 'Ver menos' : 'Mostrar mais'}
           </button>
         )}

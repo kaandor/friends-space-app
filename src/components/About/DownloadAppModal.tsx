@@ -156,18 +156,18 @@ export function DownloadAppModal({ open, onClose }: DownloadAppModalProps) {
           {CHANGELOG.length > 0 && (
             <div style={{ marginBottom: 20, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 14, padding: '16px 18px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <Fa name="rocket" size={14} style={{ color: 'var(--accent)' }} />
+                <Fa name="rocket" size={14} style={{ color: 'var(--text-primary)' }} />
                 <span style={{ fontWeight: 800, fontSize: 15 }}>Novidades da versão {CHANGELOG[0].version}</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>App desktop</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>App desktop</div>
                   <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
                     {CHANGELOG[0].app.map((item, i) => <li key={i}>{item}</li>)}
                   </ul>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Site</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Site</div>
                   <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
                     {CHANGELOG[0].site.map((item, i) => <li key={i}>{item}</li>)}
                   </ul>
@@ -183,7 +183,7 @@ export function DownloadAppModal({ open, onClose }: DownloadAppModalProps) {
               <Fa name="circle-info" size={14} />
             </div>
             <p style={{ margin: 0, lineHeight: 1.45 }}>
-              Precisa de ajuda? Consulte nossa <a href="#help" onClick={e => e.preventDefault()} style={{ color: 'var(--accent)' }}>Central de Ajuda</a> ou entre no nosso <a href="#community" onClick={e => e.preventDefault()} style={{ color: 'var(--accent)' }}>servidor no Friends Space.</a>
+              Precisa de ajuda? Consulte nossa <a href="#help" onClick={e => e.preventDefault()} style={{ color: 'var(--text-primary)' }}>Central de Ajuda</a> ou entre no nosso <a href="#community" onClick={e => e.preventDefault()} style={{ color: 'var(--text-primary)' }}>servidor no Friends Space.</a>
             </p>
           </div>
         </footer>

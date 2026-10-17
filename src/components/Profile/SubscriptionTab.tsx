@@ -214,7 +214,7 @@ export function SubscriptionTab() {
                 {busy === 'support' ? '...' : 'Abrir ticket'}
               </button>
             </div>
-            {ticketId && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--accent)', fontWeight: 700 }}>Ticket {ticketId} aberto.</div>}
+            {ticketId && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-primary)', fontWeight: 700 }}>Ticket {ticketId} aberto.</div>}
           </div>
         </div>
       )}

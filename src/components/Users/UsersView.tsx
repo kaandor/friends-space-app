@@ -30,7 +30,7 @@ export function UsersView() {
     <div className="fs-chat-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-primary)' }}>
       <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--accent-dim)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
+          <span style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--accent-dim)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
             <Fa name="users" size={14} />
           </span>
           <h2 style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
@@ -68,7 +68,7 @@ export function UsersView() {
               <div style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 14 }}>
                 {user.name}
                 {user.activityEnabled !== false && user.activityPrivacy !== 'private' && user.activityName && (
-                  <span style={{ color: 'var(--accent)', fontSize: 12, marginLeft: 8 }}>
+                  <span style={{ color: 'var(--text-primary)', fontSize: 12, marginLeft: 8 }}>
                     — {user.activityName}
                   </span>
                 )}

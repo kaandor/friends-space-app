@@ -74,7 +74,7 @@ export function DataRecovery({ onClose }: { onClose: () => void }) {
         <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
           {counts === null ? 'Lendo aparelho...' : total === 0 ? 'Nada salvo neste aparelho.' : `No aparelho: ${counts.servers} servidores · ${counts.users} usuários · ${counts.friends} amizades · ${counts.messages} mensagens`}
         </p>
-        {result && <p style={{ fontSize: 13, color: 'var(--accent)' }}>{result}</p>}
+        {result && <p style={{ fontSize: 13, color: 'var(--text-primary)' }}>{result}</p>}
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
           <button type="button" onClick={() => void run()} disabled={working || total === 0} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#04120a', fontWeight: 700, cursor: working || total === 0 ? 'not-allowed' : 'pointer', opacity: working || total === 0 ? 0.6 : 1 }}>
             {working ? 'Enviando...' : 'Recuperar'}

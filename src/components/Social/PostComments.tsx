@@ -44,7 +44,7 @@ function renderRich(text: string, users: User[]) {
       const code = part.slice(1).toLowerCase()
       const match = users.find((u) => (u.friendCode || '').toLowerCase() === code)
       return (
-        <span key={i} title={match?.name || part} style={{ color: 'var(--accent)', fontWeight: 700 }}>
+        <span key={i} title={match?.name || part} style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
           {part}
         </span>
       )
@@ -191,7 +191,7 @@ export function PostComments({ postId, initial, users, currentUserId, header }: 
         title={open ? 'Ocultar comentários' : 'Ver comentários'}
         style={{
           background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-          color: open ? 'var(--accent)' : 'var(--text-muted)', fontSize: 12.5, fontWeight: 700, padding: '2px 0',
+          color: open ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: 12.5, fontWeight: 700, padding: '2px 0',
         }}
       >
         <MessageCircle size={16} strokeWidth={2} />
@@ -233,7 +233,7 @@ export function PostComments({ postId, initial, users, currentUserId, header }: 
                         ? <VideoPlayer src={header.mediaUrl} maxHeight={220} />
                         : <img src={header.mediaUrl} alt="" style={{ marginTop: 6, maxWidth: '100%', maxHeight: 220, borderRadius: 10, objectFit: 'cover', display: 'block' }} />
                     )}
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>Respondendo a <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{header.name}</span></div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>Respondendo a <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{header.name}</span></div>
                   </div>
                 </div>
               )}
@@ -263,7 +263,7 @@ export function PostComments({ postId, initial, users, currentUserId, header }: 
                             return (
                               <>
                                 <span className={nameClassOf(cu)} style={{ fontWeight: 600, color: 'var(--text-primary)', ...nameStyleOf(cu) }}>{codeOf(r.userId) ? `@${codeOf(r.userId)}` : nameOf(r.userId)}</span>
-                                {hasAstroBadge(cu) && <Rocket size={11} strokeWidth={2.5} color="var(--accent)" />}
+                                {hasAstroBadge(cu) && <Rocket size={11} strokeWidth={2.5} color="var(--text-primary)" />}
                               </>
                             )
                           })()}
@@ -316,7 +316,7 @@ export function PostComments({ postId, initial, users, currentUserId, header }: 
                       <div style={{ marginLeft: 44, marginTop: 6 }}>
                         {!open ? (
                           <button onClick={() => toggleId(repliesOpen, setRepliesOpen, c.id)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: 12.5, fontWeight: 700, padding: '4px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 700, padding: '4px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
                             <span style={{ display: 'inline-block', width: 20, height: 1, background: 'var(--text-muted)' }} />
                             Mostrar {replies.length === 1 ? '1 resposta' : `${replies.length} respostas`}
                             <ChevronDown size={12} strokeWidth={2.5} />
@@ -324,7 +324,7 @@ export function PostComments({ postId, initial, users, currentUserId, header }: 
                         ) : (
                           <>
                             <button onClick={() => toggleId(repliesOpen, setRepliesOpen, c.id)}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: 12.5, fontWeight: 700, padding: '4px 0', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 700, padding: '4px 0', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                               <span style={{ display: 'inline-block', width: 20, height: 1, background: 'var(--text-muted)' }} />
                               Ocultar respostas
                               <ChevronUp size={12} strokeWidth={2.5} />
@@ -352,7 +352,7 @@ export function PostComments({ postId, initial, users, currentUserId, header }: 
                     >
                       <Avatar src={u.photoUrl} name={u.name} size={24} />
                       <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-primary)' }}>{u.name}</span>
-                      <span style={{ fontSize: 11, color: 'var(--accent)' }}>@{u.friendCode}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-primary)' }}>@{u.friendCode}</span>
                     </button>
                   ))}
                 </div>
@@ -398,7 +398,7 @@ export function PostComments({ postId, initial, users, currentUserId, header }: 
               )}
               {replyTo && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, fontSize: 12, color: 'var(--text-muted)' }}>
-                  <span>Respondendo a <b style={{ color: 'var(--accent)' }}>{replyTo.name}</b></span>
+                  <span>Respondendo a <b style={{ color: 'var(--text-primary)' }}>{replyTo.name}</b></span>
                   <button onClick={() => setReplyTo(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12 }}>✕</button>
                 </div>
               )}

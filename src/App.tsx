@@ -1461,7 +1461,7 @@ function App() {
         <div style={{ position: 'fixed', inset: 0, zIndex: 2100, display: !updateBannerDismissed ? 'flex' : 'none', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, maxWidth: 400, textAlign: 'center', padding: 20 }}>
             <div style={{ width: 80, height: 80, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--accent)', boxShadow: '0 0 24px color-mix(in srgb, var(--accent) 22%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-tertiary)' }}>
-              <Fa name="arrow-up" size={32} style={{  color: 'var(--accent)' }} />
+              <Fa name="arrow-up" size={32} style={{  color: 'var(--text-primary)' }} />
             </div>
             <div>
               <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Atualização pronta</h2>
@@ -1486,7 +1486,7 @@ function App() {
           title={`Instalar Friends Space ${updateDownloadedVersion}`}
           style={{ position: 'fixed', right: 16, bottom: 16, zIndex: 2500, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 999, border: '1px solid var(--accent)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 30px rgba(0,0,0,0.5)', animation: 'fs-blink 1.6s infinite' }}
         >
-          <Fa name="rotate" size={14} style={{ color: 'var(--accent)' }} />
+          <Fa name="rotate" size={14} style={{ color: 'var(--text-primary)' }} />
           Atualizar app
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }} />
         </button>
@@ -1496,7 +1496,7 @@ function App() {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, maxWidth: 400, width: '100%', textAlign: 'center', background: 'var(--bg-secondary)', border: '1px solid color-mix(in srgb, var(--accent) 30%, var(--border))', borderRadius: 22, padding: '32px 28px 26px', boxShadow: '0 30px 80px rgba(0,0,0,0.55)' }}>
             <img src={assetUrl('friends-space-logo.png')} alt="Friends Space" style={{ height: 44, width: 'auto', maxWidth: '100%', objectFit: 'contain', background: 'transparent', border: 'none', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.45))' }} />
             <div style={{ width: 64, height: 64, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in srgb, var(--accent) 12%, var(--bg-tertiary))', border: '2px solid var(--accent)', boxShadow: '0 0 24px color-mix(in srgb, var(--accent) 25%, transparent)' }}>
-              <Fa name="rotate" size={26} style={{ color: 'var(--accent)' }} />
+              <Fa name="rotate" size={26} style={{ color: 'var(--text-primary)' }} />
             </div>
             <h2 style={{ fontSize: 21, fontWeight: 800, fontFamily: '"Space Grotesk", sans-serif', letterSpacing: '-0.02em', color: 'var(--text-primary)', margin: 0 }}>Nova versão disponível</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.5, margin: 0 }}>
@@ -1513,7 +1513,7 @@ function App() {
         <div style={{ position: 'fixed', inset: 0, zIndex: 2100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, maxWidth: 400, textAlign: 'center', padding: 20 }}>
             <div style={{ width: 80, height: 80, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--accent)', boxShadow: '0 0 24px color-mix(in srgb, var(--accent) 22%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-tertiary)' }}>
-              <Fa name="arrow-up" size={32} style={{  color: 'var(--accent)' }} />
+              <Fa name="arrow-up" size={32} style={{  color: 'var(--text-primary)' }} />
             </div>
             <div>
               <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Nova versão disponível</h2>

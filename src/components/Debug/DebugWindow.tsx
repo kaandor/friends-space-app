@@ -197,7 +197,7 @@ function FingerprintBar({ buildId, connectedCount, totalPeers, signalErrors, con
   }, [buildId, connectedCount, totalPeers, connectionStates, diag, codes, signalErrors])
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 12px' }}>
-      <Fa name="bug" size={12} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+      <Fa name="bug" size={12} style={{ color: 'var(--text-primary)', flexShrink: 0 }} />
       <span style={{ fontFamily: 'monospace', fontSize: 11.5, color: 'var(--text-primary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={print}>
         {print}
       </span>
@@ -335,7 +335,7 @@ export default function DebugWindow({ onClose }: { onClose: () => void }) {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '13px 18px', borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
           <span style={{ width: 30, height: 30, borderRadius: 9, background: 'color-mix(in srgb, var(--accent) 16%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Fa name="bug" size={14} style={{ color: 'var(--accent)' }} />
+            <Fa name="bug" size={14} style={{ color: 'var(--text-primary)' }} />
           </span>
           <span style={{ fontWeight: 800, fontSize: 15.5, color: 'var(--text-primary)' }}>Diagnóstico de conexão</span>
           <span style={{ marginLeft: 'auto', fontSize: 11.5, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
@@ -458,7 +458,7 @@ export default function DebugWindow({ onClose }: { onClose: () => void }) {
             <SectionTitle>Voz e vídeo · {e2e ? <b style={{ color: '#23a55a' }}>ponta a ponta ativa</b> : <b style={{ color: '#f0b232' }}>sincronizando</b>}</SectionTitle>
             <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px' }}>
               <Spark data={downHist} unit="kbps" />
-              <Row label="Download voz+vídeo"><b style={{ color: 'var(--accent)' }}>{lastDown != null ? `${lastDown} kbps` : '—'}</b></Row>
+              <Row label="Download voz+vídeo"><b style={{ color: 'var(--text-primary)' }}>{lastDown != null ? `${lastDown} kbps` : '—'}</b></Row>
               <Row label="Usuários na call"><b style={{ color: '#23a55a' }}>{participants.length} {participants.length === 1 ? 'pessoa' : 'pessoas'}</b></Row>
               <Row label="Perda total de pacotes">
                 <b style={{ color: totalLoss > 0 ? '#f04747' : '#23a55a' }}>{totalLoss > 0 ? `${totalLoss} perdidos` : '0'}</b>

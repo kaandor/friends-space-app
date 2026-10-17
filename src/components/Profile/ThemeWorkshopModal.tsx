@@ -120,7 +120,7 @@ export function ThemeWorkshopModal({ onClose }: Props) {
       {swatch(t)}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {t.name} {t.kind === 'animated' && <span style={{ fontSize: 10, color: 'var(--accent)' }}>✨ animado</span>}
+          {t.name} {t.kind === 'animated' && <span style={{ fontSize: 10, color: 'var(--text-primary)' }}>✨ animado</span>}
         </div>
         <div style={{ color: 'var(--text-secondary)', fontSize: 11 }}>por {own ? 'você' : t.ownerName}</div>
         {own && (
@@ -168,7 +168,7 @@ export function ThemeWorkshopModal({ onClose }: Props) {
     <div style={{ position: 'fixed', inset: 0, zIndex: 5000, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
       <div className="fs-modal-in" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 14, width: '100%', maxWidth: 480, maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px 0' }}>
-          <Palette size={16} strokeWidth={2} color="var(--accent)" />
+          <Palette size={16} strokeWidth={2} color="var(--text-primary)" />
           <h4 style={{ color: 'var(--text-primary)', fontWeight: 800, fontSize: 15, margin: 0, flex: 1 }}>Workshop de temas</h4>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 16 }}>✕</button>
         </div>
@@ -181,7 +181,7 @@ export function ThemeWorkshopModal({ onClose }: Props) {
           ))}
         </div>
         <div style={{ overflowY: 'auto', padding: '12px 16px 16px' }}>
-          {msg && <div style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 700, marginBottom: 8 }}>{msg}</div>}
+          {msg && <div style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 700, marginBottom: 8 }}>{msg}</div>}
 
           {tab === 'mine' && (
             <>
