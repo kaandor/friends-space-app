@@ -126,27 +126,44 @@ export function appearanceStyle(appearance: AppearanceSettings): CSSProperties {
 }
 
 export function appearanceScreenStyle(appearance: AppearanceSettings): CSSProperties {
-  const vars = appearanceStyle(appearance);
+  const vars = appearanceStyle(appearance) as unknown as Record<string, string>;
+  const themeDefault = appearance.theme === "default";
+  const bgDefault = appearance.bg === "default";
+  const textFollowsTheme = bgDefault && appearance.textColor === "default";
   const hasImage = (APPEARANCE_BACKGROUNDS[appearance.bg] ?? APPEARANCE_BACKGROUNDS.default).image !== "none";
   const page = "var(--appearance-page-bg)";
-  return {
-    ...vars,
-    "--accent": "var(--appearance-accent)",
-    "--accent-hover": "color-mix(in srgb, var(--appearance-accent) 82%, transparent)",
-    "--accent-dim": "var(--appearance-accent-soft)",
-    "--connection-dot": "var(--appearance-accent)",
-    "--text-primary": "var(--appearance-text)",
-    "--text-secondary": "color-mix(in srgb, var(--appearance-text) 82%, transparent)",
-    "--text-muted": "color-mix(in srgb, var(--appearance-text) 60%, transparent)",
-    "--bg-primary": hasImage ? `color-mix(in srgb, ${page} 88%, transparent)` : `var(--appearance-page-bg)`,
-    "--bg-secondary": hasImage ? `color-mix(in srgb, ${page} 90%, white)` : `color-mix(in srgb, ${page} 96%, white)`,
-    "--bg-tertiary": hasImage ? `color-mix(in srgb, ${page} 84%, transparent)` : `var(--appearance-page-bg)`,
-    "--bg-hover": "color-mix(in srgb, var(--appearance-page-bg) 86%, var(--appearance-accent))",
-    "--bg-active": "color-mix(in srgb, var(--appearance-page-bg) 74%, var(--appearance-accent))",
-    "--border": "color-mix(in srgb, var(--appearance-accent) 8%, transparent)",
-    "--border-light": "color-mix(in srgb, var(--appearance-accent) 13%, transparent)",
+  const style: Record<string, string> = {
+    "--appearance-accent": vars["--appearance-accent"],
+    "--appearance-accent-strong": vars["--appearance-accent-strong"],
+    "--appearance-accent-soft": vars["--appearance-accent-soft"],
+    "--appearance-glow": vars["--appearance-glow"],
+    "--appearance-font": vars["--appearance-font"],
     "--sans": "var(--appearance-font)",
-  } as CSSProperties;
+  };
+  if (!themeDefault) {
+    style["--accent"] = "var(--appearance-accent)";
+    style["--accent-hover"] = "color-mix(in srgb, var(--appearance-accent) 82%, transparent)";
+    style["--accent-dim"] = "var(--appearance-accent-soft)";
+    style["--connection-dot"] = "var(--appearance-accent)";
+  }
+  if (!bgDefault) {
+    style["--appearance-page-bg"] = vars["--appearance-page-bg"];
+    style["--appearance-page-image"] = vars["--appearance-page-image"];
+    style["--bg-primary"] = hasImage ? `color-mix(in srgb, ${page} 88%, transparent)` : `var(--appearance-page-bg)`;
+    style["--bg-secondary"] = hasImage ? `color-mix(in srgb, ${page} 90%, white)` : `color-mix(in srgb, ${page} 96%, white)`;
+    style["--bg-tertiary"] = hasImage ? `color-mix(in srgb, ${page} 84%, transparent)` : `var(--appearance-page-bg)`;
+    style["--bg-hover"] = "color-mix(in srgb, var(--appearance-page-bg) 86%, var(--appearance-accent))";
+    style["--bg-active"] = "color-mix(in srgb, var(--appearance-page-bg) 74%, var(--appearance-accent))";
+    style["--border"] = "color-mix(in srgb, var(--appearance-accent) 8%, transparent)";
+    style["--border-light"] = "color-mix(in srgb, var(--appearance-accent) 13%, transparent)";
+  }
+  if (!textFollowsTheme) {
+    style["--appearance-text"] = vars["--appearance-text"];
+    style["--text-primary"] = "var(--appearance-text)";
+    style["--text-secondary"] = "color-mix(in srgb, var(--appearance-text) 82%, transparent)";
+    style["--text-muted"] = "color-mix(in srgb, var(--appearance-text) 60%, transparent)";
+  }
+  return style as unknown as CSSProperties;
 }
 
 export function appearanceDataAttrs(appearance: AppearanceSettings): Record<string, string> {

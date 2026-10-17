@@ -850,18 +850,25 @@ function App() {
       document.body.style.background = ""
       return
     }
-    const style = appearanceScreenStyle(appearance)
-    for (const [key, value] of Object.entries(style)) root.style.setProperty(key, String(value))
+    const style = appearanceScreenStyle(appearance) as unknown as Record<string, string>
+    const managedKeys = ['--appearance-accent', '--appearance-accent-strong', '--appearance-accent-soft', '--appearance-glow', '--appearance-page-bg', '--appearance-page-image', '--appearance-font', '--appearance-text', '--accent', '--accent-hover', '--accent-dim', '--connection-dot', '--text-primary', '--text-secondary', '--text-muted', '--bg-primary', '--bg-secondary', '--bg-tertiary', '--bg-hover', '--bg-active', '--border', '--border-light', '--sans']
+    for (const key of managedKeys) {
+      if (key in style) root.style.setProperty(key, String(style[key]))
+      else root.style.removeProperty(key)
+    }
     for (const [key, value] of Object.entries(appearanceDataAttrs(appearance))) root.setAttribute(key, value)
     const body = document.body
-    const styleMap = style as unknown as Record<string, string>
-    const bg = String(styleMap["--appearance-page-bg"])
-    const image = String(styleMap["--appearance-page-image"])
-    body.style.background = image !== "none" && image
-      ? `${image}, ${bg}`
-      : bg
-    body.style.backgroundAttachment = "fixed"
-    body.style.backgroundSize = "cover, auto"
+    const bg = String(style["--appearance-page-bg"] || "")
+    const image = String(style["--appearance-page-image"] || "")
+    if (bg) {
+      body.style.background = image !== "none" && image ? `${image}, ${bg}` : bg
+      body.style.backgroundAttachment = "fixed"
+      body.style.backgroundSize = "cover, auto"
+    } else {
+      body.style.background = ""
+      body.style.backgroundAttachment = ""
+      body.style.backgroundSize = ""
+    }
     return () => {
       const latest = currentUser || restoredUser || getStickyUser()
       const latestAppearance = latest?.settings ? parseAppearance(latest.settings as Record<string, unknown>) : null
