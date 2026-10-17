@@ -216,34 +216,12 @@ export function GoogleLoginView() {
     setMenuOpen(null)
   }
 
-  useEffect(() => {
-    const preventCtrlWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) e.preventDefault()
-    }
-    const preventCtrlKeys = (e: KeyboardEvent) => {
-      if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) e.preventDefault()
-    }
-    const preventGesture = (e: Event) => { e.preventDefault() }
-    window.addEventListener('wheel', preventCtrlWheel, { passive: false })
-    window.addEventListener('keydown', preventCtrlKeys)
-    document.addEventListener('gesturestart', preventGesture)
-    document.addEventListener('gesturechange', preventGesture)
-    return () => {
-      window.removeEventListener('wheel', preventCtrlWheel)
-      window.removeEventListener('keydown', preventCtrlKeys)
-      document.removeEventListener('gesturestart', preventGesture)
-      document.removeEventListener('gesturechange', preventGesture)
-    }
-  }, [])
-
   return (
     <div style={{
-      position: 'relative',
-      width: '100vw',
-      height: '100vh',
+      position: 'fixed',
+      inset: 0,
       overflow: 'hidden',
       background: '#000',
-      touchAction: 'none',
     }}>
       <img
         src={assetUrl('login-wallpaper.jpg')}
@@ -377,27 +355,29 @@ export function GoogleLoginView() {
             </div>
           )}
 
-          <div style={{
-            marginTop: accounts.length > 0 ? 10 : 16,
-            paddingTop: accounts.length > 0 ? 6 : 0,
-            borderTop: accounts.length > 0 ? '1px solid rgba(130,175,255,0.12)' : 'none',
-          }}>
-            <button
-              className="fs-login-add"
-              onClick={() => startGoogleLogin()}
-              disabled={loading}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                width: '100%', background: 'transparent', border: 'none',
-                color: 'rgba(150,190,255,0.95)', fontSize: 13.5, fontWeight: 600,
-                padding: '10px', borderRadius: 10,
-                cursor: loading ? 'default' : 'pointer',
-              }}
-            >
-              <span style={{ fontSize: 17, lineHeight: 1, fontWeight: 400 }}>+</span>
-              Adicionar uma conta
-            </button>
-          </div>
+          {accounts.length < 3 && (
+            <div style={{
+              marginTop: accounts.length > 0 ? 10 : 16,
+              paddingTop: accounts.length > 0 ? 6 : 0,
+              borderTop: accounts.length > 0 ? '1px solid rgba(130,175,255,0.12)' : 'none',
+            }}>
+              <button
+                className="fs-login-add"
+                onClick={() => startGoogleLogin()}
+                disabled={loading}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  width: '100%', background: 'transparent', border: 'none',
+                  color: 'rgba(150,190,255,0.95)', fontSize: 13, fontWeight: 600,
+                  padding: '10px', borderRadius: 10,
+                  cursor: loading ? 'default' : 'pointer',
+                }}
+              >
+                <span style={{ fontSize: 16, lineHeight: 1, fontWeight: 300 }}>+</span>
+                Adicionar uma conta
+              </button>
+            </div>
+          )}
 
           {loading && (
             <p style={{ margin: '10px 0 0', color: 'rgba(196,214,255,0.7)', fontSize: 12.5, textAlign: 'center' }}>

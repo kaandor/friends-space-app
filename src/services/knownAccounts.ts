@@ -54,7 +54,8 @@ export function addKnownAccount(profile: GoogleProfile) {
     })
   }
   accounts.sort((a, b) => b.lastUsedAt - a.lastUsedAt)
-  saveKnownAccounts(accounts)
+  // Limite de 3 contas: e o que cabe no card do login (sem scroll).
+  saveKnownAccounts(accounts.slice(0, 3))
 }
 
 export function removeKnownAccount(googleId: string) {

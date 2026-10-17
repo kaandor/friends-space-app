@@ -51,20 +51,6 @@
          Google (o crawler nao executa o loader dinamico). O anuncio em si
          (<ins class="adsbygoogle">) so renderiza para plano gratuito. -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5929082469611228" crossorigin="anonymous"></script>
-    <script>
-      // Zoom travado em 125% antes da primeira renderizacao (sem flash).
-      // Usa CSS `zoom` com reflow: o layout preenche qualquer janela.
-      (function () {
-        try {
-          var root = document.documentElement;
-          var apply = function () { root.style.zoom = '125%'; };
-          apply();
-          window.addEventListener('resize', apply);
-          window.addEventListener('orientationchange', apply);
-          document.addEventListener('fullscreenchange', apply);
-        } catch (e) { /* noop */ }
-      })();
-    </script>
     <title>Friends Space Beta — Grupos, amigos, chat e chamadas</title>
     <script type="application/ld+json">
       {
