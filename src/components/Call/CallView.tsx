@@ -71,7 +71,7 @@ const controlBtn: CSSProperties = {
   transition: 'background 0.15s',
 }
 
-export function CallView() {
+export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
   const {
     activeCall, participants, muted, deafened, screenSharing,
     screenStream, localStream, preferredQuality, preferredFps, preferredBitrate,
@@ -485,7 +485,7 @@ export function CallView() {
           <button onClick={endCall} style={{ padding: '6px 14px', borderRadius: 7, background: '#f23f43', color: 'var(--text-primary)', border: 'none', fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>Sair da chamada</button>
         </div>
       ) : (
-        <div className="vc-screen" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--bg-primary)' }}>
+        <div className="vc-screen" style={{ position: embedded ? 'absolute' : 'fixed', inset: 0, zIndex: embedded ? 20 : 100, background: 'var(--bg-primary)', borderRadius: embedded ? 12 : 0, overflow: 'hidden' }}>
           <CameraOverlay />
           {recordingActive && (
             <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 300, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,.72)', border: '1px solid #ef4444', borderRadius: 999, padding: '7px 16px', fontSize: 12, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' }}>

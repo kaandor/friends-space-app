@@ -724,7 +724,7 @@ function App() {
       setCurrentServer(targetServer ?? null)
       setCurrentChannel(targetChannel)
     } else if (callChannelId === 'dm') {
-      setShowUsers(true)
+      setShowUsers(false)
       setCurrentServer(null)
     }
   }, [servers, callServerId, callChannelId, setCurrentServer, setCurrentChannel])
@@ -1964,7 +1964,7 @@ function App() {
 
           <UserContextMenu />
 
-          {callChannelId === 'dm' && !(currentServer && currentChannel?.type === 'voice') && <CallView />}
+          {isMobile && callChannelId === 'dm' && !(currentServer && currentChannel?.type === 'voice') && <CallView />}
 
           <Modal open={showSearch} onClose={() => { setShowSearch(false); setSearchQuery('') }} title="Pesquisar">
             <Input value={searchQuery} onChange={setSearchQuery} placeholder="Nome, codigo de usuario ou convite" />

@@ -25,6 +25,7 @@ import { StoriesBar } from '../Social/StoriesBar'
 import { FeedView } from '../Social/FeedView'
 import { AstroGiftModal } from '../Home/AstroGiftModal'
 import { VoicePanel } from '../Call/VoicePanel'
+import { CallView } from '../Call/CallView'
 import { UserDock } from '../Layout/UserDock'
 import { useUserMenuStore } from '../../stores/userMenuStore'
 import { useCallStore } from '../../stores/callStore'
@@ -69,7 +70,9 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
   const callUser = useCallStore(s => s.callUser)
   const callingUser = useCallStore(s => s.callingUser)
   const activeCall = useCallStore(s => s.activeCall)
+  const callChannelId = useCallStore(s => s.channelId)
   const isMobile = useIsMobile(768)
+  const dmCallActive = Boolean(activeCall && callChannelId === 'dm')
   const userSettings = (currentUser?.settings || {}) as Record<string, unknown>
   const hasAstro = userSettings['astro'] === true || userSettings['astro'] === 'true'
   const dmEmojis = collectAllServerEmojis()
@@ -481,7 +484,8 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
       </div>
 
       <div style={{ flex: 1, display: isMobile && !currentDMUser ? 'none' : 'flex', flexDirection: isMobile ? 'column' : 'row', background: 'var(--bg-primary)', minWidth: 0, minHeight: 0, height: isMobile ? '100%' : undefined }}>
-        <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+        {!isMobile && dmCallActive && <CallView embedded />}
         {currentDMUser ? (
           <>
             <div style={{
