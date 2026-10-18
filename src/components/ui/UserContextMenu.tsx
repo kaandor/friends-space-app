@@ -53,14 +53,13 @@ function Item({ icon, label, danger, onClick, disabled }: {
 export function UserContextMenu() {
   const { currentUser } = useUserStore()
   const { friends, loadFriends, addFriendById, respondFriend } = useFriendStore()
-  const { user: menu, x, y, close } = useUserMenuStore()
+  const { user: menu, x, y, close, profileUser, openProfile, closeProfile } = useUserMenuStore()
   const { t } = useLangStore()
   const activeCall = useCallStore(s => s.activeCall)
   const participants = useCallStore(s => s.participants)
   const remoteScreenStreams = useCallStore(s => s.remoteScreenStreams)
   const volumes = useCallStore(s => s.volumes)
   const setVolume = useCallStore(s => s.setVolume)
-  const [viewProfileUser, setViewProfileUser] = useState<typeof menu>(null)
   const [reportUser, setReportUser] = useState<typeof menu>(null)
 
   useEffect(() => {
@@ -79,19 +78,20 @@ export function UserContextMenu() {
     }
   }, [menu, close])
 
-  if (viewProfileUser) {
-    const viewUser = viewProfileUser
+  if (profileUser) {
+    const viewUser = profileUser
     return (
       <UserProfileModal
         user={viewUser}
-        onClose={() => setViewProfileUser(null)}
+        isSelf={viewUser.id === currentUser?.id}
+        onClose={closeProfile}
         onAction={(action) => {
           if (action === 'message') {
-            setViewProfileUser(null)
+            closeProfile()
             window.dispatchEvent(new CustomEvent('friends-space:open-dm', { detail: { user: viewUser } }))
             close()
           } else if (action === 'request') {
-            setViewProfileUser(null)
+            closeProfile()
             if (currentUser) {
               void addFriendById(currentUser.id, viewUser.id).then(async (added) => {
                 if (added.ok) await loadFriends(currentUser.id)
@@ -99,7 +99,7 @@ export function UserContextMenu() {
             }
             close()
           } else if (action === 'report') {
-            setViewProfileUser(null)
+            closeProfile()
             setReportUser(viewUser)
           }
         }}
@@ -236,7 +236,7 @@ export function UserContextMenu() {
         {!isMe && (
           <Item icon={<IconSend width={15} height={15} />} label={t('menu.conversar')} onClick={sendMessage} />
         )}
-        <Item icon={<Fa name="user" size={12} />} label={t('menu.viewProfile')} onClick={() => setViewProfileUser(user)} />
+        <Item icon={<Fa name="user" size={12} />} label={t('menu.viewProfile')} onClick={() => openProfile(user)} />
         {!isMe && isIncoming && (
           <Item icon={<IconCheck width={15} height={15} />} label={t('menu.acceptRequest')} onClick={accept} />
         )}

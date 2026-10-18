@@ -7,7 +7,7 @@ import { useUserMenuStore } from '../../stores/userMenuStore'
 
 export function UsersView() {
   const { users, currentUser } = useUserStore()
-  const { open: openUserMenu } = useUserMenuStore()
+  const { open: openUserMenu, openProfile } = useUserMenuStore()
   const addFriendById = useFriendStore(s => s.addFriendById)
   const friends = useFriendStore(s => s.friends)
   const [query, setQuery] = useState('')
@@ -55,12 +55,13 @@ export function UsersView() {
           return (
           <div
             key={user.id}
+            onClick={() => openProfile(user)}
             onContextMenu={(e) => openMenu(e, user)}
             style={{
               display: 'flex', alignItems: 'center', gap: 12,
               padding: '10px 12px', borderRadius: 'var(--radius-md)',
               background: 'var(--bg-secondary)', marginBottom: 6,
-              border: '1px solid var(--border)', cursor: 'context-menu',
+              border: '1px solid var(--border)', cursor: 'pointer',
             }}
           >
             <Avatar src={user.photoUrl} name={user.name} size={40} />
@@ -82,7 +83,8 @@ export function UsersView() {
                 <button
                   title="Pedir amizade"
                   disabled={addingId === user.id}
-                  onClick={() => {
+                  onClick={(event) => {
+                    event.stopPropagation()
                     setAddingId(user.id)
                     void addFriendById(currentUser.id, user.id).then(r => {
                       try {

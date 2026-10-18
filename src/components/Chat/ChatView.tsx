@@ -77,7 +77,7 @@ export function ChatView({ channel }: ChatViewProps) {
   const [reportTarget, setReportTarget] = useState<ReportTargetState | null>(null)
   const [forwardTarget, setForwardTarget] = useState<Message | null>(null)
   const [reactFor, setReactFor] = useState<Message | null>(null)
-  const { open: openUserMenu } = useUserMenuStore()
+  const { open: openUserMenu, openProfile } = useUserMenuStore()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const stickRef = useRef(true)
@@ -526,6 +526,7 @@ export function ChatView({ channel }: ChatViewProps) {
                   {!sameUser && !sent && (
                     <span
                       style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+                      onClick={() => openProfile(msgUser)}
                       onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); openUserMenu(msgUser, e.clientX, e.clientY) }}
                     >
                       <Avatar src={msg.userPhoto} name={msg.userName} size={20} />
@@ -702,7 +703,7 @@ export function ChatView({ channel }: ChatViewProps) {
             <div className="fs-chat-members-group">Online — {membersOnline.length}</div>
             {membersOnline.length === 0 && <div className="fs-chat-members-empty">Ninguém</div>}
             {membersOnline.map(u => (
-              <div key={u.id} className="fs-chat-member-row" onClick={e => openUserMenu(u, e.clientX, e.clientY)} onContextMenu={e => { e.preventDefault(); e.stopPropagation(); openUserMenu(u, e.clientX, e.clientY) }}>
+              <div key={u.id} className="fs-chat-member-row" onClick={() => openProfile(u)} onContextMenu={e => { e.preventDefault(); e.stopPropagation(); openUserMenu(u, e.clientX, e.clientY) }}>
                 <Avatar src={u.photoUrl} name={u.name} size={28} />
                 <span className="fs-chat-member-name">{u.name}</span>
                 <span className="fs-chat-member-dot online" />
@@ -710,7 +711,7 @@ export function ChatView({ channel }: ChatViewProps) {
             ))}
             <div className="fs-chat-members-group">Offline — {membersOffline.length}</div>
             {membersOffline.map(u => (
-              <div key={u.id} className="fs-chat-member-row" onClick={e => openUserMenu(u, e.clientX, e.clientY)} onContextMenu={e => { e.preventDefault(); e.stopPropagation(); openUserMenu(u, e.clientX, e.clientY) }}>
+              <div key={u.id} className="fs-chat-member-row" onClick={() => openProfile(u)} onContextMenu={e => { e.preventDefault(); e.stopPropagation(); openUserMenu(u, e.clientX, e.clientY) }}>
                 <Avatar src={u.photoUrl} name={u.name} size={28} />
                 <span className="fs-chat-member-name">{u.name}</span>
                 <span className="fs-chat-member-dot" />

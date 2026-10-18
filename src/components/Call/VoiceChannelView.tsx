@@ -97,7 +97,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
   const [showChat, setShowChat] = useState(false)
   const [showDebugWindow, setShowDebugWindow] = useState(false)
   const [outMenu, setOutMenu] = useState<{ x: number; y: number } | null>(null)
-  const { open: openUserMenu } = useUserMenuStore()
+  const { open: openUserMenu, openProfile } = useUserMenuStore()
   const [driveModal, setDriveModal] = useState(false)
   const [screenMenu, setScreenMenu] = useState<{ x: number; y: number; userId: string | null } | null>(null)
   const [outDevices, setOutDevices] = useState<{ deviceId: string; label: string }[]>([])
@@ -554,8 +554,12 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
                   <div
                     key={p.userId}
                     className={`vc-strip-chip${speaking ? ' speaking' : ''}${pMuted ? ' muted-ring' : ''}`}
+                    onClick={() => {
+                      const full = useUserStore.getState().users.find(u => u.id === p.userId)
+                      openProfile(full || { id: p.userId, name: p.userName, photoUrl: p.userPhoto, bio: '', friendCode: '', createdAt: 0 })
+                    }}
                     onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); openUserMenu({ id: p.userId, name: p.userName, photoUrl: p.userPhoto, bio: '', friendCode: '', createdAt: 0 }, e.clientX, e.clientY) }}
-                    title={`${p.userName} (botão direito: ver perfil)`}
+                    title={`${p.userName} (clique: ver perfil · botão direito: menu)`}
                   >
                     <div className="vc-strip-ring">
                       <Avatar src={p.userPhoto} name={p.userName} size={34} />

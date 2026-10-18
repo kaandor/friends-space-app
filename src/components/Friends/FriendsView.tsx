@@ -43,7 +43,7 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
     loadFriends, addFriendById,
     sendDirectMessage, loadDirectMessages, setCurrentDMUser } = useFriendStore()
   const { servers } = useServerStore()
-  const { open: openUserMenu } = useUserMenuStore()
+  const { open: openUserMenu, openProfile } = useUserMenuStore()
   const [addQuery, setAddQuery] = useState('')
   const [addResults, setAddResults] = useState<User[]>([])
   const [addLoading, setAddLoading] = useState(false)
@@ -496,7 +496,11 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
             }}>
               <button onClick={() => setCurrentDMUser(null)} title="Voltar ao feed" style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', color: 'var(--text-secondary)', background: 'var(--bg-tertiary)', border: 'none', cursor: 'pointer', flexShrink: 0, fontSize: 15 }}>←</button>
               <Avatar src={currentDMUser.photoUrl} name={currentDMUser.name} size={36} />
-              <span onContextMenu={(e) => { e.preventDefault(); openUserMenu(currentDMUser, e.clientX, e.clientY) }}>{currentDMUser.name}</span>
+              <span
+                style={{ cursor: 'pointer' }}
+                onClick={() => openProfile(currentDMUser)}
+                onContextMenu={(e) => { e.preventDefault(); openUserMenu(currentDMUser, e.clientX, e.clientY) }}
+              >{currentDMUser.name}</span>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
                 <button
                   className="fs-dm-action"
