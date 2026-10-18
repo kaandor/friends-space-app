@@ -291,3 +291,9 @@
   border-color: color-mix(in srgb, #f23f43 34%, var(--border));
   color: #f23f43;
 }
+
+/* Mini preview unificado: mesmo cartao do Editar Perfil */
+.ucm-profile-preview.ape-card { border-radius: 0; box-shadow: none; }
+.ucm-profile-preview .ape-card-inner { border: 0; border-bottom: 1px solid var(--border); border-radius: 0; }
+.ucm-profile-preview .ape-card-banner { height: 96px; }
+.ucm-card .ucm-activity { margin: 10px 8px 0; }

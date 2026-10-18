@@ -1,10 +1,9 @@
 import { Fa } from '../../utils/fa'
 import { useEffect, useState } from 'react'
-import { StatusIcon } from './StatusIcon'
 import { UserProfileModal } from '../Profile/UserProfileModal'
 import { IconSend, IconAdd, IconCheck, IconClose } from '../../utils/icons'
 import { useFriendStore } from '../../stores/friendStore'
-import { useUserStore, isUserOnline } from '../../stores/userStore'
+import { useUserStore } from '../../stores/userStore'
 import { useUserMenuStore } from '../../stores/userMenuStore'
 import { useLangStore } from '../../stores/langStore'
 import { useCallStore } from '../../stores/callStore'
@@ -13,6 +12,7 @@ import { getAstroTier } from '../../utils/astro'
 import { nameStyleOf, nameClassOf } from '../../utils/nameStyle'
 import { toImageUrl } from '../../services/driveService'
 import { skinClass } from '../Profile/ProfileEditor/astroCatalog'
+import { ProfileCardView } from '../Profile/ProfileCardView'
 import { cn } from '../Profile/ProfileEditor/cn'
 import './UserContextMenu.css'
 
@@ -128,10 +128,8 @@ export function UserContextMenu() {
   const isFriend = rel?.status === 'accepted'
   const isOutgoing = rel?.status === 'pending' && rel.userId === meId
   const isIncoming = rel?.status === 'pending' && rel.friendId === meId
-  const online = isUserOnline(user)
   const settings = (user.settings || {}) as Record<string, string | boolean | undefined>
   const pronoun = typeof settings['pronoun'] === 'string' ? settings['pronoun'] as string : ''
-  const statusKey = typeof settings['status'] === 'string' ? settings['status'] as string : 'online'
   const statusMessage = typeof settings['statusMessage'] === 'string' ? settings['statusMessage'] as string : ''
   const astro = settings['astro'] === true || settings['astro'] === 'true'
   const verified = Boolean(user.googleId || user.authProvider === 'google')
@@ -183,50 +181,38 @@ export function UserContextMenu() {
   return (
     <>
     <div id="user-context-menu" className="ucm-card fs-menu-in" style={style}>
-      <div className="ucm-banner">
-        {user.bannerUrl
-          ? <img src={toImageUrl(user.bannerUrl, 680)} alt="Banner" />
-          : <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${user.accentColor || '#29A3FF'}33, transparent)` }} />}
-        {effectClass && <div className={cn('ape-effect-layer', effectClass)} />}
-      </div>
-      <div className="ucm-body">
-        <div className={cn('ape-avatar', 'ucm-avatar', frameClass)}>
-          {user.photoUrl
-            ? <img src={toImageUrl(user.photoUrl, 128)} alt="" />
-            : <div className="ucm-avatar-fallback">{(user.name || '?').charAt(0).toUpperCase()}</div>}
-        </div>
-        <div className="ucm-name-row">
-          <span className={cn('ape-plate', plateClass, nameClass, 'ucm-name')} style={namePreview}>{user.name}</span>
-          <StatusIcon status={statusKey} online={online} size={14} />
-          {!badgeHidden && astro && (
-            <span className="ape-badge-astro" style={{ display: 'inline-flex', flexShrink: 0 }}><Fa name="rocket" size={11} /></span>
-          )}
-        </div>
-        <div className="ucm-handle">@{user.friendCode || 'sem-codigo'}</div>
-        {statusMessage && <div className="ucm-status-message">{statusMessage}</div>}
-        <div className="ucm-badges">
-          {isFriend && <span className="ucm-chip is-friend">{t('menu.friend')}</span>}
-          {!badgeHidden && verified && (
-            <span className="ucm-chip is-verified"><Fa name="check" size={9} /> {t('menu.verified')}</span>
-          )}
-          {pronoun && <span className="ucm-chip">{pronoun}</span>}
-          {showJoinDate && user.createdAt > 0 && (
-            <span className="ucm-chip">
-              {t('menu.joinedOn')} {new Date(user.createdAt).toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' })}
-            </span>
-          )}
-        </div>
-        {user.bio && <p className="ucm-bio">{user.bio}</p>}
-        {user.activityName && settings['showActivity'] !== false && user.activityPrivacy !== 'private' && (
-          <div className="ucm-activity">
-            <Fa name="gamepad" size={12} style={{ color: 'var(--text-primary)', flexShrink: 0 }} />
-            <div style={{ minWidth: 0 }}>
-              <div className="ucm-activity-name">{user.activityName}</div>
-              {user.activityDetails && <div className="ucm-activity-details">{user.activityDetails}</div>}
-            </div>
+      <ProfileCardView
+        displayName={user.name || ''}
+        username={user.friendCode || ''}
+        about={user.bio || ''}
+        emptyAbout="Este usuário ainda não escreveu uma apresentação."
+        statusMessage={statusMessage}
+        avatarSrc={user.photoUrl ? toImageUrl(user.photoUrl, 512) : undefined}
+        avatarFallback={user.name}
+        bannerStyle={user.bannerUrl ? { backgroundImage: `url("${toImageUrl(user.bannerUrl, 680)}")` } : undefined}
+        memberSince={showJoinDate && user.createdAt > 0 ? new Date(user.createdAt).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }) : undefined}
+        pronoun={pronoun || undefined}
+        verified={!badgeHidden && verified}
+        paid={paid}
+        showAstroBadge={!badgeHidden && astro}
+        plateClass={plateClass}
+        nameClass={nameClass}
+        nameStyle={namePreview}
+        avatarClass={frameClass}
+        cardClass={paid ? skinClass('frame', typeof settings['profileFrame'] === 'string' ? settings['profileFrame'] : 'none') : ''}
+        effectClass={effectClass}
+        className="ucm-profile-preview"
+      />
+
+      {user.activityName && settings['showActivity'] !== false && user.activityPrivacy !== 'private' && (
+        <div className="ucm-activity">
+          <Fa name="gamepad" size={12} style={{ color: 'var(--text-primary)', flexShrink: 0 }} />
+          <div style={{ minWidth: 0 }}>
+            <div className="ucm-activity-name">{user.activityName}</div>
+            {user.activityDetails && <div className="ucm-activity-details">{user.activityDetails}</div>}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {activeCall && !isMe && participants.some(p => p.userId === user.id) && (
         <div className="ucm-volume">
