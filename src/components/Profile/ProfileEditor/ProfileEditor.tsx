@@ -503,15 +503,69 @@ export function PublicProfileModal({ plan, displayName, username, about, socialS
   const frameClass = paid ? skinClass("frame", profileFrameId || "none") : "";
   const effectClass = paid ? skinClass("effect", profileEffectId || "none") : "";
   return (
-    <div className="public-profile-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section className={cn("public-profile-modal", frameClass && "ape-card", frameClass, plan === "astro" && "public-profile-astro", plan === "astroPlus" && "public-profile-astro-plus", plan === "astroPlusGold" && "public-profile-astro-plus-gold")} role="dialog" aria-modal="true" aria-labelledby="public-profile-title" onMouseDown={(event) => event.stopPropagation()}>
+    <div className="public-profile-overlay pp2-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <section className={cn("public-profile-modal pp2-profile", frameClass && "ape-card", frameClass, plan === "astro" && "public-profile-astro", plan === "astroPlus" && "public-profile-astro-plus", plan === "astroPlusGold" && "public-profile-astro-plus-gold")} role="dialog" aria-modal="true" aria-labelledby="public-profile-title" onMouseDown={(event) => event.stopPropagation()}>
         {effectClass && <div className={cn("ape-effect-layer", effectClass)} style={{ zIndex: 5 }} />}
-        <header className="public-profile-modal-header"><div><span className="social-modal-kicker">PERFIL PÚBLICO</span><h2 id="public-profile-title">{isSelf ? "Seu perfil público" : "Perfil de " + (displayName || "usuário")}</h2><p>Todas as informações configuradas pelo dono deste perfil.</p></div><div className="public-profile-header-actions">{onEdit && <button className="public-profile-edit-btn" type="button" onClick={onEdit}><Pencil size={13} />Editar perfil</button>}<button className="frames-shop-close" type="button" aria-label="Fechar perfil público" onClick={onClose}><X size={18} /></button></div></header>
-        <div className="public-profile-body">
-          <div className="public-profile-hero"><div className="public-profile-cover" style={bannerUrl ? { backgroundImage: `url("${bannerUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center 30%' } : undefined} /><div className="public-profile-identity"><div className={cn("public-profile-avatar", `profile-frame-${selectedFrame}`)}><img src={avatar} alt={`Avatar de ${displayName || "usuário"}`} /></div><div className="public-profile-name"><span className="public-profile-plan">{planLabel}</span><h3 className={cn("ape-plate", plateClass, namePreview.className)} style={namePreview.style}>{displayName || "Seu nome"}</h3><p>@{username || "usuario"}{paid && showAstroBadge && <span className="ape-badge-astro" style={{ marginLeft: 6, display: 'inline-flex', verticalAlign: 'middle' }}><Rocket size={13} /></span>}</p><span className="public-profile-status"><i style={{ background: statusMeta[socialStatus].color }} />{statusMeta[socialStatus].label}</span>{(isFriend || verified || pronoun || (joinedAt ?? 0) > 0) && <span className="public-profile-badges">{isFriend && <span className="ucm-chip is-friend">Amigo</span>}{verified && <span className="ucm-chip is-verified"><Check size={10} />Verificado</span>}{pronoun && <span className="ucm-chip">{pronoun}</span>}{(joinedAt ?? 0) > 0 && <span className="ucm-chip">Entrou em {new Date(joinedAt as number).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</span>}</span>}</div><div className="public-profile-frame-note"><span>Moldura</span><strong>{frameName}</strong></div></div></div>
-          <div className="public-profile-grid"><div className="public-profile-main"><section className="public-profile-panel"><div className="public-profile-panel-heading"><span>APRESENTAÇÃO</span><Sparkles size={14} /></div>{statusMessage && <p className="public-profile-message">“{statusMessage}”</p>}<p className={cn("public-profile-about", !about && "is-empty")}>{about || "Este perfil ainda não adicionou uma apresentação."}</p>{!isSelf && <div className="profile-preview-actions public-profile-actions" aria-label="Ações do perfil">{isFriend ? <span className="profile-action-button"><Check size={13} />Já são amigos</span> : <button type="button" className="profile-action-button primary" onClick={() => onProfileAction("request")}><UserPlus size={13} />Mandar solicitação</button>}<button type="button" className="profile-action-button" onClick={() => onProfileAction("message")}><MessageCircle size={13} />Conversar</button><button type="button" className="profile-action-button danger" onClick={() => onProfileAction("report")}><ShieldCheck size={13} />Denunciar usuário</button></div>}</section><section className="public-profile-panel"><div className="public-profile-panel-heading"><span>MURAL</span><Sparkles size={14} /></div><div className="public-profile-mural-list">{visibleMural.length ? visibleMural.flatMap(({ id, label, fallback }) => (mural[id] || []).map((item) => <article className="public-profile-mural-widget" key={item.id}><img src={item.image} alt={`Imagem de ${item.value || label}`} /><div><span>{label}</span><strong>{item.value.trim() || fallback}</strong></div></article>)) : <p className="profile-mural-empty">Este perfil ainda não escolheu categorias para o Mural.</p>}</div></section></div><aside className="public-profile-side"><section className="public-profile-panel"><div className="public-profile-panel-heading"><span>VISIBILIDADE</span><Eye size={14} /></div><div className="public-profile-visibility-list"><span className={showActivity ? "visible" : "hidden"}>{showActivity ? "Atividade visível" : "Atividade oculta"}</span><span className={showServers ? "visible" : "hidden"}>{showServers ? "Servidores em comum visíveis" : "Servidores privados"}</span><span className={showMutualFriends ? "visible" : "hidden"}>{showMutualFriends ? "Amigos em comum visíveis" : "Amigos privados"}</span></div></section></aside></div>
+        <div className="pp2-scroll">
+          <div className="pp2-banner" style={bannerUrl ? { backgroundImage: `url("${bannerUrl}")` } : undefined}>
+            <div className="pp2-banner-actions">
+              {onEdit && <button className="pp2-edit" type="button" onClick={onEdit}><Pencil size={14} /> Editar perfil</button>}
+              <button className="pp2-close" type="button" aria-label="Fechar perfil público" onClick={onClose}><X size={17} /></button>
+            </div>
+          </div>
+          <div className="pp2-head">
+            <div className={cn("public-profile-avatar", `profile-frame-${selectedFrame}`)}><img src={avatar} alt={`Avatar de ${displayName || "usuário"}`} /></div>
+            <div className="pp2-ident">
+              <span className="pp2-plan">{planLabel}</span>
+              <h3 id="public-profile-title" className={cn("ape-plate", plateClass, namePreview.className)} style={namePreview.style}>{displayName || "Seu nome"}</h3>
+              <div className="pp2-meta">
+                <span>@{username || "usuario"}</span>
+                {paid && showAstroBadge && <span className="pp2-meta-badge"><Rocket size={12} /></span>}
+                <span className="pp2-status"><i style={{ background: statusMeta[socialStatus].color }} />{statusMeta[socialStatus].label}</span>
+              </div>
+            </div>
+            <div className="pp2-frame-note"><span>Moldura</span><strong>{frameName}</strong></div>
+          </div>
+          {(isFriend || verified || pronoun || (joinedAt ?? 0) > 0) && (
+            <div className="pp2-chips">
+              {isFriend && <span className="ucm-chip is-friend">Amigo</span>}
+              {verified && <span className="ucm-chip is-verified"><Check size={10} />Verificado</span>}
+              {pronoun && <span className="ucm-chip">{pronoun}</span>}
+              {(joinedAt ?? 0) > 0 && <span className="ucm-chip">Entrou em {new Date(joinedAt as number).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</span>}
+            </div>
+          )}
+          <div className="pp2-grid">
+            <div className="pp2-main">
+              <section className="pp2-card">
+                <div className="pp2-card-head"><span>Apresentação</span><Sparkles size={15} /></div>
+                {statusMessage && <p className="pp2-quote">“{statusMessage}”</p>}
+                <p className={cn("pp2-about", !about && "is-empty")}>{about || "Este perfil ainda não adicionou uma apresentação."}</p>
+                {!isSelf && <div className="profile-preview-actions public-profile-actions pp2-actions" aria-label="Ações do perfil">{isFriend ? <span className="profile-action-button"><Check size={13} />Já são amigos</span> : <button type="button" className="profile-action-button primary" onClick={() => onProfileAction("request")}><UserPlus size={13} />Mandar solicitação</button>}<button type="button" className="profile-action-button" onClick={() => onProfileAction("message")}><MessageCircle size={13} />Conversar</button><button type="button" className="profile-action-button danger" onClick={() => onProfileAction("report")}><ShieldCheck size={13} />Denunciar usuário</button></div>}
+              </section>
+              <section className="pp2-card">
+                <div className="pp2-card-head"><span>Mural</span><Sparkles size={15} /></div>
+                <div className="pp2-mural">
+                  {visibleMural.length ? visibleMural.flatMap(({ id, label, fallback }) => (mural[id] || []).map((item) => <article className="pp2-mural-item" key={item.id}><img src={item.image} alt={`Imagem de ${item.value || label}`} /><div><span>{label}</span><strong>{item.value.trim() || fallback}</strong></div></article>)) : <p className="pp2-empty">Este perfil ainda não escolheu categorias para o Mural.</p>}
+                </div>
+              </section>
+            </div>
+            <aside className="pp2-side">
+              <section className="pp2-card">
+                <div className="pp2-card-head"><span>Visibilidade</span><Eye size={15} /></div>
+                <div className="pp2-vis">
+                  <span className={showActivity ? "is-visible" : "is-hidden"}><i />Atividade {showActivity ? "visível" : "oculta"}</span>
+                  <span className={showServers ? "is-visible" : "is-hidden"}><i />Servidores em comum {showServers ? "visíveis" : "ocultos"}</span>
+                  <span className={showMutualFriends ? "is-visible" : "is-hidden"}><i />Amigos em comum {showMutualFriends ? "visíveis" : "ocultos"}</span>
+                </div>
+              </section>
+              {isSelf && <p className="pp2-hint">É assim que as outras pessoas veem o seu perfil público.</p>}
+            </aside>
+          </div>
         </div>
-        <footer className="public-profile-footer"><span>{isSelf ? "Este é o seu perfil público." : "Esta é uma visualização pública do perfil."}</span><button type="button" onClick={onClose}>Fechar perfil</button></footer>
+        <footer className="pp2-footer">
+          <span>{isSelf ? "Este é o seu perfil público." : "Esta é uma visualização pública do perfil."}</span>
+          <button type="button" onClick={onClose}>Fechar perfil</button>
+        </footer>
       </section>
     </div>
   );

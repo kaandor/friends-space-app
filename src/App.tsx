@@ -1362,7 +1362,7 @@ function App() {
   if (!authReady) {
     return (
       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26, background: 'var(--appearance-page-bg, var(--bg-primary))' }}>
-        <img src={assetUrl('penguin-tux.svg')} alt="" style={{ width: 132, height: 132, objectFit: 'contain', display: 'block' }} />
+        <img src={assetUrl('penguin-loading.png')} alt="" style={{ width: 132, height: 132, objectFit: 'contain', display: 'block' }} />
         <span className="fs-boot-dot" />
         <LoadingWatchdog />
         <style>{`@keyframes fsBootDotPulse{0%,100%{opacity:.2;transform:scale(.78)}50%{opacity:1;transform:scale(1)}}.fs-boot-dot{width:12px;height:12px;border-radius:50%;background:#fff;animation:fsBootDotPulse 1s ease-in-out infinite}`}</style>
@@ -1712,7 +1712,7 @@ function App() {
                   onClick={() => { setCurrentServer(null); setShowUsers(false); setCurrentChannel(null) }}
                   title="Amigos"
                 >
-                  <img src={assetUrl('penguin-tux.svg')} alt="" style={{ width: 30, height: 30, borderRadius: 9, objectFit: 'contain', display: 'block' }} />
+                  <img src={assetUrl('penguin-logo.png')} alt="" style={{ width: 30, height: 30, borderRadius: 9, objectFit: 'cover', display: 'block' }} />
                   {totalUnread > 0 && (
                     <span style={navBadgeStyle}>
                       {totalUnread > 99 ? '99+' : totalUnread}
