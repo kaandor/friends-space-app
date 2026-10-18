@@ -241,7 +241,11 @@ const tursoArg = (v) => {
 // entao nada mais no arquivo precisa saber qual banco esta ativo.
 const neonEnv = () => ({ url: process.env.NEON_DATABASE_URL || '' })
 
-const isNeon = () => Boolean(neonEnv().url)
+// Driver ativo: "neon" liga o Neon (exige NEON_DATABASE_URL); qualquer outro
+// valor (ou ausente) mantem o Turso. O Neon FREE estourou a cota de rede em
+// 10/2026 (402 "exceeded the quota") e o Turso segue com os mesmos dados —
+// basta trocar DB_DRIVER para voltar sem mexer no codigo.
+const isNeon = () => Boolean(neonEnv().url) && process.env.DB_DRIVER === 'neon'
 
 const neonTarget = () => {
   const raw = neonEnv().url

@@ -12,3 +12,4 @@ migrations_dir = "migrations"
 
 [vars]
 ENVIRONMENT = "production"
+DB_DRIVER = "turso"
