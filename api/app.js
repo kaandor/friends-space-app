@@ -214,7 +214,7 @@ const tursoEnv = () => ({
 
 const isTurso = () => {
   const { url, token } = tursoEnv()
-  return Boolean(url && token)
+  return Boolean((url && token) || isNeon())
 }
 
 const hasRemoteStorage = () => isTurso() || Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
@@ -234,7 +234,60 @@ const tursoArg = (v) => {
   return { type: 'text', value: String(v) }
 }
 
+// Driver Neon (Postgres sobre HTTP): entra em cena quando NEON_DATABASE_URL
+// existe. O Neon tem regiao em Sao Paulo (aws-sa-east-1) — mais perto que o
+// Turso nos EUA. O SQL do app e todo compativel (ja usa ON CONFLICT); so
+// trocamos ? por $n e convertemos a resposta pro mesmo formato do Turso,
+// entao nada mais no arquivo precisa saber qual banco esta ativo.
+const neonEnv = () => ({ url: process.env.NEON_DATABASE_URL || '' })
+
+const isNeon = () => Boolean(neonEnv().url)
+
+const neonTarget = () => {
+  const raw = neonEnv().url
+  const host = /@([^/]+)\//.exec(raw)?.[1] || ''
+  if (!host) throw new Error('NEON_DATABASE_URL invalida')
+  return { host, conn: raw }
+}
+
+const neonCell = (v) => {
+  if (v === null || v === undefined) return { type: 'null' }
+  if (typeof v === 'number') return { type: Number.isInteger(v) ? 'integer' : 'float', value: String(v) }
+  if (typeof v === 'boolean') return { type: 'integer', value: v ? '1' : '0' }
+  return { type: 'text', value: String(v) }
+}
+
+const neonFetch = async (sql, args = []) => {
+  const { host, conn } = neonTarget()
+  let n = 0
+  const query = sql.replace(/\?/g, () => `$${++n}`)
+  const response = await fetch(`https://${host}/sql`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'Neon-Connection-String': conn,
+      'Neon-Array-Mode': 'true',
+      'Neon-Raw-Text-Output': 'true',
+    },
+    body: JSON.stringify({ query, params: args }),
+  })
+  if (!response.ok) {
+    let detail = ''
+    try {
+      const text = await response.text()
+      if (text) detail = text.slice(0, 300)
+    } catch {}
+    throw new Error(`Neon request failed: ${response.status} ${detail}`)
+  }
+  const data = await response.json()
+  const rows = Array.isArray(data?.rows)
+    ? data.rows.map((r) => (Array.isArray(r) ? r.map(neonCell) : Object.values(r).map(neonCell)))
+    : []
+  return { rows, affected_row_count: Number(data?.rowCount || 0), rows_read: 0, rows_written: 0, query_duration_ms: 0 }
+}
+
 const tursoFetch = async (sql, args = []) => {
+  if (isNeon()) return neonFetch(sql, args)
   const { token } = tursoEnv()
   const response = await fetch(`${tursoBaseUrl()}/v2/pipeline`, {
     method: 'POST',
@@ -268,8 +321,8 @@ const tursoFetch = async (sql, args = []) => {
 
 const ensureTursoSchema = async () => {
   if (tursoSchemaReady || !isTurso()) return
-  await tursoFetch(`CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at INTEGER)`)
-  await tursoFetch(`CREATE TABLE IF NOT EXISTS locks (key TEXT PRIMARY KEY, token TEXT NOT NULL, expires_at INTEGER)`)
+  await tursoFetch(`CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at BIGINT)`)
+  await tursoFetch(`CREATE TABLE IF NOT EXISTS locks (key TEXT PRIMARY KEY, token TEXT NOT NULL, expires_at BIGINT)`)
   // Tabela dedicada de signals WebRTC (09/2026): o sendCallSignal é NO_LOCK_ACTIONS
   // (sem lock global) e, ANTES, escrevia no blob JSON inteiro do store — dois
   // requests concorrentes (answer + candidate simultâneos) carregavam o store,
@@ -282,14 +335,14 @@ const ensureTursoSchema = async () => {
     to_user_id TEXT NOT NULL,
     type TEXT NOT NULL,
     payload TEXT NOT NULL,
-    created_at INTEGER NOT NULL
+    created_at BIGINT NOT NULL
   )`)
   await tursoFetch(`CREATE INDEX IF NOT EXISTS idx_call_signals_inbox ON call_signals (session_id, to_user_id, created_at)`)
-  await tursoFetch(`CREATE TABLE IF NOT EXISTS ip_bans (ip TEXT PRIMARY KEY, reason TEXT NOT NULL, created_at INTEGER NOT NULL)`)
-  await tursoFetch(`CREATE TABLE IF NOT EXISTS device_bans (id TEXT PRIMARY KEY, reason TEXT NOT NULL, created_at INTEGER NOT NULL)`)
-  await tursoFetch(`CREATE TABLE IF NOT EXISTS rate_hits (k TEXT NOT NULL, ts INTEGER NOT NULL)`)
+  await tursoFetch(`CREATE TABLE IF NOT EXISTS ip_bans (ip TEXT PRIMARY KEY, reason TEXT NOT NULL, created_at BIGINT NOT NULL)`)
+  await tursoFetch(`CREATE TABLE IF NOT EXISTS device_bans (id TEXT PRIMARY KEY, reason TEXT NOT NULL, created_at BIGINT NOT NULL)`)
+  await tursoFetch(`CREATE TABLE IF NOT EXISTS rate_hits (k TEXT NOT NULL, ts BIGINT NOT NULL)`)
   await tursoFetch(`CREATE INDEX IF NOT EXISTS idx_rate_hits_k ON rate_hits (k, ts)`)
-  await tursoFetch(`CREATE TABLE IF NOT EXISTS ip_events (ip TEXT NOT NULL, ts INTEGER NOT NULL, kind TEXT NOT NULL)`)
+  await tursoFetch(`CREATE TABLE IF NOT EXISTS ip_events (ip TEXT NOT NULL, ts BIGINT NOT NULL, kind TEXT NOT NULL)`)
   await tursoFetch(`CREATE INDEX IF NOT EXISTS idx_ip_events_ip ON ip_events (ip, ts)`)
   tursoSchemaReady = true
 }
@@ -2177,7 +2230,7 @@ const actions = {
     const actor = actorOf(store, body)
     try {
       if (isTurso()) {
-        await tursoFetch('CREATE TABLE IF NOT EXISTS client_errors (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, ts INTEGER NOT NULL, whereami TEXT NOT NULL, message TEXT NOT NULL)')
+        await tursoFetch('CREATE TABLE IF NOT EXISTS client_errors (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, ts BIGINT NOT NULL, whereami TEXT NOT NULL, message TEXT NOT NULL)')
         try { await tursoFetch('ALTER TABLE client_errors ADD COLUMN code TEXT') } catch { }
         await tursoFetch('CREATE INDEX IF NOT EXISTS idx_client_errors_ts ON client_errors (ts)')
         try {
