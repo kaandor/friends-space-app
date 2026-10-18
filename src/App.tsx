@@ -14,7 +14,6 @@ import { toImageUrl } from './services/driveService'
 import { enablePushNotifications, pushEnabledLocally } from './services/pushService'
 import { ChannelSidebar } from './components/Layout/ChannelSidebar'
 import { TopBar } from './components/Layout/TopBar'
-import { UserDock } from './components/Layout/UserDock'
 import { InboxModal } from './components/Home/InboxModal'
 import { ChatView } from './components/Chat/ChatView'
 import { CallView } from './components/Call/CallView'
@@ -22,7 +21,7 @@ import { CallAudioLayer } from './components/Call/CallAudioLayer'
 import { FriendsView } from './components/Friends/FriendsView'
 import { FeedView } from './components/Social/FeedView'
 import { MobileLayout } from './components/Layout/MobileLayout'
-import { ProfileView, type ProfileTab } from './components/Profile/ProfileView'
+import { UserProfileModal } from './components/Profile/UserProfileModal'
 import { AstroWindow } from './components/Profile/AstroWindow'
 import { EditProfile } from './components/Profile/EditProfile'
 import { appearanceDataAttrs, appearanceScreenStyle, clampAppearanceToPlan, parseAppearance, planFromUser } from './components/Profile/ProfileEditor/appearance'
@@ -331,7 +330,6 @@ function App() {
   const [showCreateServer, setShowCreateServer] = useState(false)
   const [showJoinServer, setShowJoinServer] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
-  const [profileTab, setProfileTab] = useState<ProfileTab>('perfil')
   const [showAstro, setShowAstro] = useState(false)
   const [showEditProfile, setShowEditProfile] = useState(false)
   const [showRoles, setShowRoles] = useState(false)
@@ -1278,7 +1276,6 @@ function App() {
     const onOpenProfile = (e: Event) => {
       const tab = (e as CustomEvent<string>).detail
       if (tab === 'astro') { setShowAstro(true); return }
-      setProfileTab((tab as ProfileTab) || 'perfil')
       setShowProfile(true)
     }
     const onOpenAstro = () => setShowAstro(true)
@@ -1635,7 +1632,7 @@ function App() {
               onMobileTabChange={setMobileTab}
               onSelectServer={selectServer}
               onSetCurrentChannel={setCurrentChannel}
-              onShowProfile={(tab) => { if (tab === 'astro') { setShowAstro(true); return } setProfileTab(tab || 'perfil'); setShowProfile(true) }}
+              onShowProfile={(tab) => { if (tab === 'astro') { setShowAstro(true); return } setShowProfile(true) }}
               onShowPrivacy={() => setShowPrivacy(true)}
               onShowEditProfile={() => setShowEditProfile(true)}
               onSignOut={handleSignOut}
@@ -1830,14 +1827,11 @@ function App() {
             )}
             </div>
             </div>
-            {!controllingCall && (!currentServer || showDiscover) && !showProfile && !showPrivacy && !showEditProfile && !showAstro && !showAstroPlans && !showAbout && !showHelpReport && !showDownloadApp && (
-              <UserDock floating aboveDiscover={showDiscover} />
-            )}
             </>
           )}
           </div>
 
-          {showProfile && <ProfileView onClose={() => setShowProfile(false)} initialTab={profileTab} />}
+          {showProfile && currentUser && <UserProfileModal user={currentUser} isSelf onClose={() => setShowProfile(false)} />}
           {showAstro && <AstroWindow onClose={() => setShowAstro(false)} />}
 
           {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}

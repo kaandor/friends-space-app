@@ -67,11 +67,11 @@ export function VoicePanel({ onReturnToCall }: { onReturnToCall?: () => void }) 
   }
 
   return (
-    <div style={{ margin: '10px 12px 12px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
+    <div className="vp-card">
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#23a55a', flexShrink: 0 }} />
-        <span style={{ fontSize: 13.5, fontWeight: 700, color: '#23a55a', letterSpacing: '0.01em' }}>Voz conectada</span>
-        <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+        <span className="vp-dot" />
+        <span className="vp-title">Voz conectada</span>
+        <span className="vp-timer">
           {(connectedAt || createdAt) ? fmtElapsed(now - ((connectedAt || createdAt) as number)) : '--:--'}
         </span>
       </div>

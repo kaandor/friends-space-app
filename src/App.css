@@ -4389,11 +4389,25 @@ button, input, select, textarea {
 .fs-astrohub-rocket{animation:fs-floaty 4.5s ease-in-out infinite}
 
 /* Painel de voz (VoicePanel) inspirado no Discord: botoes ghost com hover */
+.vp-card {
+  margin: 10px 12px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+}
+.vp-dot {
+  width: 10px; height: 10px; border-radius: 50%; background: #23a55a; flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(35, 165, 90, 0.75);
+}
+.vp-title { font-size: 13px; font-weight: 800; color: #23a55a; letter-spacing: 0.01em; }
+.vp-timer { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .vp-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   background: transparent; color: var(--text-secondary);
-  border: 1px solid var(--border); border-radius: 8px; padding: 7px 0;
+  border: 1px solid var(--border); border-radius: 9px; padding: 7px 0;
   font-size: 12px; font-weight: 600; cursor: pointer; flex: 1; min-width: 0;
+  transition: background 0.13s ease, color 0.13s ease, border-color 0.13s ease;
 }
 .vp-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 .vp-btn.vp-active { background: var(--accent); border-color: var(--accent); color: #04120a; }

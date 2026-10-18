@@ -4,6 +4,7 @@ import type { NameEffect } from '../../utils/nameStyle'
 import { toImageUrl } from '../../services/driveService'
 import { requestBackend } from '../../services/backend'
 import { useUserStore } from '../../stores/userStore'
+import { useFriendStore } from '../../stores/friendStore'
 import { PublicProfileModal, type FrameId, type MuralFieldId, type MuralState, type Plan, type ProfileActionId, type SocialStatus, EMPTY_MURAL } from './ProfileEditor/ProfileEditor'
 import type { User } from '../../types'
 import './ProfileEditor/ProfileEditor.css'
@@ -29,6 +30,7 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
   onClose: () => void
 }) {
   const { currentUser: me } = useUserStore()
+  const { friends } = useFriendStore()
   const [following, setFollowing] = useState(me?.following?.includes(user.id) || false)
   const [blocked, setBlocked] = useState(me?.blocked?.includes(user.id) || false)
   const [busy, setBusy] = useState<'follow' | 'block' | null>(null)
@@ -70,6 +72,15 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
   const nameColorId = typeof settings.nameColor === 'string' ? settings.nameColor : 'default'
   const nameEffectId = (typeof settings.nameEffect === 'string' ? settings.nameEffect : 'none') as NameEffect
   const showAstroBadge = tier !== 'none' && settings.astroBadge !== false
+
+  const rel = friends.find(f =>
+    (f.userId === user.id && f.friendId === me?.id) ||
+    (f.friendId === user.id && f.userId === me?.id)
+  )
+  const isFriend = !isSelf && rel?.status === 'accepted'
+  const verified = Boolean(user.googleId || user.authProvider === 'google') && settings.showBadges !== false
+  const joinedAt = Number(user.createdAt || 0)
+  const pronoun = typeof settings.pronoun === 'string' ? settings.pronoun : ''
 
   const handleFollow = async () => {
     if (!me || busy) return
@@ -124,6 +135,11 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
         nameColorId={nameColorId}
         nameEffectId={nameEffectId}
         showAstroBadge={showAstroBadge}
+        verified={verified}
+        isFriend={isFriend}
+        joinedAt={joinedAt}
+        pronoun={pronoun}
+        onEdit={isSelf ? () => { onClose(); try { window.dispatchEvent(new Event('friends-space:edit-profile')) } catch { } } : undefined}
         isSelf={isSelf}
         onClose={onClose}
         onProfileAction={(action) => { if (onAction) onAction(action) }}

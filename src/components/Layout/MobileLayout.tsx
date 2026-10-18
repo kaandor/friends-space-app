@@ -1,5 +1,4 @@
 import type { Channel, Server, User } from '../../types'
-import type { ProfileTab } from '../Profile/ProfileView'
 import { TopBar } from '../Layout/TopBar'
 import { ChannelSidebar } from '../Layout/ChannelSidebar'
 import { ChatView } from '../Chat/ChatView'
@@ -11,6 +10,8 @@ import { Compass, Plus, Mail, MessageCircle, CircleUser, Pen, Settings, LogOut, 
 import { Avatar } from '../ui/Avatar'
 import { useCallStore } from '../../stores/callStore'
 import { Button } from '../ui/Button'
+
+type ProfileTab = 'perfil' | 'social' | 'privacidade' | 'astro' | 'interface'
 
 interface MobileLayoutProps {
   activeUser: User | null

@@ -1,6 +1,5 @@
 import { Fa } from '../../utils/fa'
 import { useEffect, useState } from 'react'
-import { Avatar } from './Avatar'
 import { StatusIcon } from './StatusIcon'
 import { UserProfileModal } from '../Profile/UserProfileModal'
 import { IconSend, IconAdd, IconCheck, IconClose } from '../../utils/icons'
@@ -10,6 +9,12 @@ import { useUserMenuStore } from '../../stores/userMenuStore'
 import { useLangStore } from '../../stores/langStore'
 import { useCallStore } from '../../stores/callStore'
 import { ReportModal } from '../Chat/ReportModal'
+import { getAstroTier } from '../../utils/astro'
+import { nameStyleOf, nameClassOf } from '../../utils/nameStyle'
+import { toImageUrl } from '../../services/driveService'
+import { skinClass } from '../Profile/ProfileEditor/astroCatalog'
+import { cn } from '../Profile/ProfileEditor/cn'
+import './UserContextMenu.css'
 
 const clampVolume = (v?: number) => (typeof v === 'number' && !Number.isNaN(v) ? Math.min(1, Math.max(0, v)) : 1)
 
@@ -35,18 +40,9 @@ function Item({ icon, label, danger, onClick, disabled }: {
 }) {
   return (
     <button
+      className={cn('ucm-item', danger && 'is-danger')}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
-      style={{
-        width: '100%', display: 'flex', alignItems: 'center', gap: 8,
-        padding: '7px 10px', borderRadius: 6,
-        color: danger ? '#f23f43' : 'var(--text-secondary)',
-        background: 'transparent', border: 'none', textAlign: 'left',
-        fontSize: 13, cursor: disabled ? 'default' : 'pointer',
-        opacity: disabled ? 0.55 : 1,
-      }}
-      onMouseEnter={e => { if (!disabled) (e.currentTarget as HTMLElement).style.background = 'var(--bg-tertiary)' }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
     >
       {icon}
       {label}
@@ -142,6 +138,14 @@ export function UserContextMenu() {
   const badgeHidden = settings['showBadges'] === false
   const showJoinDate = settings['showJoinDate'] !== false
 
+  const tier = isMe ? getAstroTier(currentUser) : getAstroTier(user)
+  const paid = tier !== 'none'
+  const frameClass = paid ? skinClass('avatar', typeof settings['frame'] === 'string' ? settings['frame'] : 'none') : ''
+  const plateClass = paid ? skinClass('nameplate', typeof settings['nameplate'] === 'string' ? settings['nameplate'] : 'none') : ''
+  const effectClass = paid ? skinClass('effect', typeof settings['profileEffect'] === 'string' ? settings['profileEffect'] : 'none') : ''
+  const namePreview = nameStyleOf(user)
+  const nameClass = nameClassOf(user)
+
   const sendMessage = () => {
     window.dispatchEvent(new CustomEvent('friends-space:open-dm', { detail: { user } }))
     close()
@@ -168,101 +172,81 @@ export function UserContextMenu() {
     close()
   }
 
-  const menuWidth = 300
+  const menuWidth = 320
   const style: React.CSSProperties = {
     left: Math.min(x, window.innerWidth - menuWidth - 8),
-    top: Math.min(y, window.innerHeight - 420),
+    top: Math.max(8, Math.min(y, window.innerHeight - 460)),
     width: menuWidth,
     maxWidth: 'calc(100vw - 16px)',
-    position: 'fixed',
-    zIndex: 5000,
-    background: 'var(--bg-tertiary)',
-    border: '1px solid var(--border)',
-    borderRadius: 10,
-    boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
-    overflow: 'hidden',
   }
 
   return (
     <>
-    <div id="user-context-menu" style={style}>
-      <div style={{ position: 'relative', borderBottom: '1px solid var(--border)' }}>
-        {user.bannerUrl ? (
-          <img src={user.bannerUrl} alt="Banner" style={{ width: '100%', height: 90, objectFit: 'cover', display: 'block' }} />
-        ) : (
-          <div style={{ height: 90, background: `linear-gradient(135deg, ${user.accentColor || '#29A3FF'}22, transparent)` }} />
-        )}
+    <div id="user-context-menu" className="ucm-card" style={style}>
+      <div className="ucm-banner">
+        {user.bannerUrl
+          ? <img src={toImageUrl(user.bannerUrl, 680)} alt="Banner" />
+          : <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${user.accentColor || '#29A3FF'}33, transparent)` }} />}
+        {effectClass && <div className={cn('ape-effect-layer', effectClass)} />}
       </div>
-      <div style={{ padding: 12, borderBottom: '1px solid var(--border)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar src={user.photoUrl} name={user.name} size={46} />
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</span>
-              <StatusIcon status={statusKey} online={online} size={14} />
-            </div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>@{user.friendCode || 'sem-codigo'}</div>
-            {statusMessage && (
-              <div style={{ color: 'var(--text-primary)', fontSize: 11.5, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {statusMessage}
-              </div>
-            )}
-          </div>
+      <div className="ucm-body">
+        <div className={cn('ape-avatar', 'ucm-avatar', frameClass)}>
+          {user.photoUrl
+            ? <img src={toImageUrl(user.photoUrl, 128)} alt="" />
+            : <div className="ucm-avatar-fallback">{(user.name || '?').charAt(0).toUpperCase()}</div>}
         </div>
-        <div style={{ display: 'flex', gap: 5, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-          {isFriend && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'var(--accent)', color: '#000', fontWeight: 700 }}>{t('menu.friend')}</span>}
+        <div className="ucm-name-row">
+          <span className={cn('ape-plate', plateClass, nameClass, 'ucm-name')} style={namePreview}>{user.name}</span>
+          <StatusIcon status={statusKey} online={online} size={14} />
           {!badgeHidden && astro && (
-            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#a020f0', color: '#fff', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <Fa name="rocket" size={9} /> ASTRO
-            </span>
+            <span className="ape-badge-astro" style={{ display: 'inline-flex', flexShrink: 0 }}><Fa name="rocket" size={11} /></span>
           )}
+        </div>
+        <div className="ucm-handle">@{user.friendCode || 'sem-codigo'}</div>
+        {statusMessage && <div className="ucm-status-message">{statusMessage}</div>}
+        <div className="ucm-badges">
+          {isFriend && <span className="ucm-chip is-friend">{t('menu.friend')}</span>}
           {!badgeHidden && verified && (
-            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <Fa name="check" size={9} style={{  color: '#23a55a' }} /> {t('menu.verified')}
-            </span>
+            <span className="ucm-chip is-verified"><Fa name="check" size={9} /> {t('menu.verified')}</span>
           )}
-          {pronoun && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>{pronoun}</span>}
+          {pronoun && <span className="ucm-chip">{pronoun}</span>}
           {showJoinDate && user.createdAt > 0 && (
-            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
+            <span className="ucm-chip">
               {t('menu.joinedOn')} {new Date(user.createdAt).toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' })}
             </span>
           )}
         </div>
-        {user.bio && (
-          <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4, wordBreak: 'break-word' }}>{user.bio}</p>
-        )}
+        {user.bio && <p className="ucm-bio">{user.bio}</p>}
         {user.activityName && settings['showActivity'] !== false && user.activityPrivacy !== 'private' && (
-          <div style={{ margin: '10px 0 0', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 9px', background: 'var(--bg-tertiary)', borderRadius: 8, border: '1px solid var(--border)' }}>
-            <Fa name="gamepad" size={12} style={{ color: 'var(--text-primary)' }} />
+          <div className="ucm-activity">
+            <Fa name="gamepad" size={12} style={{ color: 'var(--text-primary)', flexShrink: 0 }} />
             <div style={{ minWidth: 0 }}>
-              <div style={{ color: 'var(--text-primary)', fontSize: 12, fontWeight: 600 }}>{user.activityName}</div>
-              {user.activityDetails && <div style={{ color: 'var(--text-muted)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.activityDetails}</div>}
+              <div className="ucm-activity-name">{user.activityName}</div>
+              {user.activityDetails && <div className="ucm-activity-details">{user.activityDetails}</div>}
             </div>
           </div>
         )}
       </div>
 
       {activeCall && !isMe && participants.some(p => p.userId === user.id) && (
-        <div style={{ padding: '8px 12px 10px', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Fa name="volume-high" size={10} /> Volume na chamada
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Fa name="microphone" size={12} style={{  color: 'var(--text-muted)', width: 16, flexShrink: 0 }} />
+        <div className="ucm-volume">
+          <div className="ucm-volume-title"><Fa name="volume-high" size={10} /> Volume na chamada</div>
+          <div className="ucm-volume-row">
+            <Fa name="microphone" size={12} style={{ color: 'var(--text-muted)', width: 16, flexShrink: 0 }} />
             <VolumeSlider value={clampVolume(volumes[user.id])} onChange={v => setVolume(user.id, v)} />
-            <span style={{ fontSize: 11, color: 'var(--text-secondary)', width: 30, textAlign: 'right', flexShrink: 0 }}>{Math.round(clampVolume(volumes[user.id]) * 100)}%</span>
+            <span className="ucm-volume-value">{Math.round(clampVolume(volumes[user.id]) * 100)}%</span>
           </div>
           {remoteScreenStreams[user.id] && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-              <Fa name="display" size={12} style={{  color: 'var(--text-muted)', width: 16, flexShrink: 0 }} />
+            <div className="ucm-volume-row">
+              <Fa name="display" size={12} style={{ color: 'var(--text-muted)', width: 16, flexShrink: 0 }} />
               <VolumeSlider value={clampVolume(volumes[`screen:${user.id}`])} onChange={v => setVolume(`screen:${user.id}`, v)} />
-              <span style={{ fontSize: 11, color: 'var(--text-secondary)', width: 30, textAlign: 'right', flexShrink: 0 }}>{Math.round(clampVolume(volumes[`screen:${user.id}`]) * 100)}%</span>
+              <span className="ucm-volume-value">{Math.round(clampVolume(volumes[`screen:${user.id}`]) * 100)}%</span>
             </div>
           )}
         </div>
       )}
 
-      <div style={{ padding: 6 }}>
+      <div className="ucm-menu">
         {!isMe && (
           <Item icon={<IconSend width={15} height={15} />} label={t('menu.conversar')} onClick={sendMessage} />
         )}

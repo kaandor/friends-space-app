@@ -2846,3 +2846,9 @@
 .fs-profile-editor .profile-crop-page .compare-card,
 .fs-profile-editor .profile-crop-page .upgrade-card,
 .fs-profile-editor .profile-crop-page .premium-card { border: 0 !important; outline: none !important; box-shadow: none !important; }
+
+/* Perfil publico unificado: acoes do cabecalho, badge de editar e chips de insignias */
+.public-profile-header-actions { display: flex; align-items: center; gap: 8px; }
+.public-profile-edit-btn { display: inline-flex; align-items: center; gap: 6px; padding: 0.55rem 0.9rem; border: 1px solid var(--appearance-accent, #29A3FF); border-radius: 7px; background: transparent; color: var(--appearance-accent, #29A3FF); font-size: 10px; font-weight: 800; letter-spacing: .04em; cursor: pointer; transition: background 160ms ease; }
+.public-profile-edit-btn:hover { background: color-mix(in srgb, var(--appearance-accent, #29A3FF) 14%, transparent); }
+.public-profile-badges { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 8px; }

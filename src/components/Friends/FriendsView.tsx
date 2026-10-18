@@ -25,6 +25,7 @@ import { StoriesBar } from '../Social/StoriesBar'
 import { FeedView } from '../Social/FeedView'
 import { AstroGiftModal } from '../Home/AstroGiftModal'
 import { VoicePanel } from '../Call/VoicePanel'
+import { UserDock } from '../Layout/UserDock'
 import { useUserMenuStore } from '../../stores/userMenuStore'
 import type { User } from '../../types'
 
@@ -58,6 +59,9 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
   const [showAstro, setShowAstro] = useState(false)
   const [showAstroPlans, setShowAstroPlans] = useState(false)
   const dmFileInputRef = useRef<HTMLInputElement>(null)
+  const dmScrollRef = useRef<HTMLDivElement>(null)
+  const dmEndRef = useRef<HTMLDivElement>(null)
+  const dmStickRef = useRef(true)
   const [storyRetrySignal, setStoryRetrySignal] = useState(0)
   const [mutualCounts, setMutualCounts] = useState({ friends: 0, servers: 0 })
   const [showFullProfile, setShowFullProfile] = useState(false)
@@ -102,6 +106,16 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
       loadDirectMessages(currentUser.id, currentDMUser.id)
     }
   }, [currentDMUser, currentUser, loadDirectMessages])
+
+  useEffect(() => {
+    dmStickRef.current = true
+    const el = dmScrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [currentDMUser?.id])
+
+  useEffect(() => {
+    if (dmStickRef.current) dmEndRef.current?.scrollIntoView({ block: 'end' })
+  }, [directMessages])
 
   useEffect(() => {
     if (!currentUser || !currentDMUser || currentDMUser.id === currentUser.id) { setMutualCounts({ friends: 0, servers: 0 }); return }
@@ -459,6 +473,7 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
           )}
         </div>
         <VoicePanel onReturnToCall={onReturnToCall} />
+        <UserDock />
       </div>
 
       <div style={{ flex: 1, display: isMobile && !currentDMUser ? 'none' : 'flex', flexDirection: isMobile ? 'column' : 'row', background: 'var(--bg-primary)', minWidth: 0, minHeight: 0, height: isMobile ? '100%' : undefined }}>
@@ -478,7 +493,16 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
               </div>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div
+              ref={dmScrollRef}
+              onScroll={() => {
+                try {
+                  const el = dmScrollRef.current
+                  if (el) dmStickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+                } catch { }
+              }}
+              style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}
+            >
               {directMessages.length === 0 ? (
                 <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 40 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Inicio da conversa com {currentDMUser.name}</div>
@@ -546,6 +570,7 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
                   )
                 })
               )}
+              <div ref={dmEndRef} />
             </div>
 
             <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)' }}>

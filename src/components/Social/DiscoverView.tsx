@@ -8,6 +8,8 @@ import { requestBackend } from '../../services/backend'
 import { useServerStore } from '../../stores/serverStore'
 import { useUserStore } from '../../stores/userStore'
 import { toImageUrl } from '../../services/driveService'
+import { VoicePanel } from '../Call/VoicePanel'
+import { UserDock } from '../Layout/UserDock'
 import type { Server } from '../../types'
 import './discover.css'
 
@@ -190,19 +192,10 @@ export function DiscoverView({ onClose }: Props) {
 
           <div className="ping-side-spacer" />
 
-          {currentUser && (
-            <div className="ping-user">
-              {currentUser.photoUrl ? (
-                <img src={toImageUrl(currentUser.photoUrl)} alt="" />
-              ) : (
-                <span className="ping-user-char">{currentUser.name.charAt(0).toUpperCase()}</span>
-              )}
-              <div className="ping-user-info">
-                <strong>{currentUser.name}</strong>
-                <span className="ping-user-status"><i /> Disponível</span>
-              </div>
-            </div>
-          )}
+          <div className="ping-side-foot">
+            <VoicePanel />
+            <UserDock />
+          </div>
         </aside>
 
         <section className="ping-main">
