@@ -369,6 +369,9 @@
   padding: 22px 20px 26px;
   display: flex;
   flex-direction: column;
+  /* Preview alinhado ao centro da coluna (safe center evita corte quando o
+     conteudo passar da altura e o navegador nao entender o valor antigo). */
+  justify-content: safe center;
   gap: 12px;
   background:
     radial-gradient(440px 280px at 50% -60px, color-mix(in srgb, var(--accent) 16%, transparent), transparent 72%),

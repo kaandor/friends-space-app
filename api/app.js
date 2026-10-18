@@ -437,6 +437,40 @@ async function savePushSubs(map) {
   await kvSet(PUSH_SUBS_KEY, map)
 }
 
+// Fallback de noticias sem chave: RSS publico do Google Noticias (BR/pt).
+// Usado quando NEWS_API_KEY nao existe (era o motivo de "as noticias sumiram"
+// depois da migracao Vercel -> Workers) ou quando o provedor pago falha.
+async function fetchNewsFromRss() {
+  try {
+    const r = await fetch('https://news.google.com/rss?hl=pt-BR&gl=BR&ceid=BR:pt-419', {
+      headers: { 'user-agent': 'Mozilla/5.0 (compatible; FriendsSpace/1.0)' },
+    })
+    if (!r.ok) return []
+    const xml = await r.text()
+    const items = []
+    for (const block of xml.split('<item>').slice(1, 21)) {
+      const pick = (tag) => {
+        const m = block.match(new RegExp('<' + tag + '(?:\\s[^>]*)?>([\\s\\S]*?)</' + tag + '>'))
+        return m ? m[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim() : ''
+      }
+      const title = pick('title')
+      const link = pick('link')
+      if (!title || !link) continue
+      items.push({
+        title: title.slice(0, 140),
+        link: link.slice(0, 500),
+        source: pick('source').slice(0, 60),
+        pubDate: pick('pubDate').slice(0, 40),
+        category: '',
+        image: '',
+      })
+    }
+    return items.slice(0, 10)
+  } catch {
+    return []
+  }
+}
+
 async function sendPushToUser(userId, title, body, extra = {}) {
   if (!webpush) return
   try {
@@ -4081,20 +4115,31 @@ const actions = {
       return { ok: true, news: data.newsCache.items, cached: true }
     }
     const key = String(process.env.NEWS_API_KEY || '')
-    if (!key) return { ok: true, news: [], missingKey: true }
     try {
-      const r = await fetch(`https://newsdata.io/api/1/latest?apikey=${encodeURIComponent(key)}&country=br&language=pt&size=10`)
-      const j = await r.json().catch(() => null)
-      const items = ((j && j.results) || []).slice(0, 10).map((n) => ({
-        title: String(n.title || '').slice(0, 140),
-        link: String(n.link || '').slice(0, 500),
-        source: String(n.source_id || n.source_name || '').slice(0, 60),
-        pubDate: String(n.pubDate || '').slice(0, 40),
-        category: String(((n.category || [])[0]) || '').slice(0, 40),
-        image: String(n.image_url || '').slice(0, 500),
-      })).filter((n) => n.title)
-      data.newsCache = { at: now(), items }
-      return { ok: true, news: items }
+      let items = []
+      if (key) {
+        const r = await fetch(`https://newsdata.io/api/1/latest?apikey=${encodeURIComponent(key)}&country=br&language=pt&size=10`)
+        const j = await r.json().catch(() => null)
+        items = ((j && j.results) || []).slice(0, 10).map((n) => ({
+          title: String(n.title || '').slice(0, 140),
+          link: String(n.link || '').slice(0, 500),
+          source: String(n.source_id || n.source_name || '').slice(0, 60),
+          pubDate: String(n.pubDate || '').slice(0, 40),
+          category: String(((n.category || [])[0]) || '').slice(0, 40),
+          image: String(n.image_url || '').slice(0, 500),
+        })).filter((n) => n.title)
+      }
+      // Sem NEWS_API_KEY (ou provedor fora do ar): fallback gratuito e sem
+      // chave via RSS do Google Noticias BR/pt — era o motivo de
+      // "as noticias sumiram" (a key antiga morava no Vercel).
+      if (items.length === 0) {
+        items = await fetchNewsFromRss()
+      }
+      if (items.length > 0) {
+        data.newsCache = { at: now(), items }
+        return { ok: true, news: items }
+      }
+      return { ok: true, news: (data.newsCache && data.newsCache.items) || [] }
     } catch {
       return { ok: true, news: (data.newsCache && data.newsCache.items) || [] }
     }
@@ -4747,10 +4792,8 @@ const actions = {
     let mergedIds = [...new Set([...(existing?.participantIds || []), ...participantIds])]
     mergedIds = mergedIds.filter((id) => id === selfId || !hasStaleStamp(stamps, id, staleThreshold))
     if (body.leaveUserId) mergedIds = mergedIds.filter((id) => id !== body.leaveUserId)
-    // Ultimo a sair apaga na hora (sem esperar os 35s do stamp).
-    if (mergedIds.length === 0) {
-      session.active = false
-    }
+    // (O "ultimo a sair apaga na hora" roda DEPOIS do session existir — antes
+    // era feito aqui citando `session` antes do const (ReferenceError/500).)
     if (selfId) {
       mergedIds = [selfId, ...mergedIds.filter((id) => id !== selfId)]
       stamps[selfId] = now()
@@ -4874,6 +4917,12 @@ const actions = {
     if (body.leaveUserId) {
       session.participantIds = session.participantIds.filter((id) => id !== body.leaveUserId)
       if (session.hostUserId === body.leaveUserId) session.hostUserId = session.participantIds[0] || ''
+    }
+    // Ultimo a sair (ou cancelamento antes de alguem entrar) apaga a sessao na
+    // hora, sem esperar os 35s do stamp. Chamador esperando sozinho continua
+    // ativo porque o alvo segue listado em participantIds.
+    if (session.serverId === 'dm' && session.participantIds.length === 0) {
+      session.active = false
     }
     session.watch = sessionWatch(session)
     upsertGlobalCallSession(store, session)
@@ -5134,6 +5183,7 @@ export default async function handler(req, res) {
       'getStories',
       'getFeed',
       'getTrending',
+      'getNews',
       'getLinkPreview',
       'loadMyFolders',
       'listAllReports',

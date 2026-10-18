@@ -1026,13 +1026,6 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
                 <span className="ape-row-text"><span className="ape-row-title">Avatar animado</span><span className="ape-row-sub">{renderPaid ? "Use um GIF para animar seu avatar" : "Disponível no ASTRO"}</span></span>
                 <span className="ape-row-tile"><span className="ape-tile-circle"><img src={avatarSrc} alt="Avatar" /></span></span>
               </button>
-
-              <div className="ape-side-sep" />
-
-              <button className="ape-row" onClick={() => setIsSocialOpen(true)}>
-                <span className="ape-row-text"><span className="ape-row-title">Social e visibilidade</span><span className="ape-row-sub">Status, atividade e mural</span></span>
-                <span className="ape-row-tile"><ChevronsRight size={15} /></span>
-              </button>
             </div>
             {!previewing && (
               <div className="ape-side-foot">

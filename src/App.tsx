@@ -20,7 +20,7 @@ import { CallView } from './components/Call/CallView'
 import { CallAudioLayer } from './components/Call/CallAudioLayer'
 import { FriendsView } from './components/Friends/FriendsView'
 import { FeedView } from './components/Social/FeedView'
-import { MobileLayout } from './components/Layout/MobileLayout'
+import { MobileLayout, type MobileTab } from './components/Layout/MobileLayout'
 import { UserProfileModal } from './components/Profile/UserProfileModal'
 import { AstroWindow } from './components/Profile/AstroWindow'
 import { EditProfile } from './components/Profile/EditProfile'
@@ -425,8 +425,9 @@ function App() {
     const t2 = window.setInterval(check, 120000)
     return () => { cancelled = true; window.clearTimeout(t1); window.clearInterval(t2) }
   }, [isElectron])
-  // Aba ativa da navegacao inferior estilo Discord mobile (Amigos/Explorar/Voce)
-  const [mobileTab, setMobileTab] = useState<'feed' | 'friends' | 'explore' | 'me'>('feed')
+  // Aba ativa da navegacao inferior estilo app do Discord mobile:
+  // Servidores / Mensagens / Notificacoes / Voce.
+  const [mobileTab, setMobileTab] = useState<MobileTab>('messages')
   // Esquema de interface por scroll (mobile): rolar para BAIXO esconde a barra
   // superior (mais espaco pra conversa), rolar para CIMA mostra de novo.
   const [topbarHidden, setTopbarHidden] = useState(false)
@@ -580,11 +581,13 @@ function App() {
       if (!user) return
       useFriendStore.getState().setCurrentDMUser(user)
       useServerStore.setState({ currentServer: null, currentChannel: null })
+      setMobileTab('messages')
       setShowUsers(false)
       setShowProfile(false)
     }
     const onShowFriends = () => {
       useServerStore.setState({ currentServer: null, currentChannel: null })
+      setMobileTab('messages')
       setShowUsers(false)
       setShowProfile(false)
     }
@@ -617,7 +620,11 @@ function App() {
       setToast(message)
     }
     window.addEventListener('friends-space:toast', onToast)
-    const onOpenDiscover = () => { if (isMobile) setMobileTab('explore'); else setShowDiscover(true) }
+    const onOpenDiscover = () => {
+      // No mobile quem trata o evento e o proprio MobileLayout (aba Servidores > Descobrir).
+      if (window.matchMedia('(max-width: 768px)').matches) return
+      setShowDiscover(true)
+    }
     window.addEventListener('friends-space:open-discover', onOpenDiscover)
     const onOpenDownload = () => {
       if (isMobile) {
@@ -1337,11 +1344,12 @@ function App() {
       const stream = await acquireCallMedia(call.callMode || 'audio', store.preferredQuality, undefined, store.preferredFps)
       // Mic dedicado + audio limpo entram em background (sem travar o join).
       void upgradeLocalMedia()
-      // BUG FIX: adicionar participante ANTES de startCall (que roda connectToAllExistingPeers
-      // e syncSession — se o outro lado não estiver na lista, nenhuma oferta é criada e a call
-      // fica muda / "Ligando..." para sempre).
-      useCallStore.getState().addParticipant({ userId: call.fromId, userName: call.fromName, userPhoto: call.fromPhoto, muted: false, deafened: false })
-      store.startCall(call.channelId || 'dm', call.serverId || 'dm', stream, call.callMode || 'audio', store.preferredQuality, call.sessionId)
+      // O chamador entra na lista ANTES do startCall e a lista e passada como
+      // initialParticipants — o startCall nao pode zerar: o gate de DM do
+      // backend nega a sessao sem o outro participante e a call nunca nasce.
+      const callPeer = { userId: call.fromId, userName: call.fromName, userPhoto: call.fromPhoto, muted: false, deafened: false }
+      useCallStore.getState().addParticipant(callPeer)
+      store.startCall(call.channelId || 'dm', call.serverId || 'dm', stream, call.callMode || 'audio', store.preferredQuality, call.sessionId, [callPeer])
       setIncomingCall(null)
     } catch {
       // Captura falhou (mic/camera negada ou indisponivel): recusa a chamada
@@ -1354,7 +1362,7 @@ function App() {
   if (!authReady) {
     return (
       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26, background: 'var(--appearance-page-bg, var(--bg-primary))' }}>
-        <img src={assetUrl('penguin-loading.png')} alt="" style={{ width: 132, height: 132, objectFit: 'contain', display: 'block' }} />
+        <img src={assetUrl('penguin-tux.svg')} alt="" style={{ width: 132, height: 132, objectFit: 'contain', display: 'block' }} />
         <span className="fs-boot-dot" />
         <LoadingWatchdog />
         <style>{`@keyframes fsBootDotPulse{0%,100%{opacity:.2;transform:scale(.78)}50%{opacity:1;transform:scale(1)}}.fs-boot-dot{width:12px;height:12px;border-radius:50%;background:#fff;animation:fsBootDotPulse 1s ease-in-out infinite}`}</style>
@@ -1439,54 +1447,63 @@ function App() {
     <div {...(siteAppearance ? appearanceDataAttrs(siteAppearance) : {})} style={siteAppearance ? { ...appearanceScreenStyle(siteAppearance, theme), width: '100%', height: '100%', display: 'flex', flexDirection: 'column' } : { width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <DesktopChrome />
       {(incomingCall && !useCallStore.getState().activeCall) && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
-            <div style={{ width: 100, height: 100, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--accent)', boxShadow: '0 0 24px color-mix(in srgb, var(--accent) 22%, transparent)' }}>
-              <Avatar src={incomingCall.fromPhoto} name={incomingCall.fromName} size={100} />
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>{incomingCall.fromName}</h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center', color: 'var(--text-muted)' }}>
-                <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent)', animation: 'pulse 1s infinite' }} />
-                <span style={{ fontSize: 15 }}>Chamada Recebida</span>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'radial-gradient(circle at 50% 34%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%), rgba(5,7,10,0.92)', backdropFilter: 'blur(14px)' }}>
+          <style>{`@keyframes fsCallPing{0%{transform:scale(.9);opacity:.85}100%{transform:scale(1.28);opacity:0}}`}</style>
+          <div className="fs-modal-in" style={{ width: 'min(92vw, 380px)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, padding: '38px 26px 26px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 22, boxShadow: '0 30px 90px rgba(0,0,0,0.65)' }}>
+            <div style={{ position: 'relative', width: 104, height: 104 }}>
+              <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid color-mix(in srgb, var(--accent) 70%, transparent)', animation: 'fsCallPing 1.7s ease-out infinite' }} />
+              <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid color-mix(in srgb, var(--accent) 45%, transparent)', animation: 'fsCallPing 1.7s ease-out .85s infinite' }} />
+              <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--accent)' }}>
+                <Avatar src={incomingCall.fromPhoto} name={incomingCall.fromName} size={98} />
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 24 }}>
-              <button onClick={() => declineIncomingCall()} style={{ width: 72, height: 56, borderRadius: 12, background: 'var(--danger)', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, fontSize: 20, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(255,68,68,0.4)' }} title="Recusar">
-                <span>✕</span>
-                <span style={{ fontSize: 11, fontWeight: 700 }}>Recusar</span>
+            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                Chamada privada · {incomingCall.callMode === 'video' ? 'vídeo' : 'voz'}
+              </span>
+              <h2 style={{ fontSize: 25, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{incomingCall.fromName}</h2>
+              <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>está te chamando agora</span>
+            </div>
+            <div style={{ display: 'flex', gap: 14, marginTop: 6 }}>
+              <button onClick={() => declineIncomingCall()} title="Recusar" style={{ minWidth: 128, height: 52, borderRadius: 999, background: 'var(--danger)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 800, border: 'none', cursor: 'pointer', boxShadow: '0 8px 26px rgba(242,63,67,0.4)' }}>
+                <Fa name="phone-slash" size={17} /> Recusar
               </button>
-              <button onClick={() => void acceptIncomingCall()} style={{ width: 72, height: 56, borderRadius: 12, background: 'var(--accent)', color: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, fontSize: 20, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px color-mix(in srgb, var(--accent) 40%, transparent)' }} title="Entrar">
-                <span>✓</span>
-                <span style={{ fontSize: 11, fontWeight: 700 }}>Entrar</span>
+              <button onClick={() => void acceptIncomingCall()} title="Atender" style={{ minWidth: 128, height: 52, borderRadius: 999, background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 800, border: 'none', cursor: 'pointer', boxShadow: '0 8px 26px color-mix(in srgb, var(--accent) 40%, transparent)' }}>
+                <Fa name="phone" size={17} /> Atender
               </button>
             </div>
           </div>
         </div>
       )}
       {callingUser && !incomingCall && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
-            <div style={{ width: 100, height: 100, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--border)', boxShadow: '0 0 24px rgba(0,0,0,0.25)' }}>
-              <Avatar src={callingUser.userPhoto} name={callingUser.userName} size={100} />
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>{callingUser.userName}</h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center', color: 'var(--text-muted)' }}>
-                <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--warning)', animation: 'pulse 1s infinite' }} />
-                {callWaiting ? (
-                  <span style={{ fontSize: 15 }}>Aguardando resposta</span>
-                ) : (
-                  <span style={{ fontSize: 15 }}>Ligando</span>
-                )}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'radial-gradient(circle at 50% 34%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 62%), rgba(5,7,10,0.92)', backdropFilter: 'blur(14px)' }}>
+          <div className="fs-modal-in" style={{ width: 'min(92vw, 380px)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, padding: '38px 26px 26px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 22, boxShadow: '0 30px 90px rgba(0,0,0,0.65)' }}>
+            <div style={{ position: 'relative', width: 104, height: 104 }}>
+              <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid color-mix(in srgb, var(--warning) 60%, transparent)', animation: 'fsCallPing 1.7s ease-out infinite' }} />
+              <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid color-mix(in srgb, var(--warning) 40%, transparent)', animation: 'fsCallPing 1.7s ease-out .85s infinite' }} />
+              <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--warning)' }}>
+                <Avatar src={callingUser.userPhoto} name={callingUser.userName} size={98} />
               </div>
+            </div>
+            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                Chamada privada · {useCallStore.getState().callMode === 'video' ? 'vídeo' : 'voz'}
+              </span>
+              <h2 style={{ fontSize: 25, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{callingUser.userName}</h2>
+              <span style={{ fontSize: 14, color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--warning)', animation: 'pulse 1s infinite' }} />
+                {callWaiting ? 'Aguardando resposta…' : 'Ligando…'}
+              </span>
               {callWaiting && (
-                <div style={{ marginTop: 8, color: 'var(--text-muted)', fontSize: 12, opacity: 0.7 }}>
+                <span style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 12, lineHeight: 1.5, maxWidth: 280 }}>
                   A pessoa foi notificada — assim que atender, você será conectado automaticamente
-                </div>
+                </span>
               )}
             </div>
-            <button onClick={() => endCall()} style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--danger)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(255,68,68,0.4)' }} title="Cancelar">✕</button>
+            <button onClick={() => endCall()} title="Cancelar chamada" style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--danger)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', boxShadow: '0 8px 26px rgba(242,63,67,0.45)', marginTop: 6 }}>
+              <Fa name="phone-slash" size={24} />
+            </button>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>Cancelar</span>
           </div>
         </div>
       )}
@@ -1695,7 +1712,7 @@ function App() {
                   onClick={() => { setCurrentServer(null); setShowUsers(false); setCurrentChannel(null) }}
                   title="Amigos"
                 >
-                  <img src={assetUrl('penguin-logo.png')} alt="" style={{ width: 30, height: 30, borderRadius: 9, objectFit: 'cover', display: 'block' }} />
+                  <img src={assetUrl('penguin-tux.svg')} alt="" style={{ width: 30, height: 30, borderRadius: 9, objectFit: 'contain', display: 'block' }} />
                   {totalUnread > 0 && (
                     <span style={navBadgeStyle}>
                       {totalUnread > 99 ? '99+' : totalUnread}

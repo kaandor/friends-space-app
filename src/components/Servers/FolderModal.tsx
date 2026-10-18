@@ -36,7 +36,7 @@ export function FolderModal({ open, folder, servers, initialServerIds, onClose, 
 
   return (
     <div className="fs-folder-overlay" onClick={onClose}>
-      <div className="fs-folder-modal" role="dialog" aria-modal="true" aria-label={folder ? 'Personalizar pasta' : 'Criar pasta'} onClick={e => e.stopPropagation()}>
+      <div className="fs-folder-modal fs-modal-in" role="dialog" aria-modal="true" aria-label={folder ? 'Personalizar pasta' : 'Criar pasta'} onClick={e => e.stopPropagation()}>
         <header className="fs-folder-header">
           <span className="fs-folder-header-icon"><Fa name="folder" size={15} /></span>
           <div>

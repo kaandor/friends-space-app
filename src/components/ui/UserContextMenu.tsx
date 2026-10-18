@@ -44,8 +44,8 @@ function Item({ icon, label, danger, onClick, disabled }: {
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
     >
-      {icon}
-      {label}
+      {icon && <span className="ucm-item-icon">{icon}</span>}
+      <span className="ucm-item-label">{label}</span>
     </button>
   )
 }
@@ -172,17 +172,17 @@ export function UserContextMenu() {
     close()
   }
 
-  const menuWidth = 320
+  const menuWidth = 340
   const style: React.CSSProperties = {
     left: Math.min(x, window.innerWidth - menuWidth - 8),
-    top: Math.max(8, Math.min(y, window.innerHeight - 460)),
+    top: Math.max(8, Math.min(y, window.innerHeight - 520)),
     width: menuWidth,
     maxWidth: 'calc(100vw - 16px)',
   }
 
   return (
     <>
-    <div id="user-context-menu" className="ucm-card" style={style}>
+    <div id="user-context-menu" className="ucm-card fs-menu-in" style={style}>
       <div className="ucm-banner">
         {user.bannerUrl
           ? <img src={toImageUrl(user.bannerUrl, 680)} alt="Banner" />

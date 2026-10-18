@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, SlidersHorizontal, Plus, Smile, Send, FileText, BadgeCheck, Rocket, ShieldCheck, Gamepad2, Gift, Phone, Video, UserPlus } from 'lucide-react'
+import { Search, SlidersHorizontal, Plus, Smile, Send, FileText, BadgeCheck, Rocket, ShieldCheck, Gamepad2, Gift, Phone, Video } from 'lucide-react'
 import { uiEnabled } from '../Profile/InterfaceTab'
 import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
@@ -506,11 +506,6 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
                   disabled={Boolean(callingUser || activeCall)}
                   title="Chamada de vídeo"
                 ><Video size={17} strokeWidth={2} /></button>
-                <button
-                  className="fs-dm-action"
-                  onClick={() => setShowAdd(true)}
-                  title="Adicionar pessoa"
-                ><UserPlus size={17} strokeWidth={2} /></button>
               </div>
             </div>
 

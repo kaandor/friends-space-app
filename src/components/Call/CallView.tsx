@@ -94,6 +94,7 @@ export function CallView() {
   const [showRecConfirm, setShowRecConfirm] = useState(false)
   const isOwnRecording = Boolean(recordingActive && recordingBy && currentUser && recordingBy.id === currentUser.id)
   const callChannelName = useServerStore(s => s.currentChannel?.name)
+  const callServerId = useCallStore(s => s.serverId)
   const [popout, setPopout] = useState(false)
     const [showVolumePanel, setShowVolumePanel] = useState(false)
     const formatCallTime = (ms: number) => {
@@ -454,9 +455,12 @@ export function CallView() {
   const callElapsed = callCreatedAt && callCreatedAt > 0 && nowClock >= callCreatedAt
     ? formatCallTime(nowClock - callCreatedAt)
     : '--:--'
+  const dmPeer = callServerId === 'dm' ? participants.find(p => p.userId !== currentUser?.id) : undefined
   const callTitle = hasActiveScreen
     ? `Tela de ${screenLabel}`
-    : callChannelName ? `# ${callChannelName}` : 'Chamada de voz'
+    : callServerId === 'dm'
+      ? (dmPeer?.userName ? `${dmPeer.userName}` : 'Chamada privada')
+      : callChannelName ? `# ${callChannelName}` : 'Chamada de voz'
   const localTile = currentUser ? {
     userId: currentUser.id,
     userName: currentUser.name,
@@ -628,12 +632,24 @@ export function CallView() {
               <>
                 <div className="vc-call-header">
                   <span className="vc-live-dot" />
+                  {callServerId === 'dm' && dmPeer && (
+                    <Avatar src={dmPeer.userPhoto} name={dmPeer.userName} size={22} />
+                  )}
                   <span className="vc-call-title">{callTitle}</span>
                   <span className="vc-call-time">{callElapsed}</span>
                   <span className="vc-call-count">
                     <Fa name="user-group" size={10} style={{  marginRight: 5 }} />
                     {totalInCall}
                   </span>
+                  {callServerId === 'dm' && (
+                    <button
+                      className="fs-dm-action"
+                      onClick={() => setAddMenu(a => !a)}
+                      title="Adicionar pessoa nesta chamada"
+                    >
+                      <UserPlus size={15} strokeWidth={2} />
+                    </button>
+                  )}
                 </div>
                 <div className="vc-tiles">
                   {tiles.map(t => {

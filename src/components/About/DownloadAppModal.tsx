@@ -96,7 +96,7 @@ export function DownloadAppModal({ open, onClose }: DownloadAppModalProps) {
         </button>
 
         <header className="fs-dl-header">
-          <span className="fs-dl-logo"><img src={assetUrl('penguin-logo.png')} alt="Friends Space" /></span>
+          <span className="fs-dl-logo"><img src={assetUrl('penguin-tux.svg')} alt="Friends Space" /></span>
           <div className="fs-dl-header-copy">
             <h2>Baixar app</h2>
             <p>Leve o Friends Space pro desktop: voz, tela, câmera e controle remoto.</p>

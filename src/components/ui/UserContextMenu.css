@@ -1,21 +1,30 @@
-/* Popup de usuario no estilo do preview do editor de perfil (ape-card) */
+/* Popup de usuario no novo padrao do site:
+   card de perfil (estilo ape-card) + menu em tiles com icone */
 .ucm-card {
   position: fixed;
   z-index: 5000;
   display: flex;
   flex-direction: column;
   background: var(--bg-tertiary);
-  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
-  border-radius: 14px;
-  box-shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--border));
+  border-radius: 18px;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   overflow: hidden;
 }
 
 .ucm-banner {
   position: relative;
-  height: 86px;
-  flex: 0 0 86px;
-  background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 55%, #0b1020), color-mix(in srgb, var(--accent) 16%, #0b1020));
+  height: 96px;
+  flex: 0 0 96px;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 60%, #0b1020), color-mix(in srgb, var(--accent) 14%, #0b1020));
+}
+
+.ucm-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 42%, color-mix(in srgb, var(--bg-tertiary) 90%, transparent));
+  pointer-events: none;
 }
 
 .ucm-banner img {
@@ -31,22 +40,23 @@
 
 .ucm-body {
   position: relative;
-  padding: 0 14px 12px;
+  padding: 0 16px 14px;
   border-bottom: 1px solid var(--border);
 }
 
 .ucm-avatar.ape-avatar {
-  width: 62px;
-  height: 62px;
-  border-width: 4px;
+  width: 72px;
+  height: 72px;
+  border-width: 5px;
   border-color: var(--bg-tertiary);
   background: var(--bg-tertiary);
-  margin-top: -27px;
+  margin-top: -34px;
   z-index: 3;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.38);
 }
 
 .ucm-avatar.ape-avatar[class*='profile-frame-']::before {
-  inset: -6px;
+  inset: -7px;
 }
 
 .ucm-avatar-fallback {
@@ -61,14 +71,14 @@
   background: var(--accent);
   color: #05130a;
   font-weight: 800;
-  font-size: 22px;
+  font-size: 26px;
 }
 
 .ucm-name-row {
   display: flex;
   align-items: center;
-  gap: 7px;
-  margin-top: 6px;
+  gap: 8px;
+  margin-top: 8px;
   min-width: 0;
 }
 
@@ -78,21 +88,21 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 800;
   color: var(--text-primary);
 }
 
 .ucm-handle {
   color: var(--text-muted);
-  font-size: 11.5px;
-  margin-top: 1px;
+  font-size: 12px;
+  margin-top: 2px;
 }
 
 .ucm-status-message {
   color: var(--text-secondary);
-  font-size: 12px;
-  margin-top: 6px;
+  font-size: 12.5px;
+  margin-top: 7px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -100,17 +110,17 @@
 
 .ucm-badges {
   display: flex;
-  gap: 5px;
-  margin-top: 9px;
+  gap: 6px;
+  margin-top: 10px;
   flex-wrap: wrap;
   align-items: center;
 }
 
 .ucm-chip {
-  font-size: 10.5px;
-  padding: 3px 8px;
+  font-size: 11px;
+  padding: 4px 10px;
   border-radius: 999px;
-  background: var(--bg-primary);
+  background: color-mix(in srgb, var(--bg-primary) 72%, transparent);
   border: 1px solid var(--border);
   color: var(--text-secondary);
   font-weight: 700;
@@ -137,9 +147,9 @@
 
 .ucm-bio {
   margin: 10px 0 0;
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--text-secondary);
-  line-height: 1.45;
+  line-height: 1.5;
   word-break: break-word;
 }
 
@@ -147,16 +157,16 @@
   margin-top: 10px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 9px;
+  gap: 9px;
+  padding: 8px 10px;
   background: var(--bg-primary);
-  border-radius: 9px;
+  border-radius: 11px;
   border: 1px solid var(--border);
 }
 
 .ucm-activity-name {
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
 }
 
@@ -169,7 +179,7 @@
 }
 
 .ucm-volume {
-  padding: 8px 12px 10px;
+  padding: 9px 12px 11px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -204,28 +214,58 @@
 }
 
 .ucm-menu {
-  padding: 6px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .ucm-item {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  color: var(--text-secondary);
+  gap: 11px;
+  padding: 7px 8px;
+  border-radius: 11px;
+  color: var(--text-primary);
   background: transparent;
   border: none;
   text-align: left;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 13.5px;
+  font-weight: 700;
   cursor: pointer;
   transition: background 0.12s ease, color 0.12s ease;
 }
 
+.ucm-item-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.ucm-item-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .ucm-item:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+
+.ucm-item:hover:not(:disabled) .ucm-item-icon {
+  background: color-mix(in srgb, var(--accent) 16%, var(--bg-primary));
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
   color: var(--text-primary);
 }
 
@@ -238,6 +278,16 @@
   color: #f23f43;
 }
 
+.ucm-item.is-danger .ucm-item-icon {
+  color: #f23f43;
+}
+
 .ucm-item.is-danger:hover:not(:disabled) {
-  background: color-mix(in srgb, #f23f43 14%, transparent);
+  background: color-mix(in srgb, #f23f43 13%, transparent);
+}
+
+.ucm-item.is-danger:hover:not(:disabled) .ucm-item-icon {
+  background: color-mix(in srgb, #f23f43 16%, var(--bg-primary));
+  border-color: color-mix(in srgb, #f23f43 34%, var(--border));
+  color: #f23f43;
 }

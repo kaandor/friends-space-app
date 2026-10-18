@@ -65,7 +65,7 @@ interface CallState {
   callMode: CallMode
   callRejectedBy: { userId: string; userName: string; userPhoto: string; mode?: CallMode; reason?: 'decline' | 'timeout' } | null
   callWaiting: boolean
-  startCall: (channelId: string, serverId: string, localStream: MediaStream, callMode?: CallMode, quality?: CallQuality, sessionId?: string) => void
+  startCall: (channelId: string, serverId: string, localStream: MediaStream, callMode?: CallMode, quality?: CallQuality, sessionId?: string, initialParticipants?: CallParticipant[]) => void
   moveCall: (channelId: string, serverId: string) => void
   endCall: () => void
   addParticipant: (participant: CallParticipant) => void
@@ -1814,6 +1814,12 @@ async function applySignal(signal: CallSignal) {
       useCallStore.setState({ incomingCall: null })
       return
     }
+    // Estava na call de DM e o outro lado desligou: encerra aqui tambem
+    // (modelo Discord: numa call privada 1-a-1, se um lado sai a call acaba).
+    if (signal.type === 'cancel' && state.activeCall && state.serverId === 'dm') {
+      useCallStore.getState().endCall()
+      return
+    }
     return
   }
   let pc = peerConnections.get(signal.fromUserId)
@@ -2545,7 +2551,10 @@ export async function syncSession(state: Pick<CallState, 'sessionId' | 'activeCa
           syncToastAt = Date.now()
           try {
             const __m = syncErr instanceof Error ? syncErr.message : ''
-            if (/Sessão expirada|401|403/.test(__m)) {
+            // 403 NAO e sessao expirada: o gate de call (ex.: DM sem outro
+            // participante) tambem responde 403 — tratar como reauth escondia
+            // a causa real e pedia reload a toa.
+            if (/Sessão expirada|401/.test(__m)) {
               void useUserStore.getState().trySilentReauth().then((ok) => {
                 if (!ok) window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Sessão expirada. Recarregue (Ctrl+F5) e entre de novo.' }))
               })
@@ -2798,7 +2807,7 @@ export const useCallStore = create<CallState>((set, get) => ({
   recordingActive: false,
   recordingBy: null,
   sharingPeers: [],
-  startCall: async (channelId, serverId, localStream, callMode = 'audio', quality = get().preferredQuality, sessionId) => {
+  startCall: async (channelId, serverId, localStream, callMode = 'audio', quality = get().preferredQuality, sessionId, initialParticipants) => {
     const previous = get()
     // Nova call = novo baseline de sons de conexao: o primeiro tick do
     // checkCallPresence estabelece quem ja estava (sem tocar som) e os
@@ -2817,7 +2826,11 @@ export const useCallStore = create<CallState>((set, get) => ({
       serverId,
       localStream,
       callMode,
-      participants: [],
+      // BUG FIX (call DM): o alvo adicionado por callUser/acceptIncomingCall/
+      // acceptCallInvite ANTES do startCall precisa sobreviver aqui — zerar a
+      // lista fazia a sessao nascer so com o chamador, o gate de DM do backend
+      // negava (403) e a call nunca existia ("Chamada recebida" nunca chegava).
+      participants: initialParticipants && initialParticipants.length ? [...initialParticipants] : [],
       preferredQuality: quality,
       muted: false,
       deafened: false,
@@ -3011,6 +3024,23 @@ export const useCallStore = create<CallState>((set, get) => ({
     broadcastCallData({ t: 'call-leave', userId: currentUser?.id })
     stopSignalLoop()
     if (state.serverId === 'dm' && state.sessionId) {
+      // Saida/cancelamento de DM: avisa o outro lado NA HORA (sinal 'cancel')
+      // para parar de tocar / encerrar a call, e marca a saida no backend
+      // (leaveUserId) — antes o upsert ia sem leaveUserId, o backend
+      // re-adicionava o proprio usuario e a sessao virava fantasma ate o
+      // stamp expirar.
+      const others = state.participants.map(p => p.userId).filter(id => id !== currentUser?.id)
+      if (currentUser) {
+        for (const otherId of others) {
+          void sendSignal({
+            sessionId: state.sessionId,
+            fromUserId: currentUser.id,
+            toUserId: otherId,
+            type: 'cancel',
+            payload: {},
+          }).catch(() => { })
+        }
+      }
       void requestBackend('upsertCallSession', {
         session: {
           id: state.sessionId,
@@ -3018,11 +3048,16 @@ export const useCallStore = create<CallState>((set, get) => ({
           channelId: 'dm',
           active: false,
           hostUserId: currentUser?.id || '',
-          participantIds: [],
+          participantIds: state.participants.map(p => p.userId),
           screenSharingUserId: '',
           createdAt: state.createdAt || Date.now(),
           updatedAt: Date.now(),
         },
+        userId: currentUser?.id,
+        leaveUserId: currentUser?.id,
+        // Cancelou antes de alguem entrar (sala de espera): remove o alvo da
+        // sessao para ela morrer na hora em vez de ficar ativa sem ninguem.
+        pruneIds: state.callingUser ? others : [],
       }).catch(() => { })
     } else {
       void syncSession({ ...state, screenSharing: false }, currentUser?.id)
@@ -3561,6 +3596,10 @@ export const useCallStore = create<CallState>((set, get) => ({
         createdAt: Date.now(),
         updatedAt: Date.now(),
       },
+      // Recusou: sai da lista da sessao na hora (senao ficava como fantasma
+      // "na call" ate o stamp expirar).
+      userId: currentUser?.id,
+      leaveUserId: currentUser?.id,
     }).catch(() => { })
   },
   callUser: async (userId, mode = 'audio') => {
@@ -3578,9 +3617,10 @@ export const useCallStore = create<CallState>((set, get) => ({
       // Mic dedicado + audio limpo entram em background (sem travar o join).
       void upgradeLocalMedia()
       const actualMode: CallMode = stream.getVideoTracks().length > 0 ? 'video' : 'audio'
-      get().addParticipant({ userId: target.id, userName: target.name, userPhoto: target.photoUrl, muted: false, deafened: false })
+      const dmPeer = { userId: target.id, userName: target.name, userPhoto: target.photoUrl, muted: false, deafened: false }
+      get().addParticipant(dmPeer)
       try {
-        await get().startCall('dm', 'dm', stream, actualMode, current.preferredQuality)
+        await get().startCall('dm', 'dm', stream, actualMode, current.preferredQuality, undefined, [dmPeer])
       } catch (dmErr) {
         set({ callingUser: null })
         try {
@@ -3628,8 +3668,9 @@ export const useCallStore = create<CallState>((set, get) => ({
       const stream = await acquireCallMedia(data.callMode || 'audio', get().preferredQuality, undefined, get().preferredFps)
       void upgradeLocalMedia()
       const mode: CallMode = stream.getVideoTracks().length > 0 ? 'video' : 'audio'
-      get().addParticipant({ userId: invite.fromUserId, userName: invite.fromName, userPhoto: invite.fromPhoto, muted: false, deafened: false })
-      get().startCall(data.channelId || 'dm', data.serverId || 'dm', stream, mode, get().preferredQuality, data.sessionId)
+      const invitePeer = { userId: invite.fromUserId, userName: invite.fromName, userPhoto: invite.fromPhoto, muted: false, deafened: false }
+      get().addParticipant(invitePeer)
+      get().startCall(data.channelId || 'dm', data.serverId || 'dm', stream, mode, get().preferredQuality, data.sessionId, [invitePeer])
       if (currentUser) {
         void requestBackend('createNotification', {
           toUserId: invite.fromUserId,
