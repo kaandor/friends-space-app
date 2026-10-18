@@ -254,27 +254,30 @@
 }
 
 .ping-hero {
+  position: relative;
   padding: 52px clamp(24px, 7vw, 104px) 44px;
   background:
-    radial-gradient(ellipse 130% 170% at 26% 40%, color-mix(in srgb, var(--accent) 42%, transparent) 0%, color-mix(in srgb, var(--accent) 18%, transparent) 36%, transparent 64%),
-    linear-gradient(180deg, color-mix(in srgb, var(--accent) 20%, var(--bg-secondary)) 0%, color-mix(in srgb, var(--accent) 7%, var(--bg-primary)) 46%, var(--bg-primary) 100%);
+    linear-gradient(90deg, rgba(4, 8, 22, 0.82) 0%, rgba(4, 8, 22, 0.48) 44%, rgba(4, 8, 22, 0.14) 100%),
+    url('/discover-hero.webp') center 42% / cover no-repeat;
 }
 
 .ping-hero h1 {
   margin: 0;
-  color: var(--text-primary);
+  color: #ffffff;
   font-size: clamp(26px, 3.1vw, 40px);
   font-weight: 900;
   line-height: 1.05;
   letter-spacing: 0.4px;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
 }
 
 .ping-hero p {
   margin: 14px 0 0;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.92);
   font-size: 14.5px;
   line-height: 1.5;
   max-width: 460px;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.5);
 }
 
 .ping-content {

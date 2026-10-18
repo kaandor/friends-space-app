@@ -139,17 +139,6 @@
   border-radius: 10px;
 }
 
-.fs-folder-add-btn {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-  border: 2px dashed var(--accent);
-}
-
-.fs-folder-add-btn:hover {
-  background: var(--accent);
-  color: #000;
-}
-
 .fs-server-item img {
   position: absolute;
   top: 0;

@@ -1822,9 +1822,6 @@ function App() {
                 <button className="fs-nav-item fs-add-btn" onClick={() => setShowDiscover(true)} title="Descubra">
                   <Fa name="compass" size={14} />
                 </button>
-                <button className="fs-nav-item fs-folder-add-btn" onClick={() => openFolderModal(null)} title="Criar pasta">
-                  <Fa name="folder-plus" size={14} />
-                </button>
                 <button className="fs-nav-item fs-add-btn" onClick={() => {
                   if (!isDriveConnected()) {
                     setPendingDriveAction(() => () => setShowCreateServer(true))
