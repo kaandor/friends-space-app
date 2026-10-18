@@ -24,10 +24,12 @@ export type ProfileCardViewProps = {
   cardClass?: string;
   effectClass?: string;
   className?: string;
+  actions?: ReactNode;
+  details?: ReactNode;
   children?: ReactNode;
 };
 
-export function ProfileCardView({ displayName, username, about, emptyAbout, avatarSrc, avatarFallback, bannerStyle, statusMessage, memberSince, pronoun, verified, paid, showAstroBadge, plateClass, nameClass, nameStyle, avatarClass, cardClass, effectClass, className, children }: ProfileCardViewProps) {
+export function ProfileCardView({ displayName, username, about, emptyAbout, avatarSrc, avatarFallback, bannerStyle, statusMessage, memberSince, pronoun, verified, paid, showAstroBadge, plateClass, nameClass, nameStyle, avatarClass, cardClass, effectClass, className, actions, details, children }: ProfileCardViewProps) {
   return (
     <div className={cn("ape-card", cardClass, className)}>
       <div className="ape-card-inner">
@@ -55,6 +57,7 @@ export function ProfileCardView({ displayName, username, about, emptyAbout, avat
               </span>
             </div>
           </div>
+          {actions}
           {statusMessage && <p className="profile-card-message">“{statusMessage}”</p>}
           <div className="ape-block-label">Sobre mim</div>
           <p className={cn("ape-about", !about && "is-empty")}>{about || emptyAbout || "Descreva-se em três emojis"}</p>
@@ -64,6 +67,7 @@ export function ProfileCardView({ displayName, username, about, emptyAbout, avat
               <p className="ape-member-since">{memberSince}</p>
             </>
           )}
+          {details}
           {children}
         </div>
         {effectClass && <span className={cn("ape-effect-layer", effectClass)} />}

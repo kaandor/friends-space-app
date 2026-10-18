@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getAstroTier, type AstroTier } from '../../utils/astro'
 import type { NameEffect } from '../../utils/nameStyle'
 import { toImageUrl } from '../../services/driveService'
 import { requestBackend } from '../../services/backend'
 import { useUserStore } from '../../stores/userStore'
 import { useFriendStore } from '../../stores/friendStore'
-import { PublicProfileModal, type FrameId, type MuralFieldId, type MuralState, type Plan, type ProfileActionId, type SocialStatus, EMPTY_MURAL } from './ProfileEditor/ProfileEditor'
+import { PublicProfileModal, type FrameId, type MuralFieldId, type MuralState, type Plan, type ProfileActionId, type SocialStatus, type MutualProfileUser, type MutualProfileServer, EMPTY_MURAL } from './ProfileEditor/ProfileEditor'
 import type { User } from '../../types'
 import './ProfileEditor/ProfileEditor.css'
 import './ProfileEditor/AstroProfileEditor.css'
@@ -23,6 +23,9 @@ const TIER_TO_PLAN: Record<AstroTier | 'none', Plan> = {
 
 const MURAL_IDS: MuralFieldId[] = ['games', 'completedGames', 'recentGames', 'series', 'movies', 'music', 'albums', 'artists', 'actors']
 
+type FriendRow = { userId: string; friendId: string; status: string }
+type ServerRow = { id: string; name: string; photoUrl?: string; members?: string[] }
+
 export function UserProfileModal({ user, isSelf, onAction, onClose }: {
   user: User
   isSelf?: boolean
@@ -34,6 +37,9 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
   const [following, setFollowing] = useState(me?.following?.includes(user.id) || false)
   const [blocked, setBlocked] = useState(me?.blocked?.includes(user.id) || false)
   const [busy, setBusy] = useState<'follow' | 'block' | null>(null)
+  const [mutualFriends, setMutualFriends] = useState<MutualProfileUser[] | undefined>(undefined)
+  const [mutualServers, setMutualServers] = useState<MutualProfileServer[] | undefined>(undefined)
+  const [mutualLoading, setMutualLoading] = useState(false)
   const settings = (user?.settings || {}) as Record<string, unknown>
   const tier = getAstroTier(user)
   const plan: Plan = TIER_TO_PLAN[tier]
@@ -81,6 +87,73 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
   const verified = Boolean(user.googleId || user.authProvider === 'google') && settings.showBadges !== false
   const joinedAt = Number(user.createdAt || 0)
   const pronoun = typeof settings.pronoun === 'string' ? settings.pronoun : ''
+  const myId = me?.id || ''
+
+  const activityAllowed = user.activityEnabled !== false
+    && user.activityPrivacy !== 'private'
+    && (user.activityPrivacy !== 'friends' || isFriend || Boolean(isSelf))
+  const publicActivity = showActivity && activityAllowed && user.activityName
+    ? { name: user.activityName, details: user.activityDetails, startedAt: user.activityStartedAt }
+    : undefined
+
+  useEffect(() => {
+    if (isSelf || !myId || (!showMutualFriends && !showServers)) {
+      setMutualFriends(undefined)
+      setMutualServers(undefined)
+      return
+    }
+
+    let cancelled = false
+    setMutualLoading(true)
+    const jobs: Array<Promise<void>> = []
+
+    if (showMutualFriends) {
+      jobs.push((async () => {
+        try {
+          const result = await requestBackend<{ friends: FriendRow[]; friendUsers: User[] }>('loadFriends', { userId: user.id })
+          if (cancelled) return
+          const mine = new Set(friends.filter(f => f.status === 'accepted').map(f => f.userId === myId ? f.friendId : f.userId))
+          const theirIds = (result?.friends || [])
+            .filter(f => f.status === 'accepted')
+            .map(f => f.userId === user.id ? f.friendId : f.userId)
+            .filter(id => id !== myId)
+          const usersById = new Map((result?.friendUsers || []).map(friend => [friend.id, friend]))
+          setMutualFriends([...new Set(theirIds)].filter(id => mine.has(id)).map(id => {
+            const friend = usersById.get(id)
+            return {
+              id,
+              name: friend?.name || 'Usuário',
+              username: friend?.friendCode || '',
+              photoUrl: friend?.photoUrl ? toImageUrl(friend.photoUrl, 128) : undefined,
+            }
+          }))
+        } catch {
+          if (!cancelled) setMutualFriends([])
+        }
+      })())
+    } else {
+      setMutualFriends(undefined)
+    }
+
+    if (showServers) {
+      jobs.push((async () => {
+        try {
+          const serverList = await requestBackend<ServerRow[]>('loadUserServers', { userId: user.id })
+          if (cancelled) return
+          setMutualServers((serverList || [])
+            .filter(s => Array.isArray(s.members) && s.members.includes(user.id) && s.members.includes(myId))
+            .map(s => ({ id: s.id, name: s.name, photoUrl: s.photoUrl ? toImageUrl(s.photoUrl, 128) : undefined, members: s.members?.length })))
+        } catch {
+          if (!cancelled) setMutualServers([])
+        }
+      })())
+    } else {
+      setMutualServers(undefined)
+    }
+
+    void Promise.all(jobs).finally(() => { if (!cancelled) setMutualLoading(false) })
+    return () => { cancelled = true }
+  }, [isSelf, myId, user.id, showMutualFriends, showServers, friends])
 
   const handleFollow = async () => {
     if (!me || busy) return
@@ -102,18 +175,6 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
 
   return (
     <div className="fs-profile-editor" style={{ position: 'relative' }}>
-      {!isSelf && me && (
-        <div style={{ position: 'absolute', top: 80, right: 24, zIndex: 10, display: 'flex', gap: 8 }}>
-          <button onClick={handleFollow} disabled={busy !== null}
-            style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--accent)', background: following ? 'var(--accent)' : 'transparent', color: following ? '#000' : 'var(--accent)', fontWeight: 700, fontSize: 12, cursor: busy ? 'default' : 'pointer' }}>
-            {busy === 'follow' ? '...' : following ? 'Seguindo' : 'Seguir'}
-          </button>
-          <button onClick={handleBlock} disabled={busy !== null}
-            style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #ef4444', background: blocked ? '#ef4444' : 'transparent', color: blocked ? '#fff' : '#ef4444', fontWeight: 600, fontSize: 11, cursor: busy ? 'default' : 'pointer' }}>
-            {busy === 'block' ? '...' : blocked ? 'Desbloquear' : 'Bloquear'}
-          </button>
-        </div>
-      )}
       <PublicProfileModal
         plan={plan}
         displayName={user?.name || ''}
@@ -139,6 +200,17 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
         isFriend={isFriend}
         joinedAt={joinedAt}
         pronoun={pronoun}
+        friendsSince={isFriend ? rel?.createdAt : undefined}
+        activity={publicActivity}
+        mutualFriends={mutualFriends}
+        mutualServers={mutualServers}
+        mutualLoading={mutualLoading}
+        targetUserId={user.id}
+        following={following}
+        blocked={blocked}
+        busy={busy !== null}
+        onFollow={isSelf ? undefined : handleFollow}
+        onBlock={isSelf ? undefined : handleBlock}
         onEdit={isSelf ? () => { onClose(); try { window.dispatchEvent(new Event('friends-space:edit-profile')) } catch { } } : undefined}
         isSelf={isSelf}
         onClose={onClose}

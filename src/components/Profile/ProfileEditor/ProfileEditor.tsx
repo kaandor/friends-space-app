@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { APPEARANCE_FONTS, APPEARANCE_TEXT_COLORS, clampAppearanceToPlan, parseAppearance, serializeAppearance, PLAN_THEMES, PLAN_BACKGROUNDS, type AppearanceBgId, type AppearanceFontId, type AppearanceTextColorId, type AppearanceThemeId } from "./appearance";
 import { useUserStore } from "../../../stores/userStore";
 import { getAstroTier } from "../../../utils/astro";
@@ -29,17 +29,21 @@ import {
   ChevronDown,
   ChevronsRight,
   Eye,
+  Gamepad2,
   Info,
   LockKeyhole,
   MessageCircle,
+  MoreHorizontal,
   Pencil,
   Plus,
   Rocket,
   Search,
+  Server,
   ShieldCheck,
   Sparkles,
   Trash2,
   UserPlus,
+  Users,
   X,
 } from "lucide-react";
 import { cn } from "./cn";
@@ -47,6 +51,10 @@ import { cn } from "./cn";
 export type Plan = "free" | "astro" | "astroPlus" | "astroPlusGold";
 export type SocialStatus = "online" | "away" | "dnd" | "invisible";
 export type ProfileActionId = "request" | "message" | "report";
+export type ProfileActivityInfo = { name: string; details?: string; startedAt?: number };
+export type MutualProfileUser = { id: string; name: string; username?: string; photoUrl?: string };
+export type MutualProfileServer = { id: string; name: string; photoUrl?: string; members?: number };
+type ProfileTabId = "mural" | "activity" | "friends" | "servers";
 
 export type MuralFieldId = "games" | "completedGames" | "recentGames" | "series" | "movies" | "music" | "albums" | "artists" | "actors";
 export type MuralItem = { id: string; value: string; image: string };
@@ -454,7 +462,16 @@ function ProfilePreview({ plan, displayName, username, about, statusMessage, sho
 
 /* ─────────────────────────── perfil público ─────────────────────────── */
 
-export function PublicProfileModal({ plan, displayName, username, about, statusMessage, selectedFrame, photoUrl, bannerUrl, isSelf, nameplateId, profileFrameId, profileEffectId, nameColorId, nameEffectId, showAstroBadge, verified, isFriend, joinedAt, pronoun, onEdit, onClose, onProfileAction }: {
+const PROFILE_STATUS_COLOR: Record<SocialStatus, string> = {
+  online: "#22c55e",
+  away: "#f59e0b",
+  dnd: "#ef4444",
+  invisible: "#94a3b8",
+};
+
+const formatProfileDate = (value?: number) => (value ?? 0) > 0 ? new Date(value as number).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" }) : undefined;
+
+export function PublicProfileModal({ plan, displayName, username, about, socialStatus, statusMessage, showActivity, showServers, showMutualFriends, mural, selectedMuralFields, selectedFrame, photoUrl, bannerUrl, isSelf, nameplateId, profileFrameId, profileEffectId, nameColorId, nameEffectId, showAstroBadge, verified, isFriend, joinedAt, pronoun, friendsSince, activity, mutualFriends, mutualServers, mutualLoading, targetUserId, following, blocked, busy, onFollow, onBlock, onEdit, onClose, onProfileAction }: {
   plan: Plan;
   displayName: string;
   username: string;
@@ -480,61 +497,224 @@ export function PublicProfileModal({ plan, displayName, username, about, statusM
   isFriend?: boolean;
   joinedAt?: number;
   pronoun?: string;
+  friendsSince?: number;
+  activity?: ProfileActivityInfo;
+  mutualFriends?: MutualProfileUser[];
+  mutualServers?: MutualProfileServer[];
+  mutualLoading?: boolean;
+  targetUserId?: string;
+  following?: boolean;
+  blocked?: boolean;
+  busy?: boolean;
+  onFollow?: () => void;
+  onBlock?: () => void;
   onEdit?: () => void;
   onClose: () => void;
   onProfileAction: (action: ProfileActionId) => void;
 }) {
-  const planLabel = planLabelOf(plan);
   const avatar = photoUrl || (plan === "free" ? ASSETS.freeAvatar : plan === "astro" ? ASSETS.astroAvatar : plan === "astroPlus" ? ASSETS.astroPlusAvatar : ASSETS.astroPlusGoldAvatar);
   const paid = plan !== "free";
   const namePreview = nameStyleFor(paid ? (nameColorId || "default") : "default", paid ? (nameEffectId || "none") : "none", paid);
   const plateClass = paid ? skinClass("nameplate", nameplateId || "none") : "";
   const frameClass = paid ? skinClass("frame", profileFrameId || "none") : "";
   const effectClass = paid ? skinClass("effect", profileEffectId || "none") : "";
+  const [tab, setTab] = useState<ProfileTabId>("mural");
+  const [note, setNote] = useState("");
+  const [editingNote, setEditingNote] = useState(false);
+  const noteKey = targetUserId ? `friends-space:profile-note:${targetUserId}` : "";
+  const memberSince = formatProfileDate(joinedAt);
+  const friendsSinceLabel = formatProfileDate(friendsSince);
+  const visibleMural = MURAL_FIELD_DEFS.filter((definition) => selectedMuralFields.includes(definition.id) && (mural[definition.id]?.length ?? 0) > 0);
+  const recentGames = (mural.recentGames || []).filter((item) => item.value.trim());
+
+  useEffect(() => {
+    if (!noteKey) { setNote(""); return; }
+    try { setNote(localStorage.getItem(noteKey) || ""); } catch { setNote(""); }
+    setEditingNote(false);
+  }, [noteKey]);
+
+  useEffect(() => {
+    if ((tab === "friends" && (isSelf || !showMutualFriends)) || (tab === "servers" && (isSelf || !showServers))) setTab("mural");
+  }, [tab, isSelf, showMutualFriends, showServers]);
+
+  const saveNote = (value: string) => {
+    setNote(value);
+    try { if (noteKey) localStorage.setItem(noteKey, value); } catch { /* armazenamento indisponível */ }
+  };
+
+  const tabs: Array<{ id: ProfileTabId; label: string }> = [
+    { id: "mural", label: "Mural" },
+    { id: "activity", label: "Atividade" },
+  ];
+  if (!isSelf && showMutualFriends) {
+    tabs.push({ id: "friends", label: mutualFriends ? `${mutualFriends.length} ${mutualFriends.length === 1 ? "amigo mútuo" : "amigos mútuos"}` : "Amigos mútuos" });
+  }
+  if (!isSelf && showServers) {
+    tabs.push({ id: "servers", label: mutualServers ? `${mutualServers.length} ${mutualServers.length === 1 ? "servidor mútuo" : "servidores mútuos"}` : "Servidores mútuos" });
+  }
+
+  const actions = isSelf
+    ? (onEdit ? <div className="pfm-actions"><button className="pfm-action primary" type="button" onClick={onEdit}><Pencil size={14} />Editar perfil</button></div> : undefined)
+    : (
+      <div className="pfm-actions">
+        <button className="pfm-action primary" type="button" onClick={() => onProfileAction("message")}><MessageCircle size={14} />Mensagem</button>
+        {isFriend
+          ? <span className="pfm-icon-button is-success" title="Vocês são amigos" aria-label="Vocês são amigos"><Check size={16} /></span>
+          : <button className="pfm-icon-button" type="button" title="Mandar solicitação de amizade" aria-label="Mandar solicitação de amizade" onClick={() => onProfileAction("request")}><UserPlus size={16} /></button>}
+        <details className="pfm-more">
+          <summary className="pfm-icon-button" title="Mais opções" aria-label="Mais opções"><MoreHorizontal size={18} /></summary>
+          <div className="pfm-more-menu">
+            {onFollow && <button type="button" disabled={busy} onClick={(event) => { onFollow(); (event.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open"); }}><UserPlus size={14} />{following ? "Deixar de seguir" : "Seguir"}</button>}
+            {onBlock && <button type="button" disabled={busy} onClick={(event) => { onBlock(); (event.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open"); }}><LockKeyhole size={14} />{blocked ? "Desbloquear" : "Bloquear"}</button>}
+            <button type="button" className="danger" onClick={() => onProfileAction("report")}><ShieldCheck size={14} />Denunciar usuário</button>
+          </div>
+        </details>
+      </div>
+    );
+
   return (
     <div className="public-profile-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div className="public-profile-shell" role="dialog" aria-modal="true" aria-label={isSelf ? "Seu perfil público" : `Perfil de ${displayName || "usuário"}`} onMouseDown={(event) => event.stopPropagation()}>
-        <div className="public-profile-toolbar">
-          <div className="public-profile-toolbar-left">
-            <span className="public-profile-kicker">PERFIL PÚBLICO</span>
-            <span className="public-profile-plan">{planLabel}</span>
-          </div>
-          <div className="public-profile-toolbar-actions">
-            {onEdit && <button className="public-profile-edit" type="button" onClick={onEdit}><Pencil size={13} />Editar perfil</button>}
-            <button className="public-profile-close" type="button" aria-label="Fechar perfil público" onClick={onClose}><X size={16} /></button>
+      <section className="pfm-modal" role="dialog" aria-modal="true" aria-label={isSelf ? "Seu perfil" : `Perfil de ${displayName || "usuário"}`} onMouseDown={(event) => event.stopPropagation()}>
+        <button className="pfm-close" type="button" aria-label="Fechar perfil" onClick={onClose}><X size={18} /></button>
+        <aside className="pfm-left" style={{ "--pfm-status": PROFILE_STATUS_COLOR[socialStatus] } as CSSProperties}>
+          <ProfileCardView
+            displayName={displayName}
+            username={username}
+            about={about}
+            emptyAbout="Este usuário ainda não escreveu uma apresentação."
+            avatarSrc={avatar}
+            bannerStyle={bannerUrl ? { backgroundImage: `url("${bannerUrl}")` } : undefined}
+            statusMessage={statusMessage}
+            memberSince={memberSince}
+            pronoun={pronoun}
+            verified={verified}
+            paid={paid}
+            showAstroBadge={showAstroBadge}
+            plateClass={plateClass}
+            nameClass={namePreview.className}
+            nameStyle={namePreview.style}
+            avatarClass={`profile-frame-${selectedFrame}`}
+            cardClass={frameClass}
+            effectClass={effectClass}
+            className="pfm-profile-card"
+            actions={actions}
+            details={(
+              <>
+                {friendsSinceLabel && (
+                  <>
+                    <div className="ape-block-label">Amigos desde</div>
+                    <p className="ape-member-since">{friendsSinceLabel}</p>
+                  </>
+                )}
+                {!isSelf && targetUserId && (
+                  <div className="pfm-note">
+                    <div className="ape-block-label">Nota <span>· visível apenas para você</span></div>
+                    {editingNote
+                      ? <textarea className="pfm-note-input" value={note} autoFocus placeholder="Clique para adicionar uma nota" onChange={(event) => saveNote(event.target.value)} onBlur={() => setEditingNote(false)} />
+                      : <button className={cn("pfm-note-preview", !note && "is-empty")} type="button" onClick={() => setEditingNote(true)}>{note || "Clique para adicionar uma nota"}</button>}
+                  </div>
+                )}
+              </>
+            )}
+          />
+        </aside>
+        <div className="pfm-right">
+          <nav className="pfm-tabs" role="tablist" aria-label="Seções do perfil">
+            {tabs.map((entry) => (
+              <button key={entry.id} className={cn("pfm-tab", tab === entry.id && "is-active")} type="button" role="tab" aria-selected={tab === entry.id} onClick={() => setTab(entry.id)}>{entry.label}</button>
+            ))}
+          </nav>
+          <div className="pfm-tab-body" role="tabpanel">
+            {tab === "mural" && (visibleMural.length
+              ? (
+                <div className="pfm-widget-grid">
+                  {visibleMural.flatMap((definition) => (mural[definition.id] || []).map((item) => {
+                    const value = item.value.trim() || definition.fallback;
+                    const image = item.image || definition.image;
+                    return (
+                      <article className="pfm-widget" key={`${definition.id}:${item.id}`}>
+                        {image ? <div className="pfm-widget-image" role="img" aria-label={`Imagem de ${value}`} style={{ backgroundImage: `url("${image}")` }} /> : <div className="pfm-widget-image is-fallback">{value.charAt(0).toUpperCase()}</div>}
+                        <div className="pfm-widget-body"><span className="pfm-widget-tag">{definition.label}</span><strong title={value}>{value}</strong></div>
+                        <MoreHorizontal className="pfm-widget-more" size={16} />
+                      </article>
+                    );
+                  }))}
+                </div>
+              )
+              : (
+                <div className="pfm-empty">
+                  <Sparkles size={28} />
+                  <strong>Mural vazio</strong>
+                  <p>{isSelf ? "Monte seu Mural no Editar perfil, em Social, para mostrar seus gostos aqui." : "Este usuário ainda não montou o Mural."}</p>
+                </div>
+              ))}
+            {tab === "activity" && (!showActivity
+              ? <div className="pfm-empty"><Gamepad2 size={28} /><strong>Atividade privada</strong><p>Este usuário prefere manter a atividade privada.</p></div>
+              : (!activity && recentGames.length === 0)
+                ? <div className="pfm-empty"><Gamepad2 size={28} /><strong>Nenhuma atividade recente</strong><p>Quando este usuário estiver jogando ou ouvindo algo, vai aparecer aqui.</p></div>
+                : (
+                  <>
+                    {activity && (
+                      <article className="pfm-activity-card">
+                        <span className="pfm-activity-icon"><Gamepad2 size={22} /></span>
+                        <div className="pfm-activity-info">
+                          <strong>{activity.name}</strong>
+                          {activity.details && <p>{activity.details}</p>}
+                          <small>{activity.startedAt ? `Iniciada às ${new Date(activity.startedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : "Agora"}</small>
+                        </div>
+                      </article>
+                    )}
+                    {recentGames.length > 0 && (
+                      <>
+                        <div className="pfm-section-title"><Gamepad2 size={13} />Jogos recentes</div>
+                        <div className="pfm-widget-grid">
+                          {recentGames.map((item) => {
+                            const value = item.value.trim() || "Jogo recente";
+                            const image = item.image || MURAL_FIELD_DEFS.find((definition) => definition.id === "recentGames")?.image || "";
+                            return (
+                              <article className="pfm-widget" key={item.id}>
+                                {image ? <div className="pfm-widget-image" role="img" aria-label={`Imagem de ${value}`} style={{ backgroundImage: `url("${image}")` }} /> : <div className="pfm-widget-image is-fallback">{value.charAt(0).toUpperCase()}</div>}
+                                <div className="pfm-widget-body"><span className="pfm-widget-tag">Atividade nos últimos 7 dias</span><strong title={value}>{value}</strong></div>
+                                <MoreHorizontal className="pfm-widget-more" size={16} />
+                              </article>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </>
+                ))}
+            {tab === "friends" && (mutualLoading && !mutualFriends
+              ? <div className="pfm-empty"><Users size={28} /><strong>Carregando amigos mútuos...</strong><p>Buscando conexões em comum.</p></div>
+              : mutualFriends?.length
+                ? (
+                  <div className="pfm-people">
+                    {mutualFriends.map((friend) => (
+                      <div className="pfm-person" key={friend.id}>
+                        <span className="pfm-person-avatar">{friend.photoUrl ? <img src={friend.photoUrl} alt={`Avatar de ${friend.name}`} /> : (friend.name || "?").charAt(0).toUpperCase()}</span>
+                        <span className="pfm-person-info"><strong>{friend.name}</strong><span>@{friend.username || "usuario"}</span></span>
+                      </div>
+                    ))}
+                  </div>
+                )
+                : <div className="pfm-empty"><Users size={28} /><strong>Nenhum amigo em comum</strong><p>Vocês ainda não têm amigos em comum.</p></div>)}
+            {tab === "servers" && (mutualLoading && !mutualServers
+              ? <div className="pfm-empty"><Server size={28} /><strong>Carregando servidores mútuos...</strong><p>Buscando servidores em comum.</p></div>
+              : mutualServers?.length
+                ? (
+                  <div className="pfm-people">
+                    {mutualServers.map((server) => (
+                      <div className="pfm-person" key={server.id}>
+                        <span className="pfm-server-icon">{server.photoUrl ? <img src={server.photoUrl} alt={`Ícone de ${server.name}`} /> : (server.name || "?").charAt(0).toUpperCase()}</span>
+                        <span className="pfm-person-info"><strong>{server.name}</strong><span>{server.members ? `${server.members} membros` : "Servidor em comum"}</span></span>
+                      </div>
+                    ))}
+                  </div>
+                )
+                : <div className="pfm-empty"><Server size={28} /><strong>Nenhum servidor em comum</strong><p>Vocês ainda não estão nos mesmos servidores.</p></div>)}
           </div>
         </div>
-        <ProfileCardView
-          displayName={displayName}
-          username={username}
-          about={about}
-          emptyAbout="Este usuário ainda não escreveu uma apresentação."
-          avatarSrc={avatar}
-          bannerStyle={bannerUrl ? { backgroundImage: `url("${bannerUrl}")` } : undefined}
-          statusMessage={statusMessage}
-          memberSince={(joinedAt ?? 0) > 0 ? new Date(joinedAt as number).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" }) : undefined}
-          pronoun={pronoun}
-          verified={verified}
-          paid={paid}
-          showAstroBadge={showAstroBadge}
-          plateClass={plateClass}
-          nameClass={namePreview.className}
-          nameStyle={namePreview.style}
-          avatarClass={`profile-frame-${selectedFrame}`}
-          cardClass={frameClass}
-          effectClass={effectClass}
-        >
-          {!isSelf && (
-            <div className="profile-card-actions" aria-label="Ações do perfil">
-              {isFriend
-                ? <span className="profile-card-badge"><Check size={13} />Já são amigos</span>
-                : <button className="profile-card-action primary" type="button" onClick={() => onProfileAction("request")}><UserPlus size={13} />Mandar solicitação</button>}
-              <button className="profile-card-action" type="button" onClick={() => onProfileAction("message")}><MessageCircle size={13} />Conversar</button>
-              <button className="profile-card-action danger" type="button" onClick={() => onProfileAction("report")}><ShieldCheck size={13} />Denunciar usuário</button>
-            </div>
-          )}
-        </ProfileCardView>
-      </div>
+      </section>
     </div>
   );
 }
@@ -1314,7 +1494,7 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
 
       {isSocialOpen && <SocialSettingsModal plan={savedPlan} displayName={displayName} username={username} about={about} selectedFrame={decoration as FrameId} status={socialStatus} onStatusChange={setSocialStatus} statusMessage={statusMessage} onStatusMessageChange={setStatusMessage} showActivity={showActivity} setShowActivity={setShowActivity} showServers={showServers} setShowServers={setShowServers} showMutualFriends={showMutualFriends} setShowMutualFriends={setShowMutualFriends} mural={mural} selectedMuralFields={selectedMuralFields} onMuralFieldToggle={toggleMuralField} onMuralItemAdd={addMuralItem} onMuralAutoFill={() => void fillRecentFromActivity()} onMuralItemChange={updateMuralItem} onMuralImageChange={updateMuralImage} onMuralItemRemove={removeMuralItem} onClose={() => setIsSocialOpen(false)} onNotify={notify} onViewProfile={() => setIsPublicProfileOpen(true)} onProfileAction={handleProfileAction} />}
 
-      {isPublicProfileOpen && <PublicProfileModal plan={renderPlan} displayName={displayName} username={username} about={about} socialStatus={socialStatus} statusMessage={statusMessage} showActivity={showActivity} showServers={showServers} showMutualFriends={showMutualFriends} mural={mural} selectedMuralFields={selectedMuralFields} selectedFrame={decoration as FrameId} photoUrl={photoUrl ? imgSrc(photoUrl, 512) : undefined} bannerUrl={bannerUrl ? imgSrc(bannerUrl, 1200) : undefined} isSelf nameplateId={nameplate} profileFrameId={profileFrame} profileEffectId={profileEffect} nameColorId={nameColor} nameEffectId={nameEffect} showAstroBadge={renderPaid && astroBadge} onClose={() => setIsPublicProfileOpen(false)} onProfileAction={handleProfileAction} />}
+      {isPublicProfileOpen && <PublicProfileModal plan={renderPlan} displayName={displayName} username={username} about={about} socialStatus={socialStatus} statusMessage={statusMessage} showActivity={showActivity} showServers={showServers} showMutualFriends={showMutualFriends} mural={mural} selectedMuralFields={selectedMuralFields} selectedFrame={decoration as FrameId} photoUrl={photoUrl ? imgSrc(photoUrl, 512) : undefined} bannerUrl={bannerUrl ? imgSrc(bannerUrl, 1200) : undefined} isSelf joinedAt={Number(currentUser?.createdAt || 0)} verified={Boolean((currentUser?.googleId || currentUser?.authProvider === "google") && userSettings.showBadges !== false)} activity={showActivity && currentUser?.activityName ? { name: currentUser.activityName, details: currentUser.activityDetails, startedAt: currentUser.activityStartedAt } : undefined} nameplateId={nameplate} profileFrameId={profileFrame} profileEffectId={profileEffect} nameColorId={nameColor} nameEffectId={nameEffect} showAstroBadge={renderPaid && astroBadge} onClose={() => setIsPublicProfileOpen(false)} onProfileAction={handleProfileAction} />}
 
       {isAppearanceOpen && (
         <div className="appearance-modal-overlay" onClick={() => setIsAppearanceOpen(false)}>
