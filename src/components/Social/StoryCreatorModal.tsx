@@ -2,7 +2,9 @@ import { useRef, useState } from 'react'
 import { Avatar } from '../ui/Avatar'
 import { requestBackend } from '../../services/backend'
 import { useUserStore } from '../../stores/userStore'
-import { toImageUrl } from '../../services/driveService'
+import { toImageUrl, uploadToDrive } from '../../services/driveService'
+import { EmojiPicker } from '../Chat/EmojiPicker'
+import { Fa } from '../../utils/fa'
 import type { Post, StoryOverlayStyle } from '../../types'
 
 interface Props {
@@ -30,8 +32,6 @@ const BACKGROUNDS = [
   'linear-gradient(135deg, #2b1055, #ec4899)',
   'linear-gradient(135deg, #111111, #555555)',
 ]
-const EMOJIS = ['😀','😁','😂','🤣','😊','😍','😎','🤔','😴','😭','😡','👍','👎','👏','🙏','💪','🔥','✨','🎉','❤️','💔','💯','👀','🤝','👋','🙌','💤','🤯','🥳','😱','🤗','💀','👽','🚀','🌟','🎮','⚽','🏆','📸']
-
 const sectionTitle: React.CSSProperties = {
   fontSize: 11,
   color: 'var(--text-muted)',
@@ -63,8 +63,12 @@ export function StoryCreatorModal({ mediaUrl, mediaType, initialPhotos, sharedPo
       : mediaUrl ? [{ url: mediaUrl, type: mediaType || 'image' }] : []
   )
   const [activePhoto, setActivePhoto] = useState(0)
+  const [showEmoji, setShowEmoji] = useState(false)
+  const [uploadingMedia, setUploadingMedia] = useState(false)
   const previewRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef(false)
+  const fileImgRef = useRef<HTMLInputElement>(null)
+  const fileVidRef = useRef<HTMLInputElement>(null)
 
   const fontCss = FONTS.find((f) => f.id === font)?.css || FONTS[0].css
   const active = photos[Math.min(activePhoto, Math.max(0, photos.length - 1))] || null
@@ -86,6 +90,20 @@ export function StoryCreatorModal({ mediaUrl, mediaType, initialPhotos, sharedPo
     const x = Math.min(90, Math.max(10, ((e.clientX - rect.left) / rect.width) * 100))
     const y = Math.min(90, Math.max(10, ((e.clientY - rect.top) / rect.height) * 100))
     setPos({ x: Math.round(x), y: Math.round(y) })
+  }
+
+  const handleAddMedia = async (f: File | undefined, kind: 'image' | 'video') => {
+    if (!f || uploadingMedia) return
+    setUploadingMedia(true)
+    try {
+      const ext = f.name.split('.').pop() || (kind === 'video' ? 'mp4' : 'jpg')
+      const url = await uploadToDrive(f, `story-${Date.now()}.${ext}`, f.type || (kind === 'video' ? 'video/mp4' : 'image/jpeg'), 'stories')
+      if (url) {
+        setPhotos((prev) => { setActivePhoto(prev.length); return [...prev, { url, type: kind }] })
+      }
+    } finally {
+      setUploadingMedia(false)
+    }
   }
 
   const publish = async () => {
@@ -246,21 +264,47 @@ export function StoryCreatorModal({ mediaUrl, mediaType, initialPhotos, sharedPo
               style={{ flex: 1, padding: '11px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,.12)', background: 'rgba(0,0,0,.35)', color: '#fff', fontSize: 13.5, outline: 'none', minWidth: 0 }}
             />
           </div>
-          <div style={{ display: 'flex', gap: 4, marginTop: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 4, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             {['😀', '😂', '😍', '🔥', '❤️', '👽', '🚀', '🎉', '👍', '😎', '🤔', '💯'].map((e) => (
               <button key={e} onClick={() => setText((v) => (v + e).slice(0, 140))} style={{ background: 'rgba(255,255,255,.06)', border: 'none', fontSize: 18, cursor: 'pointer', padding: 5, borderRadius: 8 }}>
                 {e}
               </button>
             ))}
+            <button
+              onClick={() => setShowEmoji((v) => !v)}
+              title="Mais emojis"
+              style={{ display: 'grid', placeItems: 'center', width: 33, height: 33, background: showEmoji ? 'rgba(41,163,255,.15)' : 'rgba(255,255,255,.06)', border: 'none', color: showEmoji ? 'var(--accent)' : 'rgba(255,255,255,.75)', cursor: 'pointer', borderRadius: 8 }}
+            >
+              <Fa name="plus" size={13} />
+            </button>
           </div>
+          {showEmoji && (
+            <div className="fs-story-picker">
+              <EmojiPicker
+                onPick={(e) => { setText((v) => (v + e).slice(0, 140)); }}
+                onPickMedia={(url, _name, kind) => {
+                  setPhotos((prev) => { setActivePhoto(prev.length); return [...prev, { url, type: kind === 'sticker' ? 'image' : 'image' }] })
+                  setShowEmoji(false)
+                }}
+              />
+            </div>
+          )}
         </div>
 
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-          {EMOJIS.map((e) => (
-            <button key={e} onClick={() => setText((v) => (v + e).slice(0, 140))} style={{ background: 'rgba(255,255,255,.06)', border: 'none', fontSize: 17, cursor: 'pointer', padding: 4, borderRadius: 8 }}>
-              {e}
+        <div>
+          <div style={sectionTitle}>Mídia</div>
+          <input ref={fileImgRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; void handleAddMedia(f, 'image') }} />
+          <input ref={fileVidRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; void handleAddMedia(f, 'video') }} />
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={() => fileImgRef.current?.click()} disabled={uploadingMedia} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 0', borderRadius: 10, border: '1.5px solid rgba(255,255,255,.1)', background: 'rgba(0,0,0,.3)', color: 'rgba(255,255,255,.8)', fontWeight: 700, fontSize: 12.5, cursor: uploadingMedia ? 'default' : 'pointer' }}>
+              <Fa name="image" size={13} /> Foto
             </button>
-          ))}
+            <button onClick={() => fileVidRef.current?.click()} disabled={uploadingMedia} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 0', borderRadius: 10, border: '1.5px solid rgba(255,255,255,.1)', background: 'rgba(0,0,0,.3)', color: 'rgba(255,255,255,.8)', fontWeight: 700, fontSize: 12.5, cursor: uploadingMedia ? 'default' : 'pointer' }}>
+              <Fa name="video" size={13} /> Vídeo
+            </button>
+          </div>
+          {uploadingMedia && <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,.5)', marginTop: 6 }}>Enviando mídia…</div>}
+          {photos.length > 0 && <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,.5)', marginTop: 6 }}>{photos.length === 1 ? '1 mídia anexada' : `${photos.length} mídias anexadas (viram ${photos.length} stories)`}</div>}
         </div>
         <div>
           <div style={sectionTitle}>Fonte</div>

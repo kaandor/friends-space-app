@@ -253,6 +253,7 @@ export function CreateServerModal({ open, onClose, onCreate }: CreateServerModal
     setNewRoleName(''); setNewRoleColor('#29A3FF')
     setSettings({ public: true, verify: true, welcome: true, logs: false })
     setActiveStep(0)
+    setCropImage(null)
     onClose()
   }
 
@@ -453,7 +454,7 @@ export function CreateServerModal({ open, onClose, onCreate }: CreateServerModal
                     placeholder="Nome do evento"
                     style={{ flex: 1, minWidth: 0, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                   />
-                  <button type="button" onClick={() => setEvents(prev => prev.filter((_, j) => j !== i))} title="Remover">
+                  <button type="button" className="csw-icon-action" onClick={() => setEvents(prev => prev.filter((_, j) => j !== i))} title="Remover">
                     <Trash2 size={14} strokeWidth={2} />
                   </button>
                 </div>
@@ -491,7 +492,7 @@ export function CreateServerModal({ open, onClose, onCreate }: CreateServerModal
                     style={{ flex: 1, minWidth: 0, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                   />
                   <small>{ch.type}</small>
-                  <button type="button" onClick={() => setTextChannels(prev => prev.filter((_, j) => j !== i))} title="Remover">
+                  <button type="button" className="csw-icon-action" onClick={() => setTextChannels(prev => prev.filter((_, j) => j !== i))} title="Remover">
                     <X size={14} strokeWidth={2.5} />
                   </button>
                 </div>
@@ -530,7 +531,7 @@ export function CreateServerModal({ open, onClose, onCreate }: CreateServerModal
                     style={{ flex: 1, minWidth: 0, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                   />
                   <small>{ch.type}</small>
-                  <button type="button" onClick={() => setVoiceChannels(prev => prev.filter((_, j) => j !== i))} title="Remover">
+                  <button type="button" className="csw-icon-action" onClick={() => setVoiceChannels(prev => prev.filter((_, j) => j !== i))} title="Remover">
                     <X size={14} strokeWidth={2.5} />
                   </button>
                 </div>
@@ -571,7 +572,7 @@ export function CreateServerModal({ open, onClose, onCreate }: CreateServerModal
                     placeholder="Nome da pasta"
                     style={{ flex: 1, minWidth: 0, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                   />
-                  <button type="button" onClick={() => setFolders(prev => prev.filter((_, j) => j !== i))} title="Remover">
+                  <button type="button" className="csw-icon-action" onClick={() => setFolders(prev => prev.filter((_, j) => j !== i))} title="Remover">
                     <X size={14} strokeWidth={2.5} />
                   </button>
                 </div>
@@ -620,7 +621,7 @@ export function CreateServerModal({ open, onClose, onCreate }: CreateServerModal
                     placeholder="Nome do cargo"
                     style={{ flex: 1, minWidth: 0, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
                   />
-                  <button type="button" onClick={() => setRoles(prev => prev.filter((_, j) => j !== i))} title="Remover cargo">
+                  <button type="button" className="csw-icon-action" onClick={() => setRoles(prev => prev.filter((_, j) => j !== i))} title="Remover cargo">
                     <Trash2 size={14} strokeWidth={2} />
                   </button>
                 </div>

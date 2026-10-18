@@ -342,9 +342,11 @@ function App() {
   const [showUsers, setShowUsers] = useState(false)
   const [serverMenu, setServerMenu] = useState<{ server: Server; x: number; y: number } | null>(null)
   const [folderMenu, setFolderMenu] = useState<{ folder: ServerFolder; x: number; y: number } | null>(null)
-  const [folderModal, setFolderModal] = useState<{ folder: ServerFolder | null; open: boolean }>({ folder: null, open: false })
+  const [folderModal, setFolderModal] = useState<{ folder: ServerFolder | null; open: boolean; presetServerIds?: string[] }>({ folder: null, open: false })
   const [folderShare, setFolderShare] = useState<ServerFolder | null>(null)
   const [expandedFolderId, setExpandedFolderId] = useState<string | null>(null)
+  const [dragServerId, setDragServerId] = useState<string | null>(null)
+  const [dropTarget, setDropTarget] = useState<string | null>(null)
   const [reportServer, setReportServer] = useState<Server | null>(null)
   const [inviteServer, setInviteServer] = useState<Server | null>(null)
   const [editServerName, setEditServerName] = useState('')
@@ -1371,14 +1373,43 @@ function App() {
     }
     return total
   }
-  const openFolderModal = (folder: ServerFolder | null) => setFolderModal({ folder, open: true })
+  const openFolderModal = (folder: ServerFolder | null) => setFolderModal({ folder, open: true, presetServerIds: [] })
+  const folderOfServer = (serverId: string) => folders.find(f => (f.serverIds || []).includes(serverId)) || null
+  const moveServerToFolder = async (folder: ServerFolder, serverId: string) => {
+    const targetIds = folder.serverIds || []
+    if (targetIds.includes(serverId)) return
+    const source = folderOfServer(serverId)
+    if (source && source.id !== folder.id) {
+      await updateFolder(source.id, { serverIds: (source.serverIds || []).filter(id => id !== serverId) })
+    }
+    await updateFolder(folder.id, { serverIds: [...targetIds, serverId] })
+    setExpandedFolderId(folder.id)
+    const serverName = servers.find(s => s.id === serverId)?.name || 'Servidor'
+    setToast(`"${serverName}" adicionado a pasta "${folder.name}"`)
+  }
+  const handleDropOnServer = async (target: Server) => {
+    const draggedId = dragServerId
+    setDragServerId(null)
+    setDropTarget(null)
+    if (!draggedId || draggedId === target.id) return
+    const targetFolder = folderOfServer(target.id)
+    if (targetFolder) {
+      await moveServerToFolder(targetFolder, draggedId)
+      return
+    }
+    const source = folderOfServer(draggedId)
+    if (source) {
+      await updateFolder(source.id, { serverIds: (source.serverIds || []).filter(id => id !== draggedId) })
+    }
+    setFolderModal({ folder: null, open: true, presetServerIds: [target.id, draggedId] })
+  }
   const handleSaveFolder = async (name: string, serverIds: string[]) => {
     const current = folderModal.folder
     if (current) {
       await updateFolder(current.id, { name, serverIds })
     } else {
-      await createFolder(name, serverIds)
-      setExpandedFolderId(null)
+      const created = await createFolder(name, serverIds)
+      setExpandedFolderId(created ? created.id : null)
     }
     setFolderModal({ folder: null, open: false })
   }
@@ -1678,10 +1709,24 @@ function App() {
                   return (
                     <Fragment key={folder.id}>
                       <button
-                        className={`fs-nav-item fs-folder-item ${expanded ? 'active' : ''}`}
+                        className={`fs-nav-item fs-folder-item ${expanded ? 'active' : ''} ${dropTarget === `folder:${folder.id}` ? 'drag-over' : ''}`}
                         onClick={() => setExpandedFolderId(expanded ? null : folder.id)}
                         onContextMenu={e => { e.preventDefault(); setFolderMenu({ folder, x: e.clientX, y: e.clientY }) }}
-                        title={folder.name}
+                        onDragOver={e => {
+                          if (!dragServerId || (folder.serverIds || []).includes(dragServerId)) return
+                          e.preventDefault()
+                          e.dataTransfer.dropEffect = 'move'
+                          setDropTarget(`folder:${folder.id}`)
+                        }}
+                        onDragLeave={() => setDropTarget(t => t === `folder:${folder.id}` ? null : t)}
+                        onDrop={e => {
+                          e.preventDefault()
+                          const draggedId = dragServerId
+                          setDragServerId(null)
+                          setDropTarget(null)
+                          if (draggedId) void moveServerToFolder(folder, draggedId)
+                        }}
+                        title={`${folder.name} — arraste um servidor pra ca`}
                       >
                         <Fa name={expanded ? 'folder-open' : 'folder'} size={14} />
                         {unreadCount > 0 && (
@@ -1693,7 +1738,18 @@ function App() {
                       {expanded && folderServers.map(server => (
                         <button
                           key={server.id}
-                          className={`fs-nav-item fs-server-item fs-folder-server ${currentServer?.id === server.id ? 'active' : ''}`}
+                          className={`fs-nav-item fs-server-item fs-folder-server ${currentServer?.id === server.id ? 'active' : ''} ${dragServerId === server.id ? 'is-dragging' : ''} ${dropTarget === server.id ? 'drag-over' : ''}`}
+                          draggable
+                          onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', server.id); setDragServerId(server.id) }}
+                          onDragEnd={() => { setDragServerId(null); setDropTarget(null) }}
+                          onDragOver={e => {
+                            if (!dragServerId || dragServerId === server.id) return
+                            e.preventDefault()
+                            e.dataTransfer.dropEffect = 'move'
+                            setDropTarget(server.id)
+                          }}
+                          onDragLeave={() => setDropTarget(t => t === server.id ? null : t)}
+                          onDrop={e => { e.preventDefault(); void handleDropOnServer(server) }}
                           onClick={() => { selectServer(server) }}
                           onContextMenu={e => { e.preventDefault(); setServerMenu({ server, x: e.clientX, y: e.clientY }) }}
                           title={server.name}
@@ -1716,10 +1772,21 @@ function App() {
                 {standaloneServers.map(server => (
                   <button
                     key={server.id}
-                    className={`fs-nav-item fs-server-item ${currentServer?.id === server.id ? 'active' : ''}`}
+                    className={`fs-nav-item fs-server-item ${currentServer?.id === server.id ? 'active' : ''} ${dragServerId === server.id ? 'is-dragging' : ''} ${dropTarget === server.id ? 'drag-over' : ''}`}
+                    draggable
+                    onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', server.id); setDragServerId(server.id) }}
+                    onDragEnd={() => { setDragServerId(null); setDropTarget(null) }}
+                    onDragOver={e => {
+                      if (!dragServerId || dragServerId === server.id) return
+                      e.preventDefault()
+                      e.dataTransfer.dropEffect = 'move'
+                      setDropTarget(server.id)
+                    }}
+                    onDragLeave={() => setDropTarget(t => t === server.id ? null : t)}
+                    onDrop={e => { e.preventDefault(); void handleDropOnServer(server) }}
                     onClick={() => { selectServer(server) }}
                     onContextMenu={e => { e.preventDefault(); setServerMenu({ server, x: e.clientX, y: e.clientY }) }}
-                    title={server.name}
+                    title={`${server.name} — arraste outro servidor aqui pra criar uma pasta`}
                   >
                     {server.photoUrl ? (
                       <img src={server.photoUrl} alt="" />
@@ -2132,6 +2199,7 @@ function App() {
             open={folderModal.open}
             folder={folderModal.folder}
             servers={servers}
+            initialServerIds={folderModal.presetServerIds}
             onClose={() => setFolderModal({ folder: null, open: false })}
             onSave={(name, serverIds) => void handleSaveFolder(name, serverIds)}
           />

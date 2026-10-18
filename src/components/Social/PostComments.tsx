@@ -6,6 +6,7 @@ import { MessageCircle, ArrowDownWideNarrow, ChevronDown, ChevronUp, Image, Smil
 import { klipyEnabled } from '../../services/klipy'
 import { nameStyleOf, nameClassOf, hasAstroBadge } from '../../utils/nameStyle'
 import { KlipyPicker } from '../Chat/KlipyPicker'
+import { EmojiPicker } from '../Chat/EmojiPicker'
 import { VideoPlayer } from '../ui/VideoPlayer'
 import type { PostComment, User } from '../../types'
 
@@ -59,6 +60,7 @@ export function PostComments({ postId, initial, users, currentUserId, header }: 
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [showEmoji, setShowEmoji] = useState(false)
+  const [emojiTab, setEmojiTab] = useState('custom')
   const [showGif, setShowGif] = useState(false)
   const [gifUrl, setGifUrl] = useState('')
   const [photo, setPhoto] = useState<{ url: string; uploading: boolean } | null>(null)
@@ -358,12 +360,13 @@ export function PostComments({ postId, initial, users, currentUserId, header }: 
                 </div>
               )}
               {showEmoji && (
-                <div className="fs-menu-in" style={{ position: 'absolute', bottom: '100%', left: 12, right: 12, marginBottom: 6, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 14, padding: 10, display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 4, maxHeight: 188, overflowY: 'auto', boxShadow: '0 -8px 30px rgba(0,0,0,.5)' }}>
-                  {EMOJIS.map((e) => (
-                    <button key={e} onClick={() => insertEmoji(e)} className="fs-emoji-btn" style={{ background: 'none', border: 'none', fontSize: 20, lineHeight: 1, cursor: 'pointer', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 9 }}>
-                      {e}
-                    </button>
-                  ))}
+                <div className="fs-comments-picker">
+                  <EmojiPicker
+                    key={emojiTab}
+                    initialTab={emojiTab}
+                    onPick={insertEmoji}
+                    onPickMedia={(url) => { setPhoto({ url, uploading: false }); setShowEmoji(false) }}
+                  />
                 </div>
               )}
               {showGif && (
@@ -419,7 +422,7 @@ export function PostComments({ postId, initial, users, currentUserId, header }: 
                   maxLength={280}
                   style={{ flex: 1, padding: '5px 0', border: 'none', background: 'transparent', color: 'var(--text-primary)', fontSize: 13, outline: 'none', minWidth: 0 }}
                   />
-                  <button onClick={() => { setShowEmoji(!showEmoji); setShowGif(false) }} title="Emoji" className="fs-icon-btn" style={{ color: 'var(--text-secondary)', cursor: 'pointer', width: 30, height: 30, flexShrink: 0 }}>
+                  <button onClick={() => { setShowEmoji(!showEmoji); setShowGif(false); setEmojiTab('custom') }} title="Emoji" className="fs-icon-btn" style={{ color: 'var(--text-secondary)', cursor: 'pointer', width: 30, height: 30, flexShrink: 0 }}>
                     <Smile size={17} strokeWidth={2} />
                   </button>
                 </div>
@@ -437,13 +440,13 @@ export function PostComments({ postId, initial, users, currentUserId, header }: 
                 <button onClick={() => fileRef.current?.click()} title="Foto" className="fs-icon-btn" style={{ color: 'var(--text-secondary)', cursor: 'pointer', width: 32, height: 32 }}>
                   <Image size={17} strokeWidth={2} />
                 </button>
-                <button onClick={() => { setShowGif(!showGif); setShowEmoji(false) }} title="GIF" style={{ background: showGif ? 'var(--bg-tertiary)' : 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12, fontWeight: 900, padding: 6, borderRadius: 6 }}>
+                <button onClick={() => { setShowEmoji(true); setShowGif(false); setEmojiTab('gifs') }} title="GIF" style={{ background: showEmoji && emojiTab === 'gifs' ? 'var(--bg-tertiary)' : 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12, fontWeight: 900, padding: 6, borderRadius: 6 }}>
                   GIF
                 </button>
-                <button onClick={() => { setShowEmoji(!showEmoji); setShowGif(false) }} title="Emoji" className="fs-icon-btn" style={{ background: showEmoji ? 'var(--bg-tertiary)' : 'none', color: 'var(--text-secondary)', cursor: 'pointer', width: 32, height: 32 }}>
+                <button onClick={() => { setShowEmoji(true); setShowGif(false); setEmojiTab('custom') }} title="Emoji" className="fs-icon-btn" style={{ background: showEmoji && emojiTab !== 'gifs' ? 'var(--bg-tertiary)' : 'none', color: 'var(--text-secondary)', cursor: 'pointer', width: 32, height: 32 }}>
                   <Smile size={17} strokeWidth={2} />
                 </button>
-                <button onClick={() => { setShowGif(!showGif); setShowEmoji(false) }} title="Colar link de mídia" className="fs-icon-btn" style={{ color: 'var(--text-secondary)', cursor: 'pointer', width: 32, height: 32 }}>
+                <button onClick={() => { setShowGif(!showGif); setShowEmoji(false) }} title="Colar link de mídia" className="fs-icon-btn" style={{ background: showGif ? 'var(--bg-tertiary)' : 'none', color: 'var(--text-secondary)', cursor: 'pointer', width: 32, height: 32 }}>
                   <Link2 size={17} strokeWidth={2} />
                 </button>
                 <span style={{ width: 1, height: 16, background: 'var(--border)', margin: '0 6px' }} />

@@ -1515,7 +1515,9 @@
 .csw-window * { box-sizing: border-box; }
 .csw-window button, .csw-window input, .csw-window textarea, .csw-window select { font: inherit; color: inherit; }
 .csw-window button, .csw-window select { cursor: pointer; }
-.csw-window button { border: 0; background: none; }
+/* Reset com especificidade ZERO (:where) — antes `.csw-window button` (0,1,1) vencia as
+   classes .csw-* (0,1,0) e apagava fundo/borda de TODOS os botoes (botões somem, toggles param). */
+:where(.csw-window) button { border: 0; background: none; }
 
 /* ── Sidebar ── */
 .csw-sidebar {
@@ -1681,6 +1683,11 @@
   .csw-back-btn, .csw-create-btn { flex: 1; justify-content: center; }
 }
 
+/* Icon-only actions do wizard (remover evento/canal/pasta/cargo) + icone do upload */
+.csw-icon-action { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; color: var(--text-muted); flex-shrink: 0; transition: color 160ms ease, background 160ms ease; }
+.csw-icon-action:hover { color: #f23f43; background: color-mix(in srgb, #f23f43 12%, transparent); }
+.csw-upload-icon { display: grid; place-items: center; color: var(--text-muted); }
+
 /* ===== Server Settings Window (janela de configurações do servidor) ===== */
 
 .ssw-overlay {
@@ -1715,7 +1722,8 @@
 .ssw-window * { box-sizing: border-box; }
 .ssw-window button, .ssw-window input, .ssw-window textarea, .ssw-window select { font: inherit; color: inherit; }
 .ssw-window button, .ssw-window select { cursor: pointer; }
-.ssw-window button { border: 0; background: none; }
+/* Mesmo bug do csw: reset com especificidade (0,1,1) vencia as classes .ssw-* (0,1,0). */
+:where(.ssw-window) button { border: 0; background: none; }
 
 /* ── Sidebar ── */
 .ssw-sidebar {
@@ -4419,3 +4427,98 @@ button, input, select, textarea {
   border: none; padding: 2px 6px; margin: 0 -6px 8px; border-radius: 6px; cursor: pointer;
 }
 .vp-name:hover { background: var(--bg-hover); }
+
+/* Drag & drop de servidores no rail (pasta por arrastar e soltar) */
+.fs-nav-item.is-dragging { opacity: .45; }
+.fs-nav-item.drag-over { box-shadow: 0 0 0 2px var(--accent), 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent); }
+
+/* Acoes do topo do chat DM (ligar, video, adicionar pessoa) */
+.fs-dm-action { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; border: none; background: var(--bg-tertiary); color: var(--text-secondary); cursor: pointer; transition: color .15s ease, background .15s ease; }
+.fs-dm-action:hover:not(:disabled) { color: var(--text-primary); background: var(--bg-hover); }
+.fs-dm-action:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Botoes da barra de controle remoto (estilo RustDesk) */
+.rc-btn { display: flex; align-items: center; gap: 5px; background: rgba(255, 255, 255, .08); color: #fff; border: none; border-radius: 8px; padding: 6px 10px; font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap; transition: background .15s ease, color .15s ease; }
+.rc-btn:hover { background: rgba(255, 255, 255, .16); }
+.rc-btn.is-active { background: var(--accent); color: #04120a; }
+.rc-btn.is-active:hover { background: var(--accent-hover, var(--accent)); }
+.rc-btn.rc-btn-danger { background: #ed4245; }
+.rc-btn.rc-btn-danger:hover { background: #f2555a; }
+
+/* ===== Janela "Baixar app" (fs-dl-*) ===== */
+.fs-dl-overlay { position: fixed; inset: 0; z-index: 3200; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, .7); backdrop-filter: blur(6px); overflow-y: auto; }
+.fs-dl-modal { position: relative; width: min(100%, 760px); max-height: calc(100dvh - 32px); overflow-y: auto; padding: clamp(22px, 3vw, 34px); background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 20px; color: var(--text-primary); box-shadow: 0 30px 80px rgba(0, 0, 0, .5); }
+.fs-dl-close { position: absolute; top: 16px; right: 16px; display: grid; place-items: center; width: 36px; height: 36px; color: var(--text-muted); background: transparent; border: 0; border-radius: 50%; cursor: pointer; transition: color .15s ease, background .15s ease; }
+.fs-dl-close:hover { color: var(--text-primary); background: var(--bg-hover); }
+.fs-dl-header { display: flex; align-items: center; gap: 14px; padding-bottom: clamp(18px, 2.4vw, 26px); padding-right: 36px; }
+.fs-dl-logo { display: grid; place-items: center; flex: 0 0 auto; width: 54px; height: 54px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 16px; }
+.fs-dl-logo img { width: 34px; height: 34px; border-radius: 9px; object-fit: cover; }
+.fs-dl-header-copy { min-width: 0; }
+.fs-dl-header h2 { margin: 0; font-size: clamp(22px, 2.4vw, 30px); font-weight: 800; letter-spacing: -.03em; }
+.fs-dl-header p { margin: 4px 0 0; color: var(--text-secondary); font-size: 13.5px; line-height: 1.45; }
+.fs-dl-version { margin-left: auto; flex: 0 0 auto; padding: 4px 10px; background: color-mix(in srgb, var(--accent) 18%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 999px; color: var(--accent); font-size: 12px; font-weight: 800; }
+.fs-dl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+.fs-dl-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 16px 18px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 16px; text-align: center; animation: fsCardIn 520ms cubic-bezier(.23, 1, .32, 1) both; transition: transform .18s ease, border-color .18s ease; }
+.fs-dl-card:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+.fs-dl-card-icon { display: grid; place-items: center; width: 62px; height: 62px; margin-bottom: 2px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 16px; }
+.fs-dl-card h3 { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -.02em; }
+.fs-dl-card p { margin: 0; color: var(--text-secondary); font-size: 12px; line-height: 1.45; flex: 1; }
+.fs-dl-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 40px; margin-top: 8px; padding: 9px 14px; background: var(--accent, #5865f2); color: #000; border: 0; border-radius: 10px; font-size: 13.5px; font-weight: 800; cursor: pointer; transition: filter .15s ease, transform .15s ease; }
+.fs-dl-btn:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); }
+.fs-dl-btn:disabled { opacity: .55; cursor: not-allowed; }
+.fs-dl-changelog { margin-top: 18px; padding: 16px 18px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 14px; }
+.fs-dl-changelog-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 14px; font-weight: 800; }
+.fs-dl-changelog-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.fs-dl-col-title { display: block; margin-bottom: 6px; color: var(--text-primary); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.fs-dl-changelog ul { margin: 0; padding-left: 18px; color: var(--text-secondary); font-size: 12.5px; line-height: 1.55; }
+.fs-dl-notes { margin: 10px 0 0; color: var(--text-muted); font-size: 11.5px; white-space: pre-wrap; }
+.fs-dl-footer { display: flex; align-items: center; gap: 12px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 12.5px; }
+.fs-dl-footer-icon { display: grid; place-items: center; flex: 0 0 auto; width: 34px; height: 34px; color: var(--text-primary); background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 50%; }
+.fs-dl-footer p { margin: 0; line-height: 1.5; }
+.fs-dl-footer button { padding: 0; background: none; border: 0; color: var(--accent); font: inherit; font-weight: 700; cursor: pointer; }
+.fs-dl-footer button:hover { text-decoration: underline; }
+@media (max-width: 560px) {
+  .fs-dl-header { flex-wrap: wrap; }
+  .fs-dl-version { margin-left: 0; }
+}
+@keyframes fsCardIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Picker de emoji dentro do drawer de comentarios */
+.fs-comments-picker { position: absolute; bottom: 100%; left: 12px; right: 12px; margin-bottom: 6px; z-index: 2; }
+.fs-comments-picker .fs-emoji-picker { width: 100%; }
+
+/* Picker de emoji inline no criador de story */
+.fs-story-picker { margin-top: 8px; }
+.fs-story-picker .fs-emoji-picker { width: 100%; }
+
+/* Modal Criar/Personalizar pasta (estilo FS) */
+.fs-folder-overlay { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, .72); }
+.fs-folder-modal { width: 100%; max-width: 440px; max-height: 86vh; display: flex; flex-direction: column; background: var(--bg-tertiary); border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--border)); border-radius: 16px; box-shadow: 0 28px 70px -20px rgba(0, 0, 0, .85); overflow: hidden; }
+.fs-folder-header { display: flex; gap: 12px; align-items: center; padding: 18px 20px 14px; border-bottom: 1px solid var(--border); }
+.fs-folder-header-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); flex-shrink: 0; }
+.fs-folder-header h2 { margin: 0; font-size: 16px; font-weight: 800; color: var(--text-primary); }
+.fs-folder-header p { margin: 3px 0 0; font-size: 12px; color: var(--text-muted); }
+.fs-folder-body { padding: 16px 20px; overflow-y: auto; }
+.fs-folder-label { display: block; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 7px; }
+.fs-folder-label-row { display: flex; align-items: baseline; justify-content: space-between; margin: 18px 0 7px; }
+.fs-folder-label-row .fs-folder-label { margin-bottom: 0; }
+.fs-folder-count { font-size: 11px; color: var(--text-muted); }
+.fs-folder-input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); font-size: 13.5px; font-family: inherit; outline: none; transition: border-color .15s ease, box-shadow .15s ease; }
+.fs-folder-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.fs-folder-empty { margin: 4px 0 0; font-size: 13px; color: var(--text-muted); }
+.fs-folder-list { display: flex; flex-direction: column; gap: 6px; }
+.fs-folder-server { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 12px; border-radius: 10px; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); cursor: pointer; text-align: left; transition: border-color .12s ease, background .12s ease; font-family: inherit; }
+.fs-folder-server:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.fs-folder-server.is-checked { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--bg-primary)); }
+.fs-folder-server img, .fs-folder-server-fallback { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.fs-folder-server-fallback { display: flex; align-items: center; justify-content: center; background: var(--bg-hover); font-size: 12px; font-weight: 800; }
+.fs-folder-server-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; }
+.fs-folder-check { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: 1.5px solid var(--border); color: #04120a; flex-shrink: 0; }
+.fs-folder-server.is-checked .fs-folder-check { background: var(--accent); border-color: var(--accent); }
+.fs-folder-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px 18px; border-top: 1px solid var(--border); }
+.fs-folder-btn { padding: 10px 16px; border-radius: 10px; border: none; font-size: 13.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.fs-folder-btn.ghost { background: var(--bg-primary); color: var(--text-secondary); border: 1px solid var(--border); }
+.fs-folder-btn.ghost:hover { color: var(--text-primary); }
+.fs-folder-btn.primary { background: var(--accent); color: #05130a; }
+.fs-folder-btn.primary:disabled { opacity: .55; cursor: not-allowed; }
+

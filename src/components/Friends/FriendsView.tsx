@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, SlidersHorizontal, Plus, Smile, Send, FileText, BadgeCheck, Rocket, ShieldCheck, Gamepad2, Gift } from 'lucide-react'
+import { Search, SlidersHorizontal, Plus, Smile, Send, FileText, BadgeCheck, Rocket, ShieldCheck, Gamepad2, Gift, Phone, Video, UserPlus } from 'lucide-react'
 import { uiEnabled } from '../Profile/InterfaceTab'
 import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
@@ -27,6 +27,7 @@ import { AstroGiftModal } from '../Home/AstroGiftModal'
 import { VoicePanel } from '../Call/VoicePanel'
 import { UserDock } from '../Layout/UserDock'
 import { useUserMenuStore } from '../../stores/userMenuStore'
+import { useCallStore } from '../../stores/callStore'
 import type { User } from '../../types'
 
 function normalizeSearchValue(value: string) {
@@ -65,6 +66,9 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
   const [storyRetrySignal, setStoryRetrySignal] = useState(0)
   const [mutualCounts, setMutualCounts] = useState({ friends: 0, servers: 0 })
   const [showFullProfile, setShowFullProfile] = useState(false)
+  const callUser = useCallStore(s => s.callUser)
+  const callingUser = useCallStore(s => s.callingUser)
+  const activeCall = useCallStore(s => s.activeCall)
   const isMobile = useIsMobile(768)
   const userSettings = (currentUser?.settings || {}) as Record<string, unknown>
   const hasAstro = userSettings['astro'] === true || userSettings['astro'] === 'true'
@@ -489,7 +493,24 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
               <button onClick={() => setCurrentDMUser(null)} title="Voltar ao feed" style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', color: 'var(--text-secondary)', background: 'var(--bg-tertiary)', border: 'none', cursor: 'pointer', flexShrink: 0, fontSize: 15 }}>←</button>
               <Avatar src={currentDMUser.photoUrl} name={currentDMUser.name} size={36} />
               <span onContextMenu={(e) => { e.preventDefault(); openUserMenu(currentDMUser, e.clientX, e.clientY) }}>{currentDMUser.name}</span>
-              <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+                <button
+                  className="fs-dm-action"
+                  onClick={() => { if (!callingUser && !activeCall) void callUser(currentDMUser.id) }}
+                  disabled={Boolean(callingUser || activeCall)}
+                  title="Chamada de voz"
+                ><Phone size={17} strokeWidth={2} /></button>
+                <button
+                  className="fs-dm-action"
+                  onClick={() => { if (!callingUser && !activeCall) void callUser(currentDMUser.id, 'video') }}
+                  disabled={Boolean(callingUser || activeCall)}
+                  title="Chamada de vídeo"
+                ><Video size={17} strokeWidth={2} /></button>
+                <button
+                  className="fs-dm-action"
+                  onClick={() => setShowAdd(true)}
+                  title="Adicionar pessoa"
+                ><UserPlus size={17} strokeWidth={2} /></button>
               </div>
             </div>
 

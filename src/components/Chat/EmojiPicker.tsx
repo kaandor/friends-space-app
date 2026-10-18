@@ -31,6 +31,7 @@ interface EmojiPickerProps {
   manageable?: boolean
   allEmojis?: ServerEmoji[]
   hasAstro?: boolean
+  initialTab?: string
 }
 
 const kindBadge: Record<string, string> = {
@@ -38,8 +39,8 @@ const kindBadge: Record<string, string> = {
   sticker: 'STK',
 }
 
-export function EmojiPicker({ onPick, onPickMedia, serverId, manageable = false, allEmojis = [], hasAstro = false }: EmojiPickerProps) {
-  const [tab, setTab] = useState<string>('custom')
+export function EmojiPicker({ onPick, onPickMedia, serverId, manageable = false, allEmojis = [], hasAstro = false, initialTab }: EmojiPickerProps) {
+  const [tab, setTab] = useState<string>(initialTab || 'custom')
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
   const [search, setSearch] = useState('')

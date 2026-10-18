@@ -207,11 +207,7 @@ export function RemoteControlOverlay({ onInput, onExit, onFullscreen }: {
       }
     : { display: 'none' }
 
-  const toolBtn = (active?: boolean): React.CSSProperties => ({
-    display: 'flex', alignItems: 'center', gap: 5, background: active ? 'var(--accent)' : 'rgba(255,255,255,0.08)',
-    color: active ? '#04120a' : '#fff', border: 'none', borderRadius: 7, padding: '6px 9px',
-    fontSize: 11, fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap',
-  })
+  const toolBtn = (active?: boolean): string => `rc-btn${active ? ' is-active' : ''}`
 
   return (
     <div
@@ -267,29 +263,29 @@ export function RemoteControlOverlay({ onInput, onExit, onFullscreen }: {
       </div>
 
       {/* Barra do controlador (estilo RustDesk) — some no fullscreen parado */}
-      <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(0,0,0,0.72)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 10, padding: 6, pointerEvents: isFs && idleHide ? 'none' : 'auto', opacity: isFs && idleHide ? 0 : 1, transition: 'opacity 0.3s', zIndex: 47 }}>
-        <button title="Focar teclado (digitar no PC remoto)" onClick={() => { try { ref.current?.focus() } catch { } }} style={toolBtn(false)}>
+      <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(8,10,13,0.82)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: 7, boxShadow: '0 12px 40px rgba(0,0,0,0.55)', backdropFilter: 'blur(14px)', pointerEvents: isFs && idleHide ? 'none' : 'auto', opacity: isFs && idleHide ? 0 : 1, transition: 'opacity 0.3s', zIndex: 47 }}>
+        <button title="Focar teclado (digitar no PC remoto)" onClick={() => { try { ref.current?.focus() } catch { } }} className={toolBtn(false)}>
           <Fa name="keyboard" size={12} /> Teclado
         </button>
-        <button title="Enviar minha área de transferência ao PC remoto" onClick={pasteClipboard} style={toolBtn(false)}>
+        <button title="Enviar minha área de transferência ao PC remoto" onClick={pasteClipboard} className={toolBtn(false)}>
           <Fa name="clipboard" size={12} /> Colar
         </button>
-        <button title={muted ? 'Ativar áudio da tela' : 'Mutar áudio da tela'} onClick={() => { try { useCallStore.getState().toggleScreenMute() } catch { } setMuted(m => !m) }} style={toolBtn(muted)}>
+        <button title={muted ? 'Ativar áudio da tela' : 'Mutar áudio da tela'} onClick={() => { try { useCallStore.getState().toggleScreenMute() } catch { } setMuted(m => !m) }} className={toolBtn(muted)}>
           <Fa name={muted ? 'volume-xmark' : 'volume-high'} size={12} /> {muted ? 'Mudo' : 'Áudio'}
         </button>
-        <button title="Tela cheia" onClick={onFullscreen} style={toolBtn(false)}>
+        <button title="Tela cheia" onClick={onFullscreen} className={toolBtn(false)}>
           <Fa name="expand" size={12} /> Tela
         </button>
-        <button title={gameMode ? 'Sair do modo game' : 'Modo game: mouse relativo + 60fps'} onClick={toggleGame} style={toolBtn(gameMode)}>
+        <button title={gameMode ? 'Sair do modo game' : 'Modo game: mouse relativo + 60fps'} onClick={toggleGame} className={toolBtn(gameMode)}>
           <Fa name="gamepad" size={12} /> {gameMode ? (locked ? 'Game ●' : 'Game…') : 'Game'}
         </button>
-        <button title="Parar controle (Ctrl+Shift+C)" onClick={onExit} style={{ ...toolBtn(false), background: '#ed4245' }}>
+        <button title="Parar controle (Ctrl+Shift+C)" onClick={onExit} className="rc-btn rc-btn-danger">
           <Fa name="xmark" size={12} /> Sair
         </button>
       </div>
 
       {/* Ajuda + countdown + atalhos — some no fullscreen parado */}
-      <div style={{ position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.6)', borderRadius: 8, padding: '5px 12px', color: 'var(--text-secondary)', fontSize: 10.5, pointerEvents: 'none', whiteSpace: 'normal', display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 10, maxWidth: 'calc(100% - 24px)', textAlign: 'center', opacity: isFs && idleHide ? 0 : 1, transition: 'opacity 0.3s' }}>
+      <div style={{ position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', background: 'rgba(8,10,13,0.72)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)', borderRadius: 10, padding: '6px 14px', color: 'var(--text-secondary)', fontSize: 10.5, pointerEvents: 'none', whiteSpace: 'normal', display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 10, maxWidth: 'calc(100% - 24px)', textAlign: 'center', opacity: isFs && idleHide ? 0 : 1, transition: 'opacity 0.3s' }}>
         <span><b style={{ color: '#fff' }}>Ctrl+Shift+C</b> parar controle</span>
         <span><b style={{ color: '#fff' }}>Ctrl+Shift+Z</b> sair do remoto</span>
         <span title={controlLinkOk === false ? 'PC remoto sem resposta' : lastInputAckAt && Date.now() - lastInputAckAt < 8000 ? 'Comandos chegando no PC remoto' : 'Enlace com o PC remoto'}>
