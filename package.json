@@ -14,7 +14,8 @@
     "preview": "vite preview",
     "dist:win": "npm run build:desktop && electron-builder --win portable",
     "dist:installer": "npm run build:desktop && electron-builder --win nsis",
-    "deploy:api": "node scripts/deploy-api.mjs"
+    "deploy:api:firebase": "node scripts/deploy-api.mjs",
+    "deploy:api": "wrangler deploy --config wrangler.api.toml"
   },
   "engines": {
     "node": ">=20"

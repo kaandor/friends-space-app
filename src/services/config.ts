@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE_URL = 'https://friends-space-ecru.vercel.app'
+const DEFAULT_API_BASE_URL = 'https://friends-space-api.kaandrofootball.workers.dev'
 
 export function getApiBaseUrl() {
   // Backend direto (o proxy same-origin do Pages está fora do ar para POST).
