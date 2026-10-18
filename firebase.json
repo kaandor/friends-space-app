@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "source": "firebase-functions",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "**/.DS_Store"
+    ]
+  }
+}

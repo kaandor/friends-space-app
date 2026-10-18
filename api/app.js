@@ -1,4 +1,5 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
 
@@ -366,7 +367,7 @@ const _kvDel = async (key) => {
 // ---------------------------------------------------------------------------
 const PUSH_SUBS_KEY = 'friends-space:push-subs'
 let webpush = null
-try { webpush = require('web-push') } catch { webpush = null }
+try { webpush = createRequire(import.meta.url)('web-push') } catch { webpush = null }
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BHXAhzSnG8HBjv4epbJL6lbRxGNQ0TRBPq4NEToo5qOMI1Kq2jBIiQKf48Pl2JpuPvSGOm9W0Wm9ocxiv49a6z8'
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'HNw7vYoqvMrE4PH-TVvMINkVw2s2oPhWErKo-qp8qKg'
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:suporte@friends-space.app'
@@ -4928,13 +4929,25 @@ const actions = {
   },
 }
 
+// Hosts do site aceitos no CORS/autoridade de origem: Cloudflare Pages,
+// Vercel, Firebase Hosting e desenvolvimento local.
+function isAllowedSiteHost(host) {
+  return host === 'friends-space.pages.dev'
+    || host.endsWith('.vercel.app')
+    || host.endsWith('.web.app')
+    || host.endsWith('.firebaseapp.com')
+    || host === 'localhost'
+    || host === '127.0.0.1'
+    || host.endsWith('.localhost')
+}
+
 export default async function handler(req, res) {
   try {
     try {
       const __o = String(req?.headers?.origin || '')
       let __h = ''
       try { __h = new URL(__o).hostname.toLowerCase() } catch {}
-      res._corsOrigin = (!__o || __o === 'file://' || __h === 'friends-space.pages.dev' || __h.endsWith('.vercel.app') || __h === 'localhost' || __h === '127.0.0.1') ? (__o || '*') : 'null'
+      res._corsOrigin = (!__o || __o === 'file://' || isAllowedSiteHost(__h)) ? (__o || '*') : 'null'
     } catch { res._corsOrigin = '*' }
     const url = new URL(req.url, 'http://localhost')
     const profileIdFromQuery = url.searchParams.get('profileId')
@@ -5088,12 +5101,7 @@ export default async function handler(req, res) {
       if (origin) {
         let host = ''
         try { host = new URL(origin).hostname.toLowerCase() } catch {}
-        const okHost = host === 'friends-space.pages.dev'
-          || host.endsWith('.vercel.app')
-          || host === 'localhost'
-          || host === '127.0.0.1'
-          || host.endsWith('.localhost')
-        if (!okHost) { json(res, 403, { ok: false, error: 'Origem negada.' }); return }
+        if (!isAllowedSiteHost(host)) { json(res, 403, { ok: false, error: 'Origem negada.' }); return }
       }
     } catch {}
     const __ip = getClientIp(req)

@@ -24,6 +24,13 @@ dist-ssr
 *.sln
 *.sw?
 
+# Chave do deploy no Firebase Hosting (NUNCA commitar)
+service-account.json
+*-service-account*.json
+.firebase/
+firebase-functions/node_modules/
+firebase-functions/app.js
+
 .vercel
 .env*
 # Secret do Google do app desktop (lido pelo electron/main.cjs, vai no asar)
