@@ -73,8 +73,14 @@ interface ServerState {
     description?: string
     themes?: string[]
     frequency?: string
+    peakTime?: string
+    language?: string
+    accent?: string
     minAge?: string
-    toggles?: { public?: boolean; verify?: boolean; welcome?: boolean; logs?: boolean }
+    requireAgeCheck?: boolean
+    toggles?: { public?: boolean; verify?: boolean; welcome?: boolean; logs?: boolean; approval?: boolean; invites?: boolean; slowmode?: boolean }
+    moderation?: string
+    automod?: { spam?: boolean; links?: boolean; caps?: boolean }
     rules?: string
     textChannels?: string[]
     voiceChannels?: string[]
@@ -238,8 +244,14 @@ export const useServerStore = create<ServerState>((set, get) => ({
     description?: string
     themes?: string[]
     frequency?: string
+    peakTime?: string
+    language?: string
+    accent?: string
     minAge?: string
-    toggles?: { public?: boolean; verify?: boolean; welcome?: boolean; logs?: boolean }
+    requireAgeCheck?: boolean
+    toggles?: { public?: boolean; verify?: boolean; welcome?: boolean; logs?: boolean; approval?: boolean; invites?: boolean; slowmode?: boolean }
+    moderation?: string
+    automod?: { spam?: boolean; links?: boolean; caps?: boolean }
     rules?: string
     textChannels?: string[]
     voiceChannels?: string[]
@@ -284,6 +296,8 @@ export const useServerStore = create<ServerState>((set, get) => ({
       description: extra?.description ?? extra?.rules,
       themes: extra?.themes, frequency: extra?.frequency, minAge: extra?.minAge,
       toggles: extra?.toggles, rules: extra?.rules,
+      peakTime: extra?.peakTime, language: extra?.language, accent: extra?.accent,
+      requireAgeCheck: extra?.requireAgeCheck, moderation: extra?.moderation, automod: extra?.automod,
       textChannels: extra?.textChannels, voiceChannels: extra?.voiceChannels,
       categories: extra?.categories, roles: extra?.roles, events: extra?.events,
     }
