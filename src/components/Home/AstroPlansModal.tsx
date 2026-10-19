@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode, type CSSProperties } from 'react'
+import { Check, X, Lock, Star, Sparkles, Crown, Gem, CalendarDays, Zap, Palette, Shield } from 'lucide-react'
 import { ASTRO_PLANS, ASTRO_ORDER, getAstroTier, type AstroTier } from '../../utils/astro'
 import { useUserStore } from '../../stores/userStore'
 import { assetUrl } from '../../utils/assets'
@@ -10,15 +11,20 @@ interface AstroPlansModalProps {
   onSubscribe?: (tier: AstroTier) => Promise<void> | void
 }
 
-const GREEN = '#29A3FF'
-const PURPLE = '#a855f7'
-const AMBER = '#f59e0b'
-
-const PLAN_VISUAL: Record<AstroTier, { color: string; border: string; btnClass: string }> = {
-  astro: { color: GREEN, border: '#0B3E73', btnClass: 'fs-astro-btn-green' },
-  astro_plus: { color: PURPLE, border: '#3a1a6a', btnClass: 'fs-astro-btn-purple' },
-  astro_ultimate: { color: AMBER, border: '#4a3a0a', btnClass: 'fs-astro-btn-amber' },
+const VISUALS: Record<AstroTier, { color: string; icon: ReactNode }> = {
+  astro: { color: '#38bdf8', icon: <Star size={18} strokeWidth={2.2} /> },
+  astro_plus: { color: '#a855f7', icon: <Sparkles size={18} strokeWidth={2.2} /> },
+  astro_ultimate: { color: '#f59e0b', icon: <Crown size={18} strokeWidth={2.2} /> },
 }
+
+const ULTIMATE_FEATURES = [
+  'Tudo do ASTRO Plus',
+  'Limites ainda maiores',
+  'Efeitos e insígnias exclusivos',
+  'Prioridade máxima',
+  'Suporte dedicado',
+  'Novos recursos em primeira mão',
+]
 
 const COMPARE_ROWS: Array<{ label: string; free: string | boolean; astro: string | boolean; astroplus: string | boolean; astroplus2: string | boolean }> = [
   { label: 'Upload de arquivos', free: 'Até 25 MB', astro: 'Até 250 MB', astroplus: 'Até 1 GB', astroplus2: 'Até 5 GB' },
@@ -29,85 +35,9 @@ const COMPARE_ROWS: Array<{ label: string; free: string | boolean; astro: string
 
 type Billing = 'monthly' | 'yearly'
 
-function Check() {
-  return (
-    <svg className="fs-astro-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="2.5">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  )
-}
-
-function X() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  )
-}
-
-function Cloud({ size = 16, color = '#9ca3af' }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-      <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z" />
-    </svg>
-  )
-}
-
-function Shield({ size = 14, color = GREEN }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    </svg>
-  )
-}
-
-function Zap({ size = 14, color = GREEN }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-    </svg>
-  )
-}
-
-function Folder({ size = 14, color = GREEN }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-    </svg>
-  )
-}
-
-function Lock() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  )
-}
-
-function ArrowRight() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="2.5">
-      <line x1="5" y1="12" x2="19" y2="12" />
-      <polyline points="12 5 19 12 12 19" />
-    </svg>
-  )
-}
-
-function InfoItem({ icon, text }: { icon: ReactNode; text: string }) {
-  return (
-    <div className="fs-astro-infoitem">
-      <span className="fs-astro-infoicon">{icon}</span>
-      <span className="fs-astro-infotext">{text}</span>
-    </div>
-  )
-}
-
 function renderCell(value: string | boolean) {
-  if (value === true) return <Check />
-  if (value === false) return <span style={{ color: 'var(--text-muted)' }}>–</span>
+  if (value === true) return <Check size={14} strokeWidth={2.6} color="#4ade80" />
+  if (value === false) return <span style={{ color: 'rgba(255,255,255,.3)' }}>–</span>
   return <>{value}</>
 }
 
@@ -117,52 +47,50 @@ function SaibaMaisModal({ onClose }: { onClose: () => void }) {
       <div className="fs-astro-modal" style={{ maxWidth: 512 }} onClick={e => e.stopPropagation()}>
         <div className="fs-astro-modalhead">
           <div className="fs-astro-modaltitle">
-            <Cloud size={18} color={GREEN} />
+            <Star size={17} color="#38bdf8" />
             <span>Como funciona o armazenamento</span>
           </div>
-          <button className="fs-astro-modalx" onClick={onClose} aria-label="Fechar"><X /></button>
+          <button className="fs-astro-modalx" onClick={onClose} aria-label="Fechar"><X size={16} /></button>
         </div>
         <div className="fs-astro-modalbody">
           <div className="fs-astro-modalitem">
-            <div className="fs-astro-modalicon" style={{ background: 'rgba(41,163,255,0.1)' }}>
-              <Cloud size={15} color={GREEN} />
+            <div className="fs-astro-modalicon" style={{ background: 'rgba(56,189,248,0.12)' }}>
+              <Star size={15} color="#38bdf8" />
             </div>
             <div>
               <p className="fs-astro-modaltitle2">Seus arquivos ficam no seu Google Drive</p>
               <p className="fs-astro-modalp">
-                O Friends Space <b style={{ color: 'var(--text-primary)' }}>não armazena</b> seus arquivos em servidores próprios. Tudo que você envia vai diretamente para uma pasta chamada{' '}
-                <b style={{ color: GREEN }}>"Friends Space"</b> no seu próprio Google Drive.
+                O Friends Space <b>não armazena</b> seus arquivos em servidores próprios. Tudo que você envia vai diretamente para uma pasta chamada{' '}
+                <b style={{ color: '#38bdf8' }}>"Friends Space"</b> no seu próprio Google Drive.
               </p>
             </div>
           </div>
           <div className="fs-astro-modalitem">
-            <div className="fs-astro-modalicon" style={{ background: 'rgba(168,85,247,0.1)' }}>
-              <Zap size={15} color={PURPLE} />
+            <div className="fs-astro-modalicon" style={{ background: 'rgba(168,85,247,0.12)' }}>
+              <Zap size={15} color="#a855f7" />
             </div>
             <div>
               <p className="fs-astro-modaltitle2">Space Ultra Transfer</p>
               <p className="fs-astro-modalp">
                 Nossa tecnologia de transferência comprime, fragmenta e envia seus arquivos em paralelo, chegando a ser{' '}
-                <b style={{ color: 'var(--text-primary)' }}>até 10x mais rápido</b> que um upload convencional ao Google Drive.
+                <b>até 10x mais rápido</b> que um upload convencional ao Google Drive.
               </p>
             </div>
           </div>
           <div className="fs-astro-modalitem">
-            <div className="fs-astro-modalicon" style={{ background: 'rgba(245,158,11,0.1)' }}>
-              <Shield size={15} color={AMBER} />
+            <div className="fs-astro-modalicon" style={{ background: 'rgba(245,158,11,0.12)' }}>
+              <Shield size={15} color="#f59e0b" />
             </div>
             <div>
               <p className="fs-astro-modaltitle2">Privacidade total</p>
               <p className="fs-astro-modalp">
-                Como os arquivos ficam no <b style={{ color: 'var(--text-primary)' }}>seu Google Drive</b>, só você (e quem você autorizar) tem acesso.
+                Como os arquivos ficam no <b>seu Google Drive</b>, só você (e quem você autorizar) tem acesso.
               </p>
             </div>
           </div>
         </div>
         <div className="fs-astro-modalfoot">
-          <button className="fs-astro-btn-green" style={{ width: '100%', padding: '10px 0', borderRadius: 12, fontWeight: 800, fontSize: 14, border: 'none', cursor: 'pointer' }} onClick={onClose}>
-            Entendi
-          </button>
+          <button className="fs-astro-modalfootbtn" onClick={onClose}>Entendi</button>
         </div>
       </div>
     </div>
@@ -175,10 +103,10 @@ function SemFidelidadeModal({ onClose }: { onClose: () => void }) {
       <div className="fs-astro-modal" style={{ maxWidth: 448 }} onClick={e => e.stopPropagation()}>
         <div className="fs-astro-modalhead">
           <div className="fs-astro-modaltitle">
-            <Lock />
+            <Lock size={16} color="#38bdf8" />
             <span>Sem fidelidade</span>
           </div>
-          <button className="fs-astro-modalx" onClick={onClose} aria-label="Fechar"><X /></button>
+          <button className="fs-astro-modalx" onClick={onClose} aria-label="Fechar"><X size={16} /></button>
         </div>
         <div className="fs-astro-modalbody">
           <p className="fs-astro-modalp" style={{ margin: 0 }}>
@@ -186,9 +114,7 @@ function SemFidelidadeModal({ onClose }: { onClose: () => void }) {
           </p>
         </div>
         <div className="fs-astro-modalfoot">
-          <button className="fs-astro-btn-green" style={{ width: '100%', padding: '10px 0', borderRadius: 12, fontWeight: 800, fontSize: 14, border: 'none', cursor: 'pointer' }} onClick={onClose}>
-            Entendi
-          </button>
+          <button className="fs-astro-modalfootbtn" onClick={onClose}>Entendi</button>
         </div>
       </div>
     </div>
@@ -203,6 +129,7 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
   const [checkoutTier, setCheckoutTier] = useState<AstroTier | null>(null)
   const [showCancelScreen, setShowCancelScreen] = useState(false)
   const activeTier = getAstroTier(currentUser)
+  const activeColor = activeTier !== 'none' ? VISUALS[activeTier].color : '#38bdf8'
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -223,291 +150,269 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
   const fmtPrice = (value: number) => 'R$ ' + value.toFixed(2).replace('.', ',')
 
   return (
-    <div className="fs-astro-overlay" style={{ zIndex: 3500 }} onClick={onClose}>
-      <div className="fs-astro-page" onClick={e => e.stopPropagation()}>
+    <div className="fsp-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="fsp-page" onMouseDown={e => e.stopPropagation()}>
         <style>{`
-          .fs-astro-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.75); padding: 16px; }
-          .fs-astro-page { position: relative; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 16px; width: 100%; max-width: 1152px; max-height: 94vh; overflow-y: auto; box-shadow: 0 20px 80px rgba(0,0,0,0.7); }
+          .fsp-overlay { position: fixed; inset: 0; z-index: 3500; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(2,4,12,.78); backdrop-filter: blur(8px); }
+          .fsp-page { position: relative; width: 100%; max-width: 1180px; max-height: 94vh; overflow-y: auto; overflow-x: hidden; border-radius: 22px; border: 1px solid rgba(120,170,255,.25); box-shadow: 0 30px 120px rgba(0,0,0,.8); color: #fff; background: radial-gradient(900px 420px at 12% -10%, rgba(56,189,248,.16), transparent 60%), radial-gradient(800px 500px at 92% 0%, rgba(168,85,247,.14), transparent 55%), #050a17 url('${assetUrl('astro-bg.png')}') center/cover no-repeat; }
+          .fsp-page::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(3,6,16,.34) 0%, rgba(3,6,16,.7) 45%, rgba(3,6,16,.92) 100%); pointer-events: none; border-radius: 22px; }
+          .fsp-inner { position: relative; z-index: 1; padding: 16px 26px 0; }
+          .fsp-head { display: flex; align-items: center; gap: 10px; padding: 2px 0 12px; }
+          .fsp-wordmark { height: 32px; width: auto; object-fit: contain; filter: drop-shadow(0 4px 18px rgba(56,189,248,.35)); }
+          .fsp-beta { font-size: 9.5px; font-weight: 800; letter-spacing: .08em; color: #7dd3fc; background: rgba(56,189,248,.12); border: 1px solid rgba(56,189,248,.45); padding: 3px 8px; border-radius: 6px; }
+          .fsp-flex { flex: 1; }
+          .fsp-close { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); color: rgba(255,255,255,.75); width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; }
+          .fsp-close:hover { background: rgba(255,255,255,.14); color: #fff; }
+          .fsp-content { display: grid; grid-template-columns: 296px minmax(0, 1fr); gap: 26px; padding: 4px 0 18px; }
+          @media (max-width: 1080px) { .fsp-content { grid-template-columns: 1fr; gap: 18px; } }
+          .fsp-hero { position: relative; padding: 6px 2px 0; }
+          .fsp-eyebrow { display: inline-block; font-size: 9.5px; font-weight: 800; letter-spacing: .12em; color: #7dd3fc; border: 1px solid rgba(56,189,248,.45); border-radius: 6px; padding: 4px 9px; background: rgba(56,189,248,.1); }
+          .fsp-hero h1 { font-size: 33px; line-height: 1.08; font-weight: 900; letter-spacing: -.02em; margin: 13px 0 10px; color: #fff; }
+          .fsp-hero h1 span { color: #38bdf8; text-shadow: 0 0 26px rgba(56,189,248,.55); }
+          .fsp-hero > p { font-size: 12.5px; line-height: 1.55; color: #aebad6; margin: 0 0 16px; max-width: 280px; }
+          .fsp-perks { list-style: none; display: flex; flex-direction: column; gap: 11px; margin: 0 0 6px; padding: 0; }
+          .fsp-perks li { display: flex; gap: 10px; align-items: flex-start; }
+          .fsp-perk-ic { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex: none; border: 1px solid; }
+          .fsp-perks strong { display: block; font-size: 12.5px; color: #fff; }
+          .fsp-perks small { display: block; font-size: 10.5px; color: #8fa0c4; line-height: 1.35; }
+          .fsp-mascot { margin-top: 4px; display: flex; justify-content: flex-start; }
+          .fsp-mascot img { width: 186px; height: auto; filter: drop-shadow(0 18px 40px rgba(41,163,255,.35)); }
+          .fsp-hero-foot { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: #8fa0c4; margin: 0; }
+          .fsp-plans-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; margin-bottom: 10px; }
+          .fsp-billing { display: flex; gap: 4px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); border-radius: 999px; padding: 3px; }
+          .fsp-billing button { background: none; border: 1px solid transparent; color: #93a3c4; font-size: 10.5px; font-weight: 700; padding: 4px 11px; border-radius: 999px; cursor: pointer; }
+          .fsp-billing button.is-on { background: rgba(56,189,248,.18); color: #7dd3fc; border-color: rgba(56,189,248,.5); }
+          .fsp-billing em { font-style: normal; font-size: 8.5px; color: #4ade80; margin-left: 4px; }
+          .fsp-activebar { display: flex; align-items: center; gap: 8px; font-size: 10.5px; color: #aebad6; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); border-radius: 999px; padding: 4px 5px 4px 11px; }
+          .fsp-activebar button { background: rgba(239,68,68,.16); border: 1px solid rgba(239,68,68,.45); color: #fca5a5; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+          .fsp-activebar button:hover { background: rgba(239,68,68,.26); }
+          .fsp-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+          @media (max-width: 1280px) { .fsp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+          @media (max-width: 640px) { .fsp-grid { grid-template-columns: 1fr; } }
+          .fsp-card { --pc: #38bdf8; position: relative; display: flex; flex-direction: column; gap: 10px; background: rgba(7,13,28,.78); border: 1px solid color-mix(in srgb, var(--pc) 42%, rgba(255,255,255,.1)); border-radius: 16px; padding: 16px 13px 14px; backdrop-filter: blur(6px); }
+          .fsp-card.is-popular { box-shadow: 0 0 0 1px color-mix(in srgb, var(--pc) 60%, transparent), 0 18px 50px rgba(168,85,247,.28); }
+          .fsp-card.is-ultimate { border-color: rgba(255,255,255,.6); box-shadow: 0 0 0 1px rgba(255,255,255,.16), 0 18px 50px rgba(255,255,255,.07); }
+          .fsp-pop { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: #a855f7; color: #fff; font-size: 8.5px; font-weight: 800; letter-spacing: .06em; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+          .fsp-pop-white { background: #fff; color: #0a1020; }
+          .fsp-card-head { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding-top: 6px; }
+          .fsp-plan-ic { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--pc); border: 2px solid color-mix(in srgb, var(--pc) 65%, transparent); box-shadow: 0 0 22px color-mix(in srgb, var(--pc) 45%, transparent); margin-bottom: 4px; }
+          .fsp-card-head h2 { font-size: 16.5px; font-weight: 900; letter-spacing: -.01em; margin: 0; color: var(--pc); }
+          .fsp-card-head p { font-size: 10.5px; color: #93a3c4; line-height: 1.35; margin: 0; min-height: 26px; }
+          .fsp-price { text-align: center; padding: 2px 0; }
+          .fsp-price-main { font-size: 22px; font-weight: 900; color: #fff; line-height: 1.05; }
+          .fsp-price-main span { font-size: 11px; font-weight: 500; color: #93a3c4; margin-left: 2px; }
+          .fsp-price-year { font-size: 10px; color: #93a3c4; margin-top: 3px; }
+          .fsp-price-year em { font-style: normal; background: rgba(74,222,128,.14); color: #4ade80; border: 1px solid rgba(74,222,128,.35); border-radius: 999px; padding: 1px 6px; margin-left: 4px; font-size: 8.5px; font-weight: 700; }
+          .fsp-subscribe { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 9px 0; border-radius: 10px; border: 1px solid transparent; background: var(--pc); color: #06101f; font-size: 12px; font-weight: 800; cursor: pointer; transition: filter .15s; }
+          .fsp-subscribe:hover { filter: brightness(1.08); }
+          .fsp-subscribe:disabled { cursor: default; opacity: .6; }
+          .fsp-card.is-ultimate .fsp-subscribe { background: transparent; color: #e6ecff; border-color: rgba(255,255,255,.55); opacity: 1; }
+          .fsp-feats { list-style: none; display: flex; flex-direction: column; gap: 6px; margin: 2px 0 0; padding: 0; }
+          .fsp-feats li { display: flex; align-items: flex-start; gap: 6px; font-size: 10.8px; line-height: 1.35; color: #b9c4dd; }
+          .fsp-feats svg { flex: none; margin-top: 2px; color: var(--pc); }
+          .fsp-compare { position: relative; z-index: 1; padding: 6px 26px 18px; }
+          .fsp-compare h3 { font-size: 15px; font-weight: 800; color: #fff; margin: 0 0 10px; }
+          .fsp-tablewrap { overflow-x: auto; background: rgba(7,13,28,.72); border: 1px solid rgba(255,255,255,.1); border-radius: 14px; }
+          .fsp-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+          .fsp-table th, .fsp-table td { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,.07); font-size: 12px; text-align: center; white-space: nowrap; }
+          .fsp-table tr:last-child td { border-bottom: none; }
+          .fsp-table th:first-child, .fsp-table td:first-child { text-align: left; color: #93a3c4; font-weight: 600; }
+          .fsp-table th { font-size: 11px; font-weight: 800; color: #c7d2ea; }
+          .fsp-table td { color: #b9c4dd; }
+          .fsp-thplan { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 800; }
+          .fsp-dotc { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+          .fsp-foot { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 26px 16px; border-top: 1px solid rgba(255,255,255,.08); font-size: 11px; color: #8fa0c4; }
+          .fsp-foot button { background: none; border: none; color: #7dd3fc; font-size: 11px; font-weight: 600; cursor: pointer; padding: 0; }
+          .fsp-foot button:hover { text-decoration: underline; }
+          .fsp-foot-pengu { width: 22px; height: 22px; object-fit: contain; }
+          .fsp-foot .fsp-beta { padding: 2px 6px; font-size: 8px; }
 
-          .fs-astro-hero { position: relative; height: 220px; overflow: hidden; border-top-left-radius: 16px; border-top-right-radius: 16px; }
-          @media (max-width: 640px) { .fs-astro-hero { height: 280px; } }
-          .fs-astro-herobg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; z-index: 0; }
-          .fs-astro-herograd { position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.3) 50%, transparent 100%); z-index: 1; }
-          .fs-astro-herofade { position: absolute; bottom: 0; left: 0; right: 0; height: 60px; background: linear-gradient(to top, var(--bg-tertiary) 0%, transparent 100%); z-index: 1; }
-          .fs-astro-herochars { position: absolute; bottom: 0; right: 0; height: 100%; object-fit: contain; object-position: bottom right; z-index: 2; }
-          .fs-astro-herotitle { position: absolute; top: 36px; left: 36px; z-index: 3; display: flex; align-items: center; gap: 12px; }
-          .fs-astro-herotitle span { color: ${GREEN}; font-weight: 900; letter-spacing: -0.025em; font-size: 36px; line-height: 1; }
-          .fs-astro-herosub { position: absolute; top: 102px; left: 36px; z-index: 3; color: var(--text-primary); font-size: 14px; line-height: 1.375; margin: 0; }
-          .fs-astro-herotabs { position: absolute; top: 148px; left: 36px; z-index: 3; display: flex; flex-wrap: wrap; gap: 8px; max-width: calc(100% - 72px); }
-          .fs-astro-herox { position: absolute; top: 18px; right: 18px; z-index: 4; color: rgba(255,255,255,0.6); background: none; border: none; cursor: pointer; padding: 4px; display: flex; transition: color .15s; }
-          .fs-astro-herox:hover { color: #fff; }
-
-          .fs-astro-btn-green { background: ${GREEN}; color: #000; }
-          .fs-astro-btn-green:hover { background: #0B7FD4; }
-          .fs-astro-btn-purple { background: ${PURPLE}; color: #fff; }
-          .fs-astro-btn-purple:hover { background: #9333ea; }
-          .fs-astro-btn-amber { background: ${AMBER}; color: #000; }
-          .fs-astro-btn-amber:hover { background: #d97706; }
-
-          .fs-astro-tab { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.4); color: var(--text-secondary); white-space: nowrap; cursor: pointer; transition: all .15s; }
-          .fs-astro-tab:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
-          .fs-astro-tab.fs-astro-tab-active { background: rgba(41,163,255,0.2); border-color: ${GREEN}; color: ${GREEN}; }
-
-          .fs-astro-body { display: flex; flex-direction: column; gap: 0; padding: 20px 28px 24px; }
-          @media (min-width: 1024px) { .fs-astro-body { flex-direction: row; } }
-          .fs-astro-side { width: 100%; display: flex; flex-direction: column; gap: 16px; padding-right: 0; margin-bottom: 24px; }
-          @media (min-width: 1024px) { .fs-astro-side { width: 220px; flex-shrink: 0; padding-right: 20px; margin-bottom: 0; } }
-          .fs-astro-sidetitle { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-          .fs-astro-sidetitle h3 { color: var(--text-primary); font-weight: 700; font-size: 14px; margin: 0; }
-          .fs-astro-sidep { color: var(--text-muted); font-size: 12px; line-height: 1.625; margin: 0; }
-          .fs-astro-infoitems { display: flex; flex-direction: column; gap: 8px; }
-          .fs-astro-infoitem { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--text-secondary); }
-          .fs-astro-infoicon { flex-shrink: 0; margin-top: 2px; display: flex; }
-          .fs-astro-infotext { line-height: 1.375; }
-          .fs-astro-about { background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; }
-          .fs-astro-abouttitle { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-          .fs-astro-abouttitle span { color: var(--text-primary); font-weight: 700; font-size: 12px; }
-          .fs-astro-saibamais { background: none; border: none; padding: 0; color: ${GREEN}; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; text-align: left; }
-          .fs-astro-saibamais:hover { text-decoration: underline; }
-
-          .fs-astro-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
-          .fs-astro-subrow { display: grid; grid-template-columns: 1fr; gap: 12px; }
-          @media (min-width: 640px) { .fs-astro-subrow { grid-template-columns: 1fr 1fr 1fr; } }
-          .fs-astro-subscribe { width: 100%; transition: background .15s; }
-          .fs-astro-cards { display: grid; grid-template-columns: 1fr; gap: 16px; }
-          @media (min-width: 640px) { .fs-astro-cards { grid-template-columns: 1fr 1fr 1fr; } }
-          .fs-astro-card { position: relative; display: flex; flex-direction: column; gap: 16px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
-          .fs-astro-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: ${PURPLE}; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 12px; border-radius: 999px; white-space: nowrap; }
-          .fs-astro-cardhead { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding-top: 8px; }
-          .fs-astro-cardhead img { object-fit: contain; }
-          .fs-astro-cardhead h2 { font-weight: 900; font-size: 20px; margin: 0; }
-          .fs-astro-cardhead p { color: var(--text-muted); font-size: 12px; line-height: 1.375; margin: 0; }
-          .fs-astro-price { text-align: center; }
-          .fs-astro-price > div:first-child { color: var(--text-primary); font-weight: 900; font-size: 24px; }
-          .fs-astro-price > div:first-child span { color: var(--text-muted); font-weight: 400; font-size: 14px; }
-          .fs-astro-priceyear { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; }
-          .fs-astro-priceyear span:first-child { color: var(--text-muted); font-size: 12px; }
-          .fs-astro-discount { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--text-primary); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 999px; }
-          .fs-astro-features { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-          .fs-astro-features li { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--text-secondary); }
-          .fs-astro-check { flex-shrink: 0; margin-top: 2px; }
-
-          .fs-astro-compare { padding: 0 28px 28px; }
-          .fs-astro-compare h3 { color: var(--text-primary); font-weight: 700; font-size: 16px; margin: 0 0 16px 0; }
-          .fs-astro-tablewrap { overflow-x: auto; }
-          .fs-astro-table { width: 100%; border-collapse: collapse; min-width: 640px; }
-          .fs-astro-th-label { text-align: left; color: var(--text-muted); font-weight: 600; padding: 0 16px 12px 0; width: 160px; border-bottom: 1px solid var(--border); }
-          .fs-astro-th { text-align: center; color: var(--text-muted); font-weight: 600; padding: 0 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-          .fs-astro-th .fs-astro-thlogo { display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-weight: 700; }
-          .fs-astro-td-label { color: var(--text-secondary); padding: 12px 16px 12px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
-          .fs-astro-td { text-align: center; color: var(--text-secondary); padding: 12px 8px; border-bottom: 1px solid var(--border); font-size: 13px; white-space: nowrap; }
-
-          .fs-astro-foot { border-top: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--text-muted); font-size: 12px; flex-wrap: wrap; }
-          .fs-astro-foot button { background: none; border: none; padding: 0; color: ${GREEN}; font-weight: 600; cursor: pointer; }
-          .fs-astro-foot button:hover { text-decoration: underline; }
-
-          .fs-astro-modal { position: relative; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 16px; width: 100%; overflow: hidden; }
-          .fs-astro-modalhead { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid var(--border); }
-          .fs-astro-modaltitle { display: flex; align-items: center; gap: 10px; color: var(--text-primary); font-weight: 700; font-size: 14px; }
-          .fs-astro-modalx { color: var(--text-muted); background: none; border: none; cursor: pointer; display: flex; padding: 4px; transition: color .15s; }
-          .fs-astro-modalx:hover { color: var(--text-primary); }
-          .fs-astro-modalbody { padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
+          .fs-astro-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.78); padding: 16px; }
+          .fs-astro-modal { position: relative; background: #081123; border: 1px solid rgba(120,170,255,.22); border-radius: 16px; width: 100%; overflow: hidden; color: #fff; box-shadow: 0 24px 90px rgba(0,0,0,.7); }
+          .fs-astro-modalhead { display: flex; align-items: center; justify-content: space-between; padding: 16px 22px; border-bottom: 1px solid rgba(255,255,255,.08); }
+          .fs-astro-modaltitle { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 700; font-size: 14px; }
+          .fs-astro-modalx { color: #8fa0c4; background: none; border: none; cursor: pointer; display: flex; padding: 4px; }
+          .fs-astro-modalx:hover { color: #fff; }
+          .fs-astro-modalbody { padding: 18px 22px; display: flex; flex-direction: column; gap: 18px; }
           .fs-astro-modalitem { display: flex; gap: 12px; }
           .fs-astro-modalicon { flex-shrink: 0; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-          .fs-astro-modaltitle2 { color: var(--text-primary); font-size: 12px; font-weight: 700; margin: 0 0 4px 0; }
-          .fs-astro-modalp { color: var(--text-muted); font-size: 12px; line-height: 1.625; margin: 0; }
-          .fs-astro-modalfoot { padding: 0 24px 20px; }
-          .fs-astro-cancelbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.35); border-radius: 12px; padding: 10px 14px; flex-wrap: wrap; }
-          .fs-astro-cancelbar p { margin: 0; font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
-          .fs-astro-cancelbar b { color: var(--text-primary); }
-          .fs-astro-cancel-actions { display: flex; gap: 8px; flex-shrink: 0; }
-          .fs-astro-cancel-btn { background: #ef4444; color: #fff; border: none; border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 12px; cursor: pointer; white-space: nowrap; }
-          .fs-astro-cancel-btn:hover { background: #dc2626; }
+          .fs-astro-modaltitle2 { color: #fff; font-size: 12px; font-weight: 700; margin: 0 0 4px 0; }
+          .fs-astro-modalp { color: #93a3c4; font-size: 12px; line-height: 1.62; margin: 0; }
+          .fs-astro-modalp b { color: #fff; }
+          .fs-astro-modalfoot { padding: 0 22px 18px; }
+          .fs-astro-modalfootbtn { width: 100%; padding: 10px 0; border-radius: 12px; border: none; background: #38bdf8; color: #06101f; font-weight: 800; font-size: 13px; cursor: pointer; }
+          .fs-astro-modalfootbtn:hover { filter: brightness(1.08); }
         `}</style>
 
-        <div className="fs-astro-hero">
-          <img src={assetUrl('astro-bg.png')} alt="" className="fs-astro-herobg" />
-          <div className="fs-astro-herograd" />
-          <div className="fs-astro-herofade" />
-          <img src={assetUrl('astro-chars.png')} alt="" className="fs-astro-herochars" />
+        <div className="fsp-inner">
+          <header className="fsp-head">
+            <img src={assetUrl('friends-space-logo.png')} alt="Friends Space" className="fsp-wordmark" />
+            <span className="fsp-beta">BETA</span>
+            <span className="fsp-flex" />
+            <button className="fsp-close" onClick={onClose} aria-label="Fechar"><X size={16} /></button>
+          </header>
 
-          <div className="fs-astro-herotitle">
-            <img src={assetUrl('astro-logo.png')} alt="" height={42} style={{ objectFit: 'contain', width: 'auto' }} />
-            <span>ASTRO</span>
-          </div>
-          <p className="fs-astro-herosub">Recursos exclusivos para turbinar sua experiência no Friends Space.</p>
-          <div className="fs-astro-herotabs" role="tablist" aria-label="Período de cobrança">
-            {(['monthly', 'yearly'] as const).map(b => (
-              <button
-                key={b}
-                role="tab"
-                aria-selected={billing === b}
-                className={`fs-astro-tab ${billing === b ? 'fs-astro-tab-active' : ''}`}
-                onClick={() => setBilling(b)}
-              >
-                {b === 'monthly' ? 'Mensal' : 'Anual −17%'}
-              </button>
-            ))}
-          </div>
-          <button className="fs-astro-herox" onClick={onClose} aria-label="Fechar"><X /></button>
-        </div>
-
-        <div className="fs-astro-body">
-          <div className="fs-astro-side">
-            <div>
-              <div className="fs-astro-sidetitle">
-                <Cloud />
-                <h3>Seus arquivos, seu Google Drive</h3>
+          <div className="fsp-content">
+            <aside className="fsp-hero">
+              <span className="fsp-eyebrow">ASSINATURA</span>
+              <h1>Leve sua experiência<br />para o <span>próximo nível</span></h1>
+              <p>Aproveite todos os recursos premium, personalize seu perfil e tenha uma experiência ainda mais completa no Friends Space.</p>
+              <ul className="fsp-perks">
+                <li>
+                  <span className="fsp-perk-ic" style={{ color: '#38bdf8', borderColor: 'rgba(56,189,248,.45)', background: 'rgba(56,189,248,.1)' }}><Gem size={13} /></span>
+                  <div><strong>Mais recursos</strong><small>Acesso a funcionalidades exclusivas.</small></div>
+                </li>
+                <li>
+                  <span className="fsp-perk-ic" style={{ color: '#a855f7', borderColor: 'rgba(168,85,247,.45)', background: 'rgba(168,85,247,.1)' }}><Palette size={13} /></span>
+                  <div><strong>Personalização total</strong><small>Deixe seu perfil do seu jeito.</small></div>
+                </li>
+                <li>
+                  <span className="fsp-perk-ic" style={{ color: '#38bdf8', borderColor: 'rgba(56,189,248,.45)', background: 'rgba(56,189,248,.1)' }}><Zap size={13} /></span>
+                  <div><strong>Melhor desempenho</strong><small>Menos limites, mais liberdade.</small></div>
+                </li>
+                <li>
+                  <span className="fsp-perk-ic" style={{ color: '#f59e0b', borderColor: 'rgba(245,158,11,.45)', background: 'rgba(245,158,11,.1)' }}><Shield size={13} /></span>
+                  <div><strong>Suporte prioritário</strong><small>Conte com a gente sempre que precisar.</small></div>
+                </li>
+              </ul>
+              <div className="fsp-mascot">
+                <img src={assetUrl('penguin-logo.png')} alt="" />
               </div>
-              <p className="fs-astro-sidep">
-                O Friends Space não armazena seus arquivos em servidores próprios e não possui banco de dados dedicado para mídias.
-              </p>
-            </div>
-            <p className="fs-astro-sidep">
-              Utilizamos o <b style={{ color: GREEN }}>Space Ultra Transfer</b>, nosso sistema de transferência de alta velocidade, que envia seus arquivos diretamente para o seu Google Drive com segurança.
-            </p>
-            <div className="fs-astro-infoitems">
-              <InfoItem icon={<Cloud size={14} color={GREEN} />} text="Arquivos armazenados no seu Google Drive" />
-              <InfoItem icon={<Shield />} text="Sua privacidade é 100% garantida" />
-              <InfoItem icon={<Zap />} text="Transferências até 10x mais rápidas" />
-              <InfoItem icon={<Folder />} text='Pasta "Friends Space" criada automaticamente no seu Google Drive' />
-            </div>
-            <div className="fs-astro-about">
-              <div className="fs-astro-abouttitle">
-                <Zap size={13} color={AMBER} />
-                <span>Sobre os planos ASTRO</span>
-              </div>
-              <p className="fs-astro-sidep" style={{ margin: 0 }}>
-                Os planos não aumentam o armazenamento do seu Google Drive. Eles apenas aumentam os limites de envio de arquivos e compartilham através do sistema do Friends Space.
-              </p>
-              <button className="fs-astro-saibamais" onClick={() => setSaibaMais(true)}>
-                Saiba mais sobre como funciona
-                <ArrowRight />
-              </button>
-            </div>
-          </div>
+              <p className="fsp-hero-foot"><Crown size={11} color="#38bdf8" /> Assine agora e faça parte do maior.</p>
+            </aside>
 
-          <div className="fs-astro-main">
-            {activeTier !== 'none' && (
-              <div className="fs-astro-cancelbar">
-                <p>
-                  <b>Plano atual: {ASTRO_PLANS[activeTier].name}</b>
-                  {' — cancele quando quiser. Ao cancelar, o tema do site volta para o gratuito e os recursos premium saem na hora.'}
-                </p>
-                <div className="fs-astro-cancel-actions">
-                  <button className="fs-astro-cancel-btn" onClick={() => setShowCancelScreen(true)}>Cancelar assinatura</button>
+            <main className="fsp-plans">
+              <div className="fsp-plans-top">
+                <div className="fsp-billing" role="tablist" aria-label="Período de cobrança">
+                  <button role="tab" aria-selected={billing === 'monthly'} className={billing === 'monthly' ? 'is-on' : ''} onClick={() => setBilling('monthly')}>Mensal</button>
+                  <button role="tab" aria-selected={billing === 'yearly'} className={billing === 'yearly' ? 'is-on' : ''} onClick={() => setBilling('yearly')}>Anual <em>-17%</em></button>
+                </div>
+                {activeTier !== 'none' && (
+                  <div className="fsp-activebar">
+                    <span>Plano atual: <strong style={{ color: activeColor }}>{ASTRO_PLANS[activeTier].name}</strong></span>
+                    <button onClick={() => setShowCancelScreen(true)}>Cancelar assinatura</button>
+                  </div>
+                )}
+              </div>
+
+              <div className="fsp-grid">
+                {ASTRO_ORDER.map(tier => {
+                  const plan = ASTRO_PLANS[tier]
+                  const visual = VISUALS[tier]
+                  const isActive = activeTier === tier
+                  const popular = tier === 'astro_plus'
+                  return (
+                    <div key={tier} className={`fsp-card ${popular ? 'is-popular' : ''}`} style={{ '--pc': visual.color } as CSSProperties}>
+                      {popular && <span className="fsp-pop">MAIS POPULAR</span>}
+                      <div className="fsp-card-head">
+                        <span className="fsp-plan-ic">{visual.icon}</span>
+                        <h2>{plan.name}</h2>
+                        <p>{plan.tagline}</p>
+                      </div>
+                      <div className="fsp-price">
+                        {billing === 'monthly' ? (
+                          <>
+                            <div className="fsp-price-main">{fmtPrice(plan.monthlyPrice)}<span>/mês</span></div>
+                            <div className="fsp-price-year">ou {fmtPrice(plan.yearlyPrice)} /ano <em>-17%</em></div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="fsp-price-main">{fmtPrice(plan.yearlyPrice / 12)}<span>/mês</span></div>
+                            <div className="fsp-price-year">{fmtPrice(plan.yearlyPrice)} /ano à vista <em>-17%</em></div>
+                          </>
+                        )}
+                      </div>
+                      <button className="fsp-subscribe" onClick={() => { if (!isActive) subscribe(tier) }} disabled={checkoutTier !== null || isActive}>
+                        <CalendarDays size={14} /> {isActive ? 'Seu plano atual' : 'Assinar'}
+                      </button>
+                      <ul className="fsp-feats">
+                        {plan.features.map(feature => (
+                          <li key={feature}><Check size={13} strokeWidth={2.6} /><span>{feature}</span></li>
+                        ))}
+                      </ul>
+                    </div>
+                  )
+                })}
+
+                <div className="fsp-card is-ultimate" style={{ '--pc': '#ffffff' } as CSSProperties}>
+                  <span className="fsp-pop fsp-pop-white">EM DESENVOLVIMENTO</span>
+                  <div className="fsp-card-head">
+                    <span className="fsp-plan-ic"><Gem size={18} strokeWidth={2.2} /></span>
+                    <h2>ASTRO Ultimate</h2>
+                    <p>A experiência definitiva do Friends Space.</p>
+                  </div>
+                  <div className="fsp-price">
+                    <div className="fsp-price-main" style={{ fontSize: 19 }}>Em breve</div>
+                    <div className="fsp-price-year">Novo plano em desenvolvimento</div>
+                  </div>
+                  <button className="fsp-subscribe" disabled>Em desenvolvimento</button>
+                  <ul className="fsp-feats">
+                    {ULTIMATE_FEATURES.map(feature => (
+                      <li key={feature}><Check size={13} strokeWidth={2.6} /><span>{feature}</span></li>
+                    ))}
+                  </ul>
                 </div>
               </div>
-            )}
-            <div className="fs-astro-subrow">
-              {ASTRO_ORDER.map(tier => {
-                const plan = ASTRO_PLANS[tier]
-                const visual = PLAN_VISUAL[tier]
-                const isActive = activeTier === tier
-                return (
-                  <button
-                    key={tier}
-                    className={`fs-astro-subscribe ${visual.btnClass}`}
-                    onClick={() => { if (!isActive) subscribe(tier) }}
-                    disabled={checkoutTier !== null || isActive}
-                    style={{ padding: '12px 0', borderRadius: 12, fontWeight: 800, fontSize: 14, border: 'none', cursor: checkoutTier !== null || isActive ? 'default' : 'pointer', opacity: isActive ? 0.75 : 1 }}
-                  >
-                    {isActive ? 'Seu plano atual' : `Assinar ${plan.name}`}
-                  </button>
-                )
-              })}
-            </div>
-
-            <div className="fs-astro-cards">
-              {ASTRO_ORDER.map(tier => {
-                const plan = ASTRO_PLANS[tier]
-                const visual = PLAN_VISUAL[tier]
-                const popular = tier === 'astro_plus'
-                return (
-                  <div key={tier} className="fs-astro-card" style={{ borderColor: popular ? PURPLE : visual.border }}>
-                    {popular && <div className="fs-astro-badge">MAIS POPULAR</div>}
-                    <div className="fs-astro-cardhead">
-                      <img src={assetUrl('astro-logo.png')} alt={plan.name} height={36} style={{ objectFit: 'contain', width: 'auto' }} />
-                      <h2 style={{ color: visual.color }}>{plan.name}</h2>
-                      <p>{plan.tagline}</p>
-                    </div>
-                    <div className="fs-astro-price">
-                      <div>
-                        {billing === 'monthly'
-                          ? <>{fmtPrice(plan.monthlyPrice)} <span>/mês</span></>
-                          : <>{fmtPrice(plan.yearlyPrice / 12)} <span>/mês</span></>}
-                      </div>
-                      <div className="fs-astro-priceyear">
-                        {billing === 'monthly'
-                          ? <><span>ou {fmtPrice(plan.yearlyPrice)} /ano</span><span className="fs-astro-discount">-17%</span></>
-                          : <><span>{fmtPrice(plan.yearlyPrice)} /ano à vista</span><span className="fs-astro-discount">-17%</span></>}
-                      </div>
-                    </div>
-                    <ul className="fs-astro-features">
-                      {plan.features.map((feature) => (
-                        <li key={feature}>
-                          <Check />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )
-              })}
-            </div>
+            </main>
           </div>
-        </div>
 
-        <div className="fs-astro-compare">
-          <h3>Comparação de planos</h3>
-          <div className="fs-astro-tablewrap">
-            <table className="fs-astro-table">
-              <thead>
-                <tr>
-                  <th className="fs-astro-th-label">Recurso</th>
-                  <th className="fs-astro-th">Gratuito</th>
-                  <th className="fs-astro-th"><span className="fs-astro-thlogo" style={{ color: GREEN }}><img src={assetUrl('astro-logo.png')} height={16} style={{ objectFit: 'contain', width: 'auto' }} alt="" />ASTRO</span></th>
-                  <th className="fs-astro-th"><span className="fs-astro-thlogo" style={{ color: PURPLE }}><img src={assetUrl('astro-logo.png')} height={16} style={{ objectFit: 'contain', width: 'auto' }} alt="" />ASTRO+</span></th>
-                  <th className="fs-astro-th"><span className="fs-astro-thlogo" style={{ color: AMBER }}><img src={assetUrl('astro-logo.png')} height={16} style={{ objectFit: 'contain', width: 'auto' }} alt="" />ASTRO Plus</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                {COMPARE_ROWS.map((row) => (
-                  <tr key={row.label}>
-                    <td className="fs-astro-td-label">{row.label}</td>
-                    <td className="fs-astro-td" style={{ color: '#9ca3af' }}>{renderCell(row.free)}</td>
-                    <td className="fs-astro-td">{renderCell(row.astro)}</td>
-                    <td className="fs-astro-td">{renderCell(row.astroplus)}</td>
-                    <td className="fs-astro-td">{renderCell(row.astroplus2)}</td>
+          <div className="fsp-compare">
+            <h3>Comparação de planos</h3>
+            <div className="fsp-tablewrap">
+              <table className="fsp-table">
+                <thead>
+                  <tr>
+                    <th>Recurso</th>
+                    <th>Gratuito</th>
+                    <th><span className="fsp-thplan" style={{ color: '#38bdf8' }}><span className="fsp-dotc" style={{ background: '#38bdf8' }} />ASTRO</span></th>
+                    <th><span className="fsp-thplan" style={{ color: '#a855f7' }}><span className="fsp-dotc" style={{ background: '#a855f7' }} />ASTRO+</span></th>
+                    <th><span className="fsp-thplan" style={{ color: '#f59e0b' }}><span className="fsp-dotc" style={{ background: '#f59e0b' }} />ASTRO Plus</span></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {COMPARE_ROWS.map(row => (
+                    <tr key={row.label}>
+                      <td>{row.label}</td>
+                      <td>{renderCell(row.free)}</td>
+                      <td>{renderCell(row.astro)}</td>
+                      <td>{renderCell(row.astroplus)}</td>
+                      <td>{renderCell(row.astroplus2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
+
+          <footer className="fsp-foot">
+            <Lock size={12} />
+            <span>Pagamento seguro com o Google Drive</span>
+            <span style={{ opacity: .4 }}>|</span>
+            <button onClick={() => setSaibaMais(true)}>Como funciona o armazenamento</button>
+            <button onClick={() => setSemFidelidade(true)}>Sem fidelidade</button>
+            <span className="fsp-flex" />
+            <img src={assetUrl('penguin-logo.png')} alt="" className="fsp-foot-pengu" />
+            <span>Todos os direitos reservados</span>
+            <span className="fsp-beta">BETA</span>
+          </footer>
         </div>
 
-        <div className="fs-astro-foot">
-          <Lock />
-          <span>Pagamento seguro. Cancele quando quiser. </span>
-          <button onClick={() => setSemFidelidade(true)}>Sem fidelidade.</button>
-        </div>
+        {saibaMais && <SaibaMaisModal onClose={() => setSaibaMais(false)} />}
+        {semFidelidade && <SemFidelidadeModal onClose={() => setSemFidelidade(false)} />}
+        {checkoutTier && (
+          <AstroCheckoutModal
+            tier={checkoutTier}
+            onClose={() => setCheckoutTier(null)}
+            onSuccess={() => setCheckoutTier(null)}
+          />
+        )}
+        {showCancelScreen && (
+          <AstroCancelModal
+            onClose={() => setShowCancelScreen(false)}
+            onCancelled={() => setShowCancelScreen(false)}
+          />
+        )}
       </div>
-
-      {saibaMais && <SaibaMaisModal onClose={() => setSaibaMais(false)} />}
-      {semFidelidade && <SemFidelidadeModal onClose={() => setSemFidelidade(false)} />}
-      {checkoutTier && (
-        <AstroCheckoutModal
-          tier={checkoutTier}
-          onClose={() => setCheckoutTier(null)}
-          onSuccess={() => setCheckoutTier(null)}
-        />
-      )}
-      {showCancelScreen && (
-        <AstroCancelModal
-          onClose={() => setShowCancelScreen(false)}
-          onCancelled={() => setShowCancelScreen(false)}
-        />
-      )}
     </div>
   )
 }
