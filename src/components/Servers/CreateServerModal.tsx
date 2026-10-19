@@ -734,7 +734,7 @@ export function CreateServerModal({ open, onClose, onCreate }: CreateServerModal
                     <ArrowLeft size={14} strokeWidth={2.5} /> Voltar
                   </button>
                 )}
-                {activeStep < totalSteps - 1 ? (
+                {activeStep < totalSteps - 1 && (
                   <button
                     type="button"
                     className="csw-create-btn"
@@ -743,16 +743,15 @@ export function CreateServerModal({ open, onClose, onCreate }: CreateServerModal
                   >
                     Próximo <ArrowRight size={14} strokeWidth={2.5} />
                   </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="csw-create-btn csw-ready-btn"
-                    onClick={handleCreate}
-                    disabled={!name.trim()}
-                  >
-                    <Check size={14} strokeWidth={2.5} /> Pronto
-                  </button>
                 )}
+                <button
+                  type="button"
+                  className="csw-create-btn csw-ready-btn"
+                  onClick={handleCreate}
+                  disabled={!name.trim()}
+                >
+                  <Check size={14} strokeWidth={2.5} /> Criar servidor
+                </button>
               </div>
             </footer>
           </section>

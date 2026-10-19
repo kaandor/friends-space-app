@@ -323,31 +323,68 @@ const tursoFetch = async (sql, args = []) => {
   return result.response?.result || {}
 }
 
+const tursoPipeline = async (stmts) => {
+  if (isNeon()) {
+    for (const s of stmts) await neonFetch(s.sql, s.args)
+    return []
+  }
+  const { token } = tursoEnv()
+  const response = await fetch(`${tursoBaseUrl()}/v2/pipeline`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${token}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      requests: [
+        ...stmts.map((s) => ({ type: 'execute', stmt: { sql: s.sql, args: (s.args || []).map(tursoArg) } })),
+        { type: 'close' },
+      ],
+    }),
+  })
+  if (!response.ok) {
+    let detail = ''
+    try {
+      const text = await response.text()
+      if (text) detail = text.slice(0, 300)
+    } catch { }
+    throw new Error(`Turso request failed: ${response.status} ${detail}`)
+  }
+  const data = await response.json()
+  const erro = (data?.results || []).find((r) => r && r.type === 'error')
+  if (erro) throw new Error(`Turso: ${erro?.error?.message || 'erro de banco'}`)
+  return data.results || []
+}
+
 const ensureTursoSchema = async () => {
   if (tursoSchemaReady || !isTurso()) return
-  await tursoFetch(`CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at BIGINT)`)
-  await tursoFetch(`CREATE TABLE IF NOT EXISTS locks (key TEXT PRIMARY KEY, token TEXT NOT NULL, expires_at BIGINT)`)
-  // Tabela dedicada de signals WebRTC (09/2026): o sendCallSignal é NO_LOCK_ACTIONS
-  // (sem lock global) e, ANTES, escrevia no blob JSON inteiro do store — dois
-  // requests concorrentes (answer + candidate simultâneos) carregavam o store,
-  // modificavam e salvavam por cima um do outro, PERDENDO o answer → call presa
-  // em new/ice:new para sempre. INSERT atômico aqui elimina a race condition.
-  await tursoFetch(`CREATE TABLE IF NOT EXISTS call_signals (
-    id TEXT PRIMARY KEY,
-    session_id TEXT NOT NULL,
-    from_user_id TEXT NOT NULL,
-    to_user_id TEXT NOT NULL,
-    type TEXT NOT NULL,
-    payload TEXT NOT NULL,
-    created_at BIGINT NOT NULL
-  )`)
-  await tursoFetch(`CREATE INDEX IF NOT EXISTS idx_call_signals_inbox ON call_signals (session_id, to_user_id, created_at)`)
-  await tursoFetch(`CREATE TABLE IF NOT EXISTS ip_bans (ip TEXT PRIMARY KEY, reason TEXT NOT NULL, created_at BIGINT NOT NULL)`)
-  await tursoFetch(`CREATE TABLE IF NOT EXISTS device_bans (id TEXT PRIMARY KEY, reason TEXT NOT NULL, created_at BIGINT NOT NULL)`)
-  await tursoFetch(`CREATE TABLE IF NOT EXISTS rate_hits (k TEXT NOT NULL, ts BIGINT NOT NULL)`)
-  await tursoFetch(`CREATE INDEX IF NOT EXISTS idx_rate_hits_k ON rate_hits (k, ts)`)
-  await tursoFetch(`CREATE TABLE IF NOT EXISTS ip_events (ip TEXT NOT NULL, ts BIGINT NOT NULL, kind TEXT NOT NULL)`)
-  await tursoFetch(`CREATE INDEX IF NOT EXISTS idx_ip_events_ip ON ip_events (ip, ts)`)
+  // Todos os CREATE em UM pipeline HTTP: antes eram 9+ tursoFetch sequenciais
+  // (~280ms cada nesta rede) pagos no cold start de toda request.
+  // call_signals: o sendCallSignal é NO_LOCK_ACTIONS (sem lock global) e,
+  // antes, escrevia no blob JSON do store — dois requests concorrentes
+  // (answer + candidate) perdiam o answer => call presa em new/ice:new.
+  // presence: 1 linha por usuario; heartbeat vira 1 único upsert SQL.
+  await tursoPipeline([
+    { sql: `CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at BIGINT)` },
+    { sql: `CREATE TABLE IF NOT EXISTS locks (key TEXT PRIMARY KEY, token TEXT NOT NULL, expires_at BIGINT)` },
+    { sql: `CREATE TABLE IF NOT EXISTS call_signals (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      from_user_id TEXT NOT NULL,
+      to_user_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      payload TEXT NOT NULL,
+      created_at BIGINT NOT NULL
+    )` },
+    { sql: `CREATE INDEX IF NOT EXISTS idx_call_signals_inbox ON call_signals (session_id, to_user_id, created_at)` },
+    { sql: `CREATE TABLE IF NOT EXISTS presence (user_id TEXT PRIMARY KEY, ts BIGINT NOT NULL)` },
+    { sql: `CREATE TABLE IF NOT EXISTS ip_bans (ip TEXT PRIMARY KEY, reason TEXT NOT NULL, created_at BIGINT NOT NULL)` },
+    { sql: `CREATE TABLE IF NOT EXISTS device_bans (id TEXT PRIMARY KEY, reason TEXT NOT NULL, created_at BIGINT NOT NULL)` },
+    { sql: `CREATE TABLE IF NOT EXISTS rate_hits (k TEXT NOT NULL, ts BIGINT NOT NULL)` },
+    { sql: `CREATE INDEX IF NOT EXISTS idx_rate_hits_k ON rate_hits (k, ts)` },
+    { sql: `CREATE TABLE IF NOT EXISTS ip_events (ip TEXT NOT NULL, ts BIGINT NOT NULL, kind TEXT NOT NULL)` },
+    { sql: `CREATE INDEX IF NOT EXISTS idx_ip_events_ip ON ip_events (ip, ts)` },
+  ])
   tursoSchemaReady = true
 }
 
@@ -663,6 +700,21 @@ const saveStore = async (store) => {
 let presenceCache = {}
 
 const loadPresence = async () => {
+  // Fast-path: 1 SELECT em linhas (tabela presence). Fallback: blob do kv.
+  try {
+    const result = await tursoFetch(`SELECT user_id, ts FROM presence`)
+    const rows = result.rows || []
+    const out = {}
+    for (const row of rows) {
+      const get = (i) => (row[i] && typeof row[i] === 'object' && 'value' in row[i] ? row[i].value : row[i])
+      const uid = String(get(0) || '')
+      const ts = Number(get(1) || 0)
+      if (uid && ts > 0) out[uid] = ts
+    }
+    if (rows.length) return out
+  } catch {
+    // tabela ausente (schema antigo): usa o blob de presença
+  }
   try {
     const value = await kvGet(PRESENCE_KEY)
     if (value && typeof value === 'object') return value
@@ -4964,13 +5016,18 @@ export default async function handler(req, res) {
       const userId = String(body.userId || '')
       if (userId) {
         try {
-          const kv = await kvGet(PRESENCE_KEY)
-          if (kv && typeof kv === 'object' && kv[userId]) {
-            delete kv[userId]
-            presenceCache = kv
-            await kvSet(PRESENCE_KEY, presenceCache)
+          if (isTurso()) {
+            await tursoFetch('DELETE FROM presence WHERE user_id = ?', [userId])
+          } else {
+            const kv = await kvGet(PRESENCE_KEY)
+            if (kv && typeof kv === 'object' && kv[userId]) {
+              delete kv[userId]
+              await kvSet(PRESENCE_KEY, kv)
+            }
           }
         } catch { }
+        presenceCache = { ...presenceCache }
+        delete presenceCache[userId]
       }
       json(res, 200, { ok: true, result: { ok: true } })
       return
@@ -4986,17 +5043,25 @@ export default async function handler(req, res) {
         return
       }
       try {
-        // SEMPRE mergeia com o kv atual para evitar que multiplas instancias
-        // Vercel quentes clobberem a presenca umas das outras (cada instancia
-        // tem sua propria presenceCache local; sem o merge, Instance A que
-        // so ve o usuario X escreveria {X: t} apagando o usuario Y de B).
-        const kv = await kvGet(PRESENCE_KEY)
-        const latest = (kv && typeof kv === 'object') ? { ...kv, [userId]: heartbeatAt } : { [userId]: heartbeatAt }
-        for (const [uid, ts] of Object.entries(latest)) {
-          if (typeof ts === 'number' && heartbeatAt - ts > PRESENCE_PRUNE_MS) delete latest[uid]
+        // UM pipeline HTTP (1 roundtrip): upsert da linha + prune de velhos.
+        // Antes: kvGet + kvSet do blob (2 roundtrips Turso de ~280ms) — era
+        // exatamente o "RTT presença" de ~500ms que o Debug mostrava.
+        if (isTurso()) {
+          await tursoPipeline([
+            { sql: 'INSERT INTO presence (user_id, ts) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET ts = excluded.ts', args: [userId, heartbeatAt] },
+            { sql: 'DELETE FROM presence WHERE ts < ?', args: [heartbeatAt - PRESENCE_PRUNE_MS] },
+          ])
+        } else {
+          // SEMPRE mergeia com o kv atual para evitar que multiplas instancias
+          // quentes clobberem a presenca umas das outras.
+          const kv = await kvGet(PRESENCE_KEY)
+          const latest = (kv && typeof kv === 'object') ? { ...kv, [userId]: heartbeatAt } : { [userId]: heartbeatAt }
+          for (const [uid, ts] of Object.entries(latest)) {
+            if (typeof ts === 'number' && heartbeatAt - ts > PRESENCE_PRUNE_MS) delete latest[uid]
+          }
+          await kvSet(PRESENCE_KEY, latest)
         }
-        presenceCache = latest
-        await kvSet(PRESENCE_KEY, presenceCache)
+        presenceCache = { ...presenceCache, [userId]: heartbeatAt }
       } catch {
         // presença é best-effort: não derruba o heartbeat
       }
