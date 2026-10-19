@@ -2228,7 +2228,7 @@ function App() {
       {toast && (
         <div style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 20000,
-          background: '#23a55a', color: '#fff', padding: '10px 18px', borderRadius: 8,
+          background: '#29a3ff', color: '#fff', padding: '10px 18px', borderRadius: 8,
           fontSize: 13, fontWeight: 600, boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
         }}>
           {toast}

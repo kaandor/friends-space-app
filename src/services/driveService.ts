@@ -768,7 +768,7 @@ export async function uploadProfileImage(dataUrl: string, kind: 'avatar' | 'bann
 // persistido (Drive fora do ar / falha de permissao). GIFs animados sao
 // preservados como estao. Garante que a imagem embutida fique pequena o
 // bastante para nao estourar o limite do backend nem pesar no banco.
-function compressDataUrl(dataUrl: string, maxDim: number, quality = 0.78): Promise<string> {
+export function compressDataUrl(dataUrl: string, maxDim: number, quality = 0.78): Promise<string> {
   if (dataUrl.startsWith('data:image/gif')) return Promise.resolve(dataUrl)
   return new Promise(resolve => {
     const img = new Image()

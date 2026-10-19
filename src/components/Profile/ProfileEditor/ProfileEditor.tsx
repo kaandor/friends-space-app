@@ -5,7 +5,7 @@ import { getAstroTier } from "../../../utils/astro";
 import { NAME_COLORS, type NameEffect } from "../../../utils/nameStyle";
 import { ImageCropper } from "../../ui/ImageCropper";
 import { ProfileCardView } from "../ProfileCardView";
-import { uploadProfileImage, isDriveConnected, toImageUrl, getLastDriveError } from "../../../services/driveService";
+import { uploadProfileImage, compressDataUrl, isDriveConnected, toImageUrl, getLastDriveError } from "../../../services/driveService";
 import { DriveRequiredModal } from "../../Chat/DriveRequiredModal";
 import "./ProfileEditor.css";
 import "./AstroProfileEditor.css";
@@ -1076,6 +1076,23 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
       }
       if (typeof finalBannerUrl === "string" && finalBannerUrl.startsWith("data:image/")) {
         finalBannerUrl = await withTimeout(uploadProfileImage(finalBannerUrl, "banner"), 20000, finalBannerUrl);
+      }
+      // GIF animado nao pode ser comprimido sem perder a animacao. Se as imagens
+      // inline finais passarem do corpo que o backend aceita, avisa o usuario
+      // em vez de falhar o sincronismo e salvar so localmente.
+      const inlineBytes = (url: string) =>
+        typeof url === "string" && url.startsWith("data:image/")
+          ? Math.round((url.length - (url.indexOf(",") + 1)) * 0.75)
+          : 0;
+      if (typeof finalPhotoUrl === "string" && finalPhotoUrl.startsWith("data:image/") && !finalPhotoUrl.startsWith("data:image/gif")) {
+        finalPhotoUrl = await compressDataUrl(finalPhotoUrl, 256, 0.72);
+      }
+      if (typeof finalBannerUrl === "string" && finalBannerUrl.startsWith("data:image/") && !finalBannerUrl.startsWith("data:image/gif")) {
+        finalBannerUrl = await compressDataUrl(finalBannerUrl, 640, 0.72);
+      }
+      if (inlineBytes(finalPhotoUrl) + inlineBytes(finalBannerUrl) > 1_400_000) {
+        notify("O arquivo ficou grande demais para o perfil (maximo ~1 MB). Escolha um menor.");
+        return;
       }
       const paidNow = paid;
       const settings: Record<string, unknown> = {

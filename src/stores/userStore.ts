@@ -372,6 +372,10 @@ handleSessionExpired: () => {
         try {
           if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Perfil ainda sincronizando. Tente de novo.' }))
         } catch { }
+      } else if (message.includes('muito grande')) {
+        try {
+          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'A foto/GIF ficou grande demais. Use um arquivo de até ~1 MB.' }))
+        } catch { }
       } else {
         try {
           if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Falha ao sincronizar perfil. Salvo localmente.' }))
