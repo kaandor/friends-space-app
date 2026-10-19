@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import type { CallParticipant, CallSession, CallSessionWatch, CallSignal, User } from '../types'
 import { requestBackend } from '../services/backend'
-import { useUserStore } from './userStore'
+import { useUserStore, pokeHeartbeat } from './userStore'
+import { useFriendStore } from './friendStore'
 import { clampStreamQuality, clampStreamFps, getMaxBitrateKbps, getMaxStreamFps, getAstroTier } from '../utils/astro'
 import { stopMediaStream, QUALITY_BITRATE_KBPS } from '../services/antiloud'
 import type { CallMode, CallQuality, CallFps } from '../services/antiloud'
@@ -121,6 +122,7 @@ interface CallState {
   callUser: (userId: string, mode?: CallMode) => Promise<void>
   dismissRejectedCall: () => void
   inviteToCall: (userId: string) => Promise<void>
+  autoJoinSession: (session: CallSession) => Promise<void>
   acceptCallInvite: (invite: { fromUserId: string; fromName: string; fromPhoto: string; data?: Record<string, unknown> }) => Promise<void>
   rejectCallInvite: (invite: { fromUserId: string; data?: Record<string, unknown> }) => Promise<void>
 }
@@ -151,6 +153,10 @@ const declinedSessions = new Set<string>()
 // Sessoes cujo toque ja terminou (30s sem atender -> sala de espera). Impede
 // que o poll re-dispara o overlay de chamada recebida para a MESMA sessao.
 const ringStoppedSessions = new Set<string>()
+// Sessao cujo auto-join de convite esta em andamento: o poll pode reencontrar
+// a sessao varias vezes enquanto a midia e capturada — sem isso disparava
+// startCall duplicado.
+let autoJoiningSessionId: string | null = null
 const reconnectRetries = new Map<string, number>()
 const reconnectTimers = new Map<string, number>()
 const disconnectTimers = new Map<string, number>()
@@ -169,6 +175,44 @@ let signalVisibilityBound = false
 let presenceSoundsArmed = false
 let ringTimer: number | null = null
 let presenceTimer: number | null = null
+// Fiquei sozinho numa call DM (o outro lado saiu/desistiu e o sinal 'cancel'
+// nao chegou): encerra sozinho em alguns segundos em vez de deixar a sessao
+// ativa (era ela que re-disparava o ring de "chamada fantasma" no poll).
+let aloneInDmTimer: number | null = null
+const ALONE_IN_DM_GRACE_MS = 8000
+
+function clearAloneInDmTimer() {
+  if (aloneInDmTimer !== null) {
+    window.clearTimeout(aloneInDmTimer)
+    aloneInDmTimer = null
+  }
+}
+
+// Pedido de "abrir a call" feito pelo painel Voz conectada. O CallView embutido
+// (chat da DM) consome isso ao montar ou via evento, e abre a visao da call.
+let callViewOpenRequestedAt = 0
+export function requestCallViewOpen() {
+  callViewOpenRequestedAt = Date.now()
+}
+export function consumeCallViewOpenRequest(): boolean {
+  const fresh = callViewOpenRequestedAt !== 0 && Date.now() - callViewOpenRequestedAt < 8000
+  callViewOpenRequestedAt = 0
+  return fresh
+}
+
+function scheduleAloneInDmEnd() {
+  if (aloneInDmTimer !== null) return
+  aloneInDmTimer = window.setTimeout(() => {
+    aloneInDmTimer = null
+    const st = useCallStore.getState()
+    if (!st.activeCall || st.serverId !== 'dm' || st.callingUser) return
+    const meId = useUserStore.getState().currentUser?.id
+    const others = st.participants.filter(p => p.userId !== meId)
+    if (others.length > 0) return
+    try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'A chamada foi encerrada' })) } catch { }
+    useCallStore.getState().endCall()
+  }, ALONE_IN_DM_GRACE_MS)
+}
 // Ultimos erros de envio de signal (para diagnostico visivel no painel).
 const lastSignalErrors: Array<{ type: string; msg: string; ts: number }> = []
 // RTT real medido nas requisições que já existem (sem ping extra).
@@ -496,7 +540,6 @@ export function warmIceServers() {
 // permissao). Ao SAIR da call, fica o carimbo standby — o rejoin reaproveita
 // tudo que ainda vale. Cada entrada e UM usuario a menos para descobrir do
 // zero: sem atraso, sem kick por timeout frio, sem fantasma.
-const standbyByServer = new Map<string, number>()
 const prewarmAt = new Map<string, number>()
 export function prewarmServer(serverId: string) {
   try {
@@ -509,12 +552,6 @@ export function prewarmServer(serverId: string) {
     void useCallStore.getState().loadCallSessions(serverId, me?.id).catch(() => { })
     void useUserStore.getState().loadUsers().catch(() => { })
   } catch { }
-}
-export function standbyFresh(serverId: string): boolean {
-  try {
-    if (!serverId) return false
-    return Date.now() - (standbyByServer.get(serverId) || 0) < 5 * 60 * 1000
-  } catch { return false }
 }
 // Diagnóstico real de TURN na máquina/rede do usuário: cria uma PC
 // temporária, coleta candidatos e diz se há relay/srflx/host. Usado pelo
@@ -644,6 +681,7 @@ async function sendSignal(signal: Omit<CallSignal, 'id' | 'createdAt'>) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       await requestBackend('sendCallSignal', { signal })
+      lastSignalActivityAt = Date.now()
       return
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error)
@@ -695,6 +733,7 @@ async function sendSignalBatch(signals: OutSignal[]) {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
       await requestBackend('sendCallSignals', { signals })
+      lastSignalActivityAt = Date.now()
       return
     } catch (error) {
       if (attempt >= 1) throw error
@@ -1814,10 +1853,26 @@ async function applySignal(signal: CallSignal) {
       useCallStore.setState({ incomingCall: null })
       return
     }
-    // Estava na call de DM e o outro lado desligou: encerra aqui tambem
-    // (modelo Discord: numa call privada 1-a-1, se um lado sai a call acaba).
+    // Call de DM: o outro lado desligou. Em call 1-a-1 a chamada encerra aqui
+    // tambem (com aviso); em call de GRUPO (3+ pessoas) quem saiu foi so UM —
+    // os demais continuam na call ate quererem sair.
     if (signal.type === 'cancel' && state.activeCall && state.serverId === 'dm') {
-      useCallStore.getState().endCall()
+      const meId = useUserStore.getState().currentUser?.id
+      const others = state.participants.map(p => p.userId).filter(id => id !== meId)
+      const leaver = state.participants.find(p => p.userId === signal.fromUserId)
+      if (others.length <= 1) {
+        clearRingState()
+        try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: `${leaver?.userName || 'A pessoa'} saiu da chamada` })) } catch { }
+        useCallStore.getState().endCall()
+        return
+      }
+      useCallStore.getState().removeParticipant(signal.fromUserId)
+      useCallStore.setState(st => {
+        const { [signal.fromUserId]: _r, ...restRemote } = st.remoteStreams
+        const { [signal.fromUserId]: _s, ...restScreens } = st.remoteScreenStreams
+        return { remoteStreams: restRemote, remoteScreenStreams: restScreens, sharingPeers: st.sharingPeers.filter(id => id !== signal.fromUserId) }
+      })
+      try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: `${leaver?.userName || 'Alguem'} saiu da chamada` })) } catch { }
       return
     }
     return
@@ -2100,7 +2155,10 @@ async function processCallSignalsInner() {
     lastSignalRttMs = rtt
     lastSignalRttAt = Date.now()
   } catch { }
-  if (signals.length > 0) signalBackoffIndex = 0
+  if (signals.length > 0) {
+    signalBackoffIndex = 0
+    lastSignalActivityAt = Date.now()
+  }
   for (const signal of signals) {
     if (processedSignals.has(signal.id)) continue
     try {
@@ -2293,6 +2351,7 @@ function startSignalLoop() {
       if (signalTimer !== null) { window.clearTimeout(signalTimer); signalTimer = null }
       void processCallSignals().catch(() => { })
       signalBackoffIndex = 0
+      lastSignalActivityAt = Date.now()
       scheduleSignalLoop()
     })
   }
@@ -2301,6 +2360,12 @@ function startSignalLoop() {
 }
 
 let signalBackoffIndex = 0
+// Marca a ultima vez que houve trafego REAL de sinal (oferta/answer/ICE
+// enviado ou recebido). O turbo de 100ms do poll so vale com trafego recente:
+// antes, qualquer peer instavel mantinha 100ms indefinidamente — esperar
+// sozinho por um convidado virava ~36k req/h e estourou a cota diaria do
+// Cloudflare (erro 1027) em 18/10.
+let lastSignalActivityAt = 0
 // Poll rapido e constante: com backoff maximo de 2s (antes 12s), a oferta
 // chega ao non-initiator em <1s (instantanco como Discord). Backoff longo
 // atrasava a descoberta da oferta e o guard de 30s do processCallSignals
@@ -2324,15 +2389,20 @@ function scheduleSignalLoop() {
   // precisa responder em <300ms (ida e volta) para a conexao parecer
   // instantanea como o Discord. Depois disso, volta ao backoff normal.
   const callStartedAt = state.createdAt || Date.now()
-  // Turbo não só nos primeiros 10s: enquanto QUALQUER peer estiver
-  // new/connecting/disconnected, o poll fica em 100ms — oferta/answer de quem
-  // está entrando não espera o backoff. Com tudo conectado, volta ao normal.
-  const anyUnstable = states.length === 0 || states.some(s => s !== 'connected')
-  const inTurbo = !allConnected && (anyUnstable || Date.now() - callStartedAt < 10000)
+  // Turbo tambem enquanto houver trafego de sinal recente (oferta/answer/ICE
+  // enviado ou recebido): a oferta/answer de quem esta entrando nao espera o
+  // backoff. ANTES, qualquer peer instavel mantinha 100ms para sempre —
+  // esperar sozinho por convidado virava ~36k req/h e estourou a cota diaria
+  // do Cloudflare (erro 1027). Agora o turbo expira sozinho sem trafego.
+  const recentSignal = Date.now() - lastSignalActivityAt < 6000
+  const inTurbo = !allConnected && (Date.now() - callStartedAt < 10000 || recentSignal)
+  // Sozinho na call, sem sinal recente: poll lento de seguranca (4s) — quando
+  // alguem entrar, a oferta dele reativa o turbo na hora.
+  const idleAlone = states.length === 0 && !recentSignal && Date.now() - callStartedAt > 10000
   // Turbo de tela: com tela recém-iniciada/recebida, o poll não desacelera
   // (mín 1s) — a oferta da tela chega junto da voz.
   const inScreenTurbo = Date.now() < screenTurboUntil
-  const delay = allConnected ? (inScreenTurbo ? 1000 : 8000) : (inTurbo ? 100 : SIGNAL_BACKOFF_STEPS[signalBackoffIndex])
+  const delay = allConnected ? (inScreenTurbo ? 1000 : 8000) : (inTurbo ? 100 : (idleAlone ? 4000 : SIGNAL_BACKOFF_STEPS[signalBackoffIndex]))
   signalTimer = window.setTimeout(() => {
     signalTimer = null
     // Nao martela o backend quando offline (sem internet real). Em background
@@ -2359,6 +2429,7 @@ export function kickSignalPoll() {
     if (signalTimer !== null) { window.clearTimeout(signalTimer); signalTimer = null }
     void processCallSignals().catch(() => { })
     signalBackoffIndex = 0
+    lastSignalActivityAt = Date.now()
     scheduleSignalLoop()
   } catch { }
 }
@@ -2699,6 +2770,14 @@ async function applyCallSessions(sessions: CallSession[], _serverId?: string, us
       useCallStore.setState({ participants: finalParticipants })
       refreshLocalities(finalParticipants)
     }
+    // Call DM sem ninguem do outro lado: agenda o encerramento (ou cancela se
+    // alguem voltou). Com callingUser ativo quem cuida e o give-up de 60s.
+    if (state.serverId === 'dm' && state.activeCall) {
+      const meId = currentUser?.id
+      const othersLeft = finalParticipants.filter(p => p.userId !== meId).length
+      if (othersLeft > 0 || state.callingUser) clearAloneInDmTimer()
+      else scheduleAloneInDmEnd()
+    }
     // Re-anuncia meu mute/deafen: se algum peer perdeu o media-state (DC
     // fechado na hora), converge em segundos em vez de ficar errado.
     try {
@@ -2711,6 +2790,23 @@ async function applyCallSessions(sessions: CallSession[], _serverId?: string, us
 
   if (userId) {
     const freshCutoff = Date.now() - 120_000
+    const myId = userStore.currentUser?.id
+    // Fui convidado ("Adicionar pessoa na call" marca invitedAt na sessao):
+    // entra DIRETO, sem tocar e sem aceitar. Chamada nova 1-a-1 (callUser)
+    // nao tem invitedAt e continua tocando normal.
+    const invited = active
+      .filter(session =>
+        session.active
+        && myId
+        && (session.invitedAt || {})[myId]
+        && session.hostUserId !== myId
+        && !declinedSessions.has(session.id)
+        && (session.updatedAt || session.createdAt || 0) >= freshCutoff)
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0]
+    if (invited && !state.activeCall && !state.callingUser && !state.incomingCall) {
+      void useCallStore.getState().autoJoinSession(invited)
+      return sessions
+    }
     const incoming = active
       .filter(session =>
         session.serverId === 'dm'
@@ -2962,6 +3058,27 @@ export const useCallStore = create<CallState>((set, get) => ({
             tag: `call-waiting-${state.sessionId}`,
             icon: currentUser.photoUrl || '/Logo.png',
           }).catch(() => { })
+          // Desistencia (60s no total): se ninguem atendeu/entrou e nenhuma
+          // conexao sequer iniciou, encerra de vez. Sem isso o "Ligando..."
+          // ficava aparecendo para sempre (chamada fantasma) e quem recebia
+          // voltava a "tocar" em refresh porque a sessao continuava ativa.
+          ringTimer = window.setTimeout(() => {
+            ringTimer = null
+            const cur = useCallStore.getState()
+            if (!cur.callingUser || cur.connectedAt) return
+            const peerStates = Object.values(cur.connectionStates)
+            if (peerStates.some(stt => stt === 'connected' || stt === 'connecting' || stt === 'checking')) return
+            useCallStore.setState({
+              callRejectedBy: {
+                userId: calling.userId,
+                userName: calling.userName,
+                userPhoto: calling.userPhoto,
+                mode: useCallStore.getState().callMode,
+                reason: 'timeout',
+              },
+            })
+            useCallStore.getState().endCall()
+          }, 30000)
         }
       }, 30000)
     }
@@ -3001,6 +3118,7 @@ export const useCallStore = create<CallState>((set, get) => ({
       window.clearTimeout(ringTimer)
       ringTimer = null
     }
+    clearAloneInDmTimer()
     clearIncomingTimer()
     stopCursorFeed()
     stopCallRecording()
@@ -3030,7 +3148,16 @@ export const useCallStore = create<CallState>((set, get) => ({
       // re-adicionava o proprio usuario e a sessao virava fantasma ate o
       // stamp expirar.
       const others = state.participants.map(p => p.userId).filter(id => id !== currentUser?.id)
-      if (currentUser) {
+      // NUNCA toca de novo essa sessao no MEU poll: se o outro lado demorar a
+      // processar o cancel (ou o sinal se perder), o poll de chamadas
+      // recebidas re-detectava a sessao ativa e o ring voltava como fantasma
+      // ("a pessoa me ligar uma vez e ficar aparecendo que ela ta me ligando").
+      declinedSessions.add(state.sessionId)
+      // Em call de GRUPO (3+ pessoas), sair NAO derruba os outros: so marca a
+      // propria saida no backend (leaveUserId) e quem ficou segue na call ate
+      // querer sair. Em 1-a-1, avisa o outro lado na hora com o sinal 'cancel'.
+      const groupCall = others.length >= 2
+      if (currentUser && !groupCall) {
         for (const otherId of others) {
           void sendSignal({
             sessionId: state.sessionId,
@@ -3067,10 +3194,6 @@ export const useCallStore = create<CallState>((set, get) => ({
     try { earlyScreen?.getTracks().forEach(x => x.stop()) } catch { }
     try { stopMediaStream(earlyLocal) } catch { }
     {
-    try {
-      const preState = get()
-      if (preState.serverId) standbyByServer.set(preState.serverId, Date.now())
-    } catch { }
     try {
       for (const t of localCameraTracks) { try { t.stop() } catch { } }
       localCameraTracks.clear()
@@ -3119,6 +3242,10 @@ export const useCallStore = create<CallState>((set, get) => ({
       incomingCall: null,
     })
     if (currentUser) startIncomingCallPoll(currentUser.id)
+    // Presenca imediata ao sair da call: o heartbeat periodico pode estar no
+    // meio do intervalo e o usuario ficava alguns segundos "offline" para os
+    // outros ate dar refresh. Um batimento na hora resolve.
+    pokeHeartbeat()
     }
   },
   toggleRecording: () => {
@@ -3425,10 +3552,10 @@ export const useCallStore = create<CallState>((set, get) => ({
     set({ screenMuted: !get().screenMuted })
   },
   setVolume: (key, value) => {
-    set({ volumes: { ...get().volumes, [key]: Math.min(1, Math.max(0, value)) } })
+    set({ volumes: { ...get().volumes, [key]: Math.min(2, Math.max(0, value)) } })
   },
   setVolumeForAll: (value) => {
-    const v = Math.min(1, Math.max(0, value))
+    const v = Math.min(2, Math.max(0, value))
     const keys = new Set<string>(['screen', 'screen:local'])
     for (const peerId of Object.keys(get().remoteStreams)) keys.add(peerId)
     for (const peerId of Object.keys(get().remoteScreenStreams)) keys.add(peerId)
@@ -3636,27 +3763,70 @@ export const useCallStore = create<CallState>((set, get) => ({
     const state = get()
     const currentUser = useUserStore.getState().currentUser
     if (!currentUser || !state.activeCall || !state.sessionId) return
+    // O alvo pode nao estar no diretorio local ainda; procurar tb na lista de
+    // amigos. O nome e so para o toast — NUNCA bloquear o convite por isso
+    // (antes um `if (!target) return` silencioso fazia o botao "nao funcionar").
     const target = useUserStore.getState().users.find(user => user.id === userId)
-    if (!target) return
-    const participants = state.participants
-      .filter(p => p.userId !== userId && p.userId !== currentUser.id)
-      .map(p => ({ userId: p.userId, name: p.userName, photoUrl: p.userPhoto }))
-    await requestBackend('createNotification', {
-      toUserId: userId,
-      fromUserId: currentUser.id,
-      fromName: currentUser.name,
-      fromPhoto: currentUser.photoUrl || '',
-      type: 'call-invite',
-      title: `${currentUser.name} quer te adicionar nesta call!`,
-      body: participants.length > 0 ? `${participants.length} ${participants.length === 1 ? 'pessoa' : 'pessoas'} na chamada` : 'Chamada em andamento',
-      data: {
-        sessionId: state.sessionId,
-        channelId: state.channelId,
-        serverId: state.serverId,
-        callMode: state.callMode,
-        participants,
-      },
-    }).catch(() => { })
+      || useFriendStore.getState().friendUsers.find(user => user.id === userId)
+    const targetName = target?.name || 'Seu amigo'
+    const toast = (detail: string) => { try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail })) } catch { } }
+    try {
+      // Convite = adicionar a pessoa na sessao com a marca invitedAt: o app
+      // dela descobre no poll e entra SOZINHO na call (sem aceitar, sem
+      // notificacao de aceitar na lista). Sem stamp o backend poda o id
+      // convidado em ~35s se ele nunca aparecer (sem fantasma na call).
+      const participantIds = [...new Set([...state.participants.map(p => p.userId), currentUser.id, userId])]
+      await requestBackend('upsertCallSession', {
+        session: {
+          id: state.sessionId,
+          serverId: state.serverId || 'dm',
+          channelId: state.channelId || 'dm',
+          active: true,
+          participantIds,
+          callMode: state.callMode,
+          createdAt: state.createdAt || Date.now(),
+        },
+        userId: currentUser.id,
+        invitedIds: [userId],
+      })
+      toast(`Convite enviado para ${targetName}`)
+    } catch {
+      toast(`Nao foi possivel convidar ${targetName}`)
+    }
+  },
+  autoJoinSession: async (session) => {
+    const me = useUserStore.getState().currentUser
+    if (!me || !session?.id) return
+    const state = get()
+    if (state.activeCall || state.callingUser || state.incomingCall) return
+    if (declinedSessions.has(session.id) || autoJoiningSessionId === session.id) return
+    autoJoiningSessionId = session.id
+    try {
+      const userStore = useUserStore.getState()
+      const others = (session.participantIds || []).filter(id => id && id !== me.id)
+      const peers: Array<{ userId: string; userName: string; userPhoto: string; muted: boolean; deafened: boolean }> = []
+      for (const id of others) {
+        let u = userStore.users.find(x => x.id === id)
+          || useFriendStore.getState().friendUsers.find(x => x.id === id)
+        if (!u) {
+          try { u = (await userStore.getUserById(id)) || undefined } catch { u = undefined }
+        }
+        peers.push({ userId: id, userName: u?.name || 'Amigo', userPhoto: u?.photoUrl || '', muted: false, deafened: false })
+      }
+      if (!peers.length) return
+      const { acquireCallMedia } = await import('../services/antiloud')
+      const stream = await acquireCallMedia(session.callMode || 'audio', get().preferredQuality, undefined, get().preferredFps)
+      void upgradeLocalMedia()
+      const mode: CallMode = stream.getVideoTracks().length > 0 ? 'video' : 'audio'
+      for (const p of peers) get().addParticipant(p)
+      playSound('call-join')
+      await get().startCall(session.channelId || 'dm', session.serverId || 'dm', stream, mode, get().preferredQuality, session.id, peers)
+      try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Você entrou na call' })) } catch { }
+    } catch {
+      try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Não foi possível entrar na call (permissão de microfone?)' })) } catch { }
+    } finally {
+      autoJoiningSessionId = null
+    }
   },
   acceptCallInvite: async (invite) => {
     const currentUser = useUserStore.getState().currentUser

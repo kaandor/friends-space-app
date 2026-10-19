@@ -38,7 +38,3 @@ export function unlockAudio() {
     }
   } catch { }
 }
-
-export function hasAudioContext() {
-  return getAudioContext() !== null
-}

@@ -29,15 +29,3 @@ export function onBackgroundTick(cb: () => void): () => void {
     listeners.delete(cb)
   }
 }
-
-export function stopBackgroundTicker() {
-  if (worker) {
-    worker.terminate()
-    worker = null
-  }
-  if (fallbackTimer !== null) {
-    window.clearInterval(fallbackTimer)
-    fallbackTimer = null
-  }
-  listeners.clear()
-}

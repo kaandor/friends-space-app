@@ -279,15 +279,6 @@ export async function unbanIp(ip: string): Promise<{ ok: boolean; error?: string
   }
 }
 
-export async function banDevice(deviceId: string, reason?: string): Promise<{ ok: boolean; error?: string }> {
-  try {
-    await requestBackend('banDevice', { adminId: getAdminId(), deviceId, reason })
-    return { ok: true }
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Erro ao banir dispositivo' }
-  }
-}
-
 export async function unbanDevice(deviceId: string): Promise<{ ok: boolean; error?: string }> {
   try {
     await requestBackend('unbanDevice', { adminId: getAdminId(), deviceId })

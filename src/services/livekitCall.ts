@@ -26,10 +26,6 @@ async function reportLivekit(stage: string, message: string) {
   } catch {}
 }
 
-export function isLivekitActive(): boolean {
-  return !!room
-}
-
 function userLabel(identity: string): { name: string; photo: string } {
   try {
     const u = useUserStore.getState().users.find((x) => x.id === identity)
@@ -500,10 +496,6 @@ export function livekitSetMicEnabled(on: boolean): void {
       } catch {}
     }
   } catch {}
-}
-
-export function livekitLocalVideoTrack(): MediaStreamTrack | null {
-  return localTrack('video')
 }
 
 // Publica uma track de mic externa (ex.: audio ja filtrado pelo RNNoise) no

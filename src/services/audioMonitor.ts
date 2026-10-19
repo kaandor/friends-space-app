@@ -72,18 +72,3 @@ export function stopAudioMonitor() {
   for (const key of Object.keys(lastSpeaking)) delete lastSpeaking[key]
   if (Object.keys(useCallStore.getState().speakingUsers).length > 0) useCallStore.setState({ speakingUsers: {} })
 }
-
-// Retorna true se o microfone local esta captando SOM (nivel acima do limiar).
-// Usado para alertar quando o mic selecionado esta mudo (ex.: dispositivo errado).
-export function getMicLevel(): boolean {
-  const entry = analysers.get('local')
-  if (!entry) return false
-  const data = new Uint8Array(entry.analyser.fftSize)
-  entry.analyser.getByteTimeDomainData(data)
-  let peak = 0
-  for (let i = 0; i < data.length; i += 1) {
-    const v = Math.abs((data[i] - 128) / 128)
-    if (v > peak) peak = v
-  }
-  return peak > 0.03
-}

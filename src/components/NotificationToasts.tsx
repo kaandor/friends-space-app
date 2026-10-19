@@ -5,20 +5,23 @@ import { useCallStore } from '../stores/callStore'
 import { Avatar } from './ui/Avatar'
 
 const TOAST_DURATION_MS = 7000
+const CALL_TOAST_DURATION_MS = 25000
 
 function ToastCard({ toast }: { toast: AppNotification & { toastId: string } }) {
   const dismissToast = useNotificationStore(s => s.dismissToast)
   const { acceptCallInvite, rejectCallInvite } = useCallStore()
   const timerRef = useRef<number | null>(null)
 
+  const isCallInvite = toast.type === 'call-invite' || toast.type === 'call-waiting'
+
   useEffect(() => {
-    timerRef.current = window.setTimeout(() => dismissToast(toast.toastId), TOAST_DURATION_MS)
+    // Convite de call fica bem mais tempo na tela: o amigo pode estar em outra
+    // aba/jogo e perder a notificação em 7s.
+    timerRef.current = window.setTimeout(() => dismissToast(toast.toastId), isCallInvite ? CALL_TOAST_DURATION_MS : TOAST_DURATION_MS)
     return () => {
       if (timerRef.current !== null) window.clearTimeout(timerRef.current)
     }
-  }, [toast.toastId, dismissToast])
-
-  const isCallInvite = toast.type === 'call-invite' || toast.type === 'call-waiting'
+  }, [toast.toastId, dismissToast, isCallInvite])
 
   return (
     <div className="fs-toast" role="status">

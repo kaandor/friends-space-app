@@ -12,10 +12,6 @@ const CURRENCY = 'BRL'
 let scriptLoaded = false
 let loadPromise: Promise<void> | null = null
 
-export function mercadopagoEnabled(): boolean {
-  return Boolean(MP_PUBLIC_KEY)
-}
-
 export function loadMercadoPagoScript(): Promise<void> {
   if (!MP_PUBLIC_KEY) return Promise.resolve()
   if (scriptLoaded) return Promise.resolve()

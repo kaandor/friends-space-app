@@ -3,9 +3,10 @@ import { getAstroTier, type AstroTier } from '../../utils/astro'
 import type { NameEffect } from '../../utils/nameStyle'
 import { toImageUrl } from '../../services/driveService'
 import { requestBackend } from '../../services/backend'
-import { useUserStore } from '../../stores/userStore'
+import { useUserStore, isUserOnline } from '../../stores/userStore'
 import { useFriendStore } from '../../stores/friendStore'
-import { PublicProfileModal, type FrameId, type MuralFieldId, type MuralState, type Plan, type ProfileActionId, type SocialStatus, type MutualProfileUser, type MutualProfileServer, EMPTY_MURAL } from './ProfileEditor/ProfileEditor'
+import { PublicProfileModal, type FrameId, type MuralFieldId, type MuralState, type Plan, type ProfileActionId, type MutualProfileUser, type MutualProfileServer, EMPTY_MURAL } from './ProfileEditor/ProfileEditor'
+import { statusFromSettings } from '../../utils/userStatus'
 import type { User } from '../../types'
 import './ProfileEditor/ProfileEditor.css'
 import './ProfileEditor/AstroProfileEditor.css'
@@ -44,7 +45,7 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
   const tier = getAstroTier(user)
   const plan: Plan = TIER_TO_PLAN[tier]
 
-  const socialStatus = (typeof settings.status === 'string' ? settings.status : 'online') as SocialStatus
+  const socialStatus = statusFromSettings(settings)
   const statusMessage = typeof settings.statusMessage === 'string' ? settings.statusMessage : ''
   const showActivity = settings.showActivity !== false
   const showServers = settings.showServers !== false
@@ -91,6 +92,7 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
 
   const activityAllowed = user.activityEnabled !== false
     && user.activityPrivacy !== 'private'
+    && (isSelf || isUserOnline(user))
     && (user.activityPrivacy !== 'friends' || isFriend || Boolean(isSelf))
   const publicActivity = showActivity && activityAllowed && user.activityName
     ? { name: user.activityName, details: user.activityDetails, startedAt: user.activityStartedAt }

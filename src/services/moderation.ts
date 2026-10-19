@@ -1,20 +1,7 @@
 // Moderacao do Friends Space - espelho client-side do motor de regras do backend.
-// Bloqueio imediato (sem round-trip) de termos, nomes de arquivos/pastas e contas
-// suspensas/em avaliacao. A analise de conteudo por IA (NVIDIA NIM) acontece no
-// backend quando a chave gratuita existe; aqui garantimos a primeira barreira.
-
-const AGE_GATE_KEY = 'friends-space:age-gate'
-const AGE_GATE_CPF_HASH_KEY = 'friends-space:age-gate-cpf-hash'
-const AGE_GATE_VERIFIED_KEY = 'friends-space:age-gate-verified'
-const AGE_GATE_VERIFIED_AT_KEY = 'friends-space:age-gate-verified-at'
-
-export interface ModerationState {
-  status: 'ok' | 'review' | 'banned'
-  reason?: string
-  since?: number
-  decidedBy?: string
-  auto?: boolean
-}
+// Bloqueio imediato (sem round-trip) de termos e nomes de arquivos/pastas.
+// A analise de conteudo por IA (NVIDIA NIM) acontece no backend quando a chave
+// gratuita existe; aqui garantimos a primeira barreira.
 
 export const BLOCKED_WORDS: string[] = [
   // pornografia / sites adultos
@@ -42,38 +29,6 @@ export const ALERT_WORDS: string[] = [
   'se matar', 'vai se matar', 'se mata', 'quero me matar', 'quero morrer', 'suicidio',
   'automutila', 'se cortar', 'corta os pulsos', 'cortar os pulsos', 'se enforcar',
   'tirar a propria vida', 'se mutilar', 'me mutilar', 'como cometer suicidio', 'se machucar de proposito',
-]
-
-export const BLOCKED_DOMAINS: string[] = [
-  // sites pornograficos principais
-  'pornhub.com', 'xvideos.com', 'xnxx.com', 'onlyfans.com', 'redtube.com',
-  'youporn.com', 'xhamster.com', 'spankbang.com', 'tube8.com',
-  'porn.com', 'porntube.com', 'pornhd.com', 'pornktube.com',
-  // fatal model / fatal fans
-  'fatalmodel.com', 'fatalmodel.com.br', 'fatalfans.com', 'fatalfans.com.br',
-  // acompanhantes / escort
-  'skokka.com', 'skokka.com.br', 'gpguia.com', 'gpguia.com.br',
-  'classificadoseroticos.com', 'classificadoseroticos.com.br',
-  'sexlog.com', 'sexlog.com.br', 'sexlog.net',
-  'fatalmoeda.com', 'fatalmoeda.com.br',
-  'acompanhantes.com', 'acompanhantes.net', 'acompanhantes.com.br',
-  'garotasdeprograma.com', 'garotasdeprograma.com.br',
-  'gp', 'gps', 'gp1', 'gp2', 'gp3',
-  // encurtadores suspeitos (usados para esconder links +18)
-  'bit.ly', 'tinyurl.com', 't.co', 'shorturl.at', 'cutt.ly',
-  'rb.gy', 'is.gd', 'v.gd', 'short.io', 'ln.run', 'urlz.fr',
-  // telegram / whatsapp / discord (convites para grupos +18)
-  'telegram.me', 't.me', 'discord.gg', 'discord.com/invite',
-  'whatsapp.com', 'wa.me',
-  // cams / webcam
-  'chaturbate.com', 'bongacams.com', 'stripchat.com', 'cam4.com',
-  'livejasmin.com', 'myfreecams.com', 'streamate.com', 'flirt4free.com',
-  'camster.com', 'imlive.com', 'camsoda.com',
-  // outros sites adultos
-  'redtube.com', 'youporn.com', 'xhamster.com', 'spankbang.com', 'tube8.com',
-  'xnxx.com', 'pornhub.com', 'porn.com', 'eporner.com', 'thumbzilla.com',
-  'xhamsterlive.com', 'porntrex.com', 'fuq.com', 'hqporner.com',
-  'beeg.com', 'tnaflix.com', 'drtuber.com', 'vporn.com', 'pornhd.com',
 ]
 
 // ===== Filtros extras para menores (13-17 anos) =====
@@ -107,22 +62,8 @@ export const MINOR_WORDS: string[] = [
   'pinto', 'piroca', 'bucetinha', 'lingerie', 'nudez', 'sem roupa', 'pelada', 'pelado',
 ]
 
-export const MINOR_DOMAINS: string[] = [
-  // apostas / cassino
-  'bet365.com', 'betfair.com', 'stake.com', 'betnacional.com', 'blaze.com', 'pixbet.com',
-  'esportesdasorte.com', 'sportingbet.com', 'betano.com', 'novibet.com', 'betmotion.com',
-  'lottery.com', 'megasena.com.br', 'loterias.com.br', 'caixa.gov.br', 'roleta', 'cassino',
-  'jogodotigrinho.com', 'tigrinho.com', 'fortune tiger', 'fortune-tiger',
-  // tabaco / vape
-  'vapeshop.com', 'vapelife.com.br', 'vapor.com.br', 'cigarro.com', 'tabacaria.com',
-  // alcool (venda/consumo)
-  'cervejaria.com', 'ambev.com.br', 'heineken.com.br', 'skol.com.br', 'brahma.com.br',
-  'adelia.com.br', 'bebidas.com', 'drinks.com',
-]
-
-// Chaves de armazenamento do perfil de idade (gate +18 declarado pelo usuario)
+// Chave de armazenamento da faixa de idade (gate +18 declarado pelo usuario)
 const AGE_GROUP_KEY = 'friends-space:age-group'
-const PARENTAL_CONSENT_KEY = 'friends-space:parental-consent'
 
 export type AgeGroup = 'adult' | 'minor' | ''
 
@@ -134,32 +75,8 @@ export function getAgeGroup(): AgeGroup {
   }
 }
 
-export function setAgeGroup(group: AgeGroup) {
-  try {
-    if (group) localStorage.setItem(AGE_GROUP_KEY, group)
-    else localStorage.removeItem(AGE_GROUP_KEY)
-  } catch {
-  }
-}
-
 export function isMinor(): boolean {
   return getAgeGroup() === 'minor'
-}
-
-export function getParentalConsent(): boolean {
-  try {
-    return localStorage.getItem(PARENTAL_CONSENT_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
-export function setParentalConsent(consented: boolean) {
-  try {
-    if (consented) localStorage.setItem(PARENTAL_CONSENT_KEY, '1')
-    else localStorage.removeItem(PARENTAL_CONSENT_KEY)
-  } catch {
-  }
 }
 
 function normalizeText(value: unknown): string {
@@ -193,31 +110,6 @@ export function scanName(value: unknown): { blocked: boolean; word: string | nul
   return { blocked: Boolean(word), word }
 }
 
-export function scanLinks(value: unknown): { blocked: boolean; url: string | null; domain: string | null } {
-  const text = String(value || '')
-  const minor = isMinor()
-  const urlRegex = /https?:\/\/[^\s]+/gi
-  const urls = text.match(urlRegex) || []
-  for (const u of urls) {
-    try {
-      const host = new URL(u).hostname.toLowerCase().replace(/^www\./, '')
-      for (const bad of BLOCKED_DOMAINS) {
-        if (host === bad || host.endsWith('.' + bad)) {
-          return { blocked: true, url: u, domain: bad }
-        }
-      }
-      if (minor) {
-        for (const bad of MINOR_DOMAINS) {
-          if (host === bad || host.endsWith('.' + bad)) {
-            return { blocked: true, url: u, domain: bad }
-          }
-        }
-      }
-    } catch { }
-  }
-  return { blocked: false, url: null, domain: null }
-}
-
 export function blockedMessage(word: string | null): string {
   const minor = isMinor()
   return minor
@@ -230,136 +122,4 @@ export function blockedNameMessage(word: string | null): string {
   return minor
     ? `Nome bloqueado para menores de 18 anos. Renomeie e tente novamente. Motivo: ${word || 'termo bloqueado'}`
     : `Nome bloqueado pelo Friends Space. Renomeie e tente novamente. Motivo: ${word || 'termo bloqueado'}`
-}
-
-export function moderationOf(settings: Record<string, unknown> | undefined | null): ModerationState {
-  const mod = settings?.moderation
-  if (mod && typeof mod === 'object') return mod as ModerationState
-  return { status: 'ok' }
-}
-
-// ===== Gate +18 (confirmacao por biometria) =====
-
-async function sha256Hex(input: string): Promise<string> {
-  try {
-    const data = new TextEncoder().encode(input)
-    const digest = await crypto.subtle.digest('SHA-256', data)
-    return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('')
-  } catch {
-    return ''
-  }
-}
-
-async function randomDeviceId(): Promise<string> {
-  const id = typeof crypto.randomUUID === 'function'
-    ? crypto.randomUUID()
-    : Math.random().toString(36).slice(2) + Date.now().toString(36)
-  return (await sha256Hex('fs18-device:' + id)) || id
-}
-
-export interface AgeGateResult {
-  ok: boolean
-  error?: string
-  cpfHash?: string
-}
-
-export interface GuardianData {
-  cpf: string
-  rg: string
-}
-
-export interface ChildData {
-  cpf: string
-  rg: string
-}
-
-const GUARDIAN_KEY = 'friends-space:guardian'
-const CHILD_KEY = 'friends-space:child'
-
-export function saveGuardianData(data: GuardianData) {
-  try {
-    localStorage.setItem(GUARDIAN_KEY, JSON.stringify(data))
-  } catch {
-  }
-}
-
-export function getGuardianData(): GuardianData | null {
-  try {
-    const raw = localStorage.getItem(GUARDIAN_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as GuardianData
-    if (!parsed || !parsed.cpf || !parsed.rg) return null
-    return parsed
-  } catch {
-    return null
-  }
-}
-
-export function saveChildData(data: ChildData) {
-  try {
-    localStorage.setItem(CHILD_KEY, JSON.stringify(data))
-  } catch {
-  }
-}
-
-export function getChildData(): ChildData | null {
-  try {
-    const raw = localStorage.getItem(CHILD_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as ChildData
-    if (!parsed || !parsed.cpf || !parsed.rg) return null
-    return parsed
-  } catch {
-    return null
-  }
-}
-
-export async function acceptAgeGate(): Promise<AgeGateResult> {
-  const cpfHash = await randomDeviceId()
-  try {
-    localStorage.setItem(AGE_GATE_KEY, '1')
-    localStorage.setItem(AGE_GATE_CPF_HASH_KEY, cpfHash)
-    localStorage.setItem(AGE_GATE_VERIFIED_KEY, '1')
-    localStorage.setItem(AGE_GATE_VERIFIED_AT_KEY, String(Date.now()))
-  } catch {
-  }
-  return { ok: true, cpfHash }
-}
-
-export function isAgeGatePassed(): boolean {
-  try {
-    return localStorage.getItem(AGE_GATE_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
-export function getAgeGateDeviceId(): string {
-  try {
-    return localStorage.getItem(AGE_GATE_CPF_HASH_KEY) || ''
-  } catch {
-    return ''
-  }
-}
-
-export function getAgeGateVerifiedAt(): number {
-  try {
-    return Number(localStorage.getItem(AGE_GATE_VERIFIED_AT_KEY) || 0)
-  } catch {
-    return 0
-  }
-}
-
-export function resetAgeGate() {
-  try {
-    localStorage.removeItem(AGE_GATE_KEY)
-    localStorage.removeItem(AGE_GATE_CPF_HASH_KEY)
-    localStorage.removeItem(AGE_GATE_VERIFIED_KEY)
-    localStorage.removeItem(AGE_GATE_VERIFIED_AT_KEY)
-    localStorage.removeItem(AGE_GROUP_KEY)
-    localStorage.removeItem(PARENTAL_CONSENT_KEY)
-    localStorage.removeItem(GUARDIAN_KEY)
-    localStorage.removeItem(CHILD_KEY)
-  } catch {
-  }
 }

@@ -68,7 +68,7 @@ export function UsersView() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 14 }}>
                 {user.name}
-                {user.activityEnabled !== false && user.activityPrivacy !== 'private' && user.activityName && (
+                {isUserOnline(user) && user.activityEnabled !== false && user.activityPrivacy !== 'private' && user.activityName && (
                   <span style={{ color: 'var(--text-primary)', fontSize: 12, marginLeft: 8 }}>
                     — {user.activityName}
                   </span>

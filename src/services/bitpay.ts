@@ -10,10 +10,6 @@ const CURRENCY = 'BRL'
 let scriptLoaded = false
 let loadPromise: Promise<void> | null = null
 
-export function bitpayEnabled(): boolean {
-  return Boolean(BITPAY_TOKEN)
-}
-
 export function loadBitPayScript(): Promise<void> {
   if (!BITPAY_TOKEN) return Promise.resolve()
   if (scriptLoaded) return Promise.resolve()
@@ -57,12 +53,4 @@ export async function createBitPayInvoice(
   const invoice = data.data
   if (!invoice || !invoice.url) throw new Error('BitPay: fatura sem URL')
   return invoice.url
-}
-
-// Verifica o status da fatura no backend (o app confirma via webhook).
-export async function verifyBitPayInvoice(invoiceId: string): Promise<{ confirmed: boolean }> {
-  const res = await fetch(`/api/payment/bitpay-status?invoiceId=${encodeURIComponent(invoiceId)}`)
-  if (!res.ok) return { confirmed: false }
-  const data = await res.json()
-  return { confirmed: Boolean(data && data.confirmed) }
 }

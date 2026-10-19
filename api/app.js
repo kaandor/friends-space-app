@@ -623,7 +623,7 @@ const loadStore = async () => {
       if (i < attempts - 1) await new Promise((r) => setTimeout(r, 400 * (i + 1)))
     }
   }
-  if (readFailed) {
+  if (readFailed || !hasRemoteStorage()) {
     try {
       const raw = await readFile(FALLBACK_FILE, 'utf8')
       store = normalizeStore(JSON.parse(raw))
@@ -838,6 +838,8 @@ const getAllCallSessions = (store) => {
 }
 
 const CALL_SYNC_GRACE_MS = 35_000
+const CALL_LEAVE_TOMBSTONE_MS = 90_000
+const CALL_INVITE_TTL_MS = 600_000
 const CALL_LEGACY_OFFLINE_MS = 60_000
 const hasStaleStamp = (stamps, id, staleThreshold) => {
   const stamp = Number(stamps[id] || 0)
@@ -888,7 +890,7 @@ const cleanupCallSessions = (store, at = now()) => {
 
 // ---------------------------------------------------------------------------
 // Manutencao automatica: contas inativas, servidores sem dono, calls vazias.
-// Roda sozinha a cada 6h (best-effort) e sob demanda via acao runMaintenance.
+// Roda sozinha a cada 6h (best-effort).
 // ---------------------------------------------------------------------------
 const MAINTENANCE_KEY = 'friends-space:maintenance-last-run'
 const MAINTENANCE_INTERVAL_MS = 6 * 60 * 60 * 1000
@@ -1805,23 +1807,12 @@ const actions = {
       return { latestVersion: '', downloadUrl: '', downloadUrlLinux: '', downloadUrlMac: '', releaseNotes: '' }
     }
   },
-  storageHealth: async (store, data, body) => {
-    actorOf(store, body)
-    const remote = await kvGet(STORE_KEY)
-    return {
-      profiles: Object.keys(store.profiles || {}).length,
-      users: getAllUsers(store).length,
-      servers: getAllServers(store).length,
-      friends: getAllFriends(store).length,
-      callSessions: getAllCallSessions(store).length,
-      remoteConfigured: hasRemoteStorage(),
-      remoteResultLength: remote ? JSON.stringify(remote).length : 0,
-    }
-  },
   loadUserServers: async (store, data, body) => getAllServers(store)
     .filter((server) => server && (server.ownerId === body.userId || (Array.isArray(server.members) && server.members.includes(body.userId)))),
   signInWithName: async (store, data, body) => {
-  throw new Error('Use o login Google')
+    const devKey = String(body.devKey || '').trim()
+    const devSecret = String(process.env.DEV_LOGIN_KEY || '').trim()
+    if (!devSecret || devKey !== devSecret) throw new Error('Use o login Google')
     if (!(await rateCheck('login:' + (body.__ip || 'unknown'), 30, 60000))) throw rateLimitError()
     const name = String(body.name || '').trim()
     if (!name || name.length < 2) throw new Error('Nome deve ter pelo menos 2 caracteres')
@@ -1981,15 +1972,22 @@ const actions = {
   updateUser: async (store, data, body) => {
     if (String(body.id || '') !== String(body.__actor || '')) deny('Operação negada (403)')
     const index = data.users.findIndex((user) => user.id === body.id)
-    if (index === -1) throw new Error('Usuário não encontrado')
+    // O cliente manda profileId = id do proprio usuario depois do login, mas o
+    // usuario pode estar salvo em outra fatia (ex.: "anonymous", de quando a
+    // conta nasceu). Sem o fallback para o diretorio, QUALQUER edicao de perfil
+    // (status, nome, mural, aparencia...) falhava com "Usuário não encontrado"
+    // e nada era persistido — o status "não mudava".
+    const prevUser = index !== -1
+      ? data.users[index]
+      : getAllUsers(store).find((user) => user && user.id === body.id)
+    if (!prevUser) throw new Error('Usuário não encontrado')
     if (body.data && body.data.friendCode) {
       const newCode = normalizeFriendCode(body.data.friendCode)
-      if (!newCode) throw new Error('Nome de usuario invalido')
-      const taken = data.users.some((u) => u.id !== body.id && normalizeFriendCode(u.friendCode) === newCode)
-      if (taken) throw new Error('Este nome de usuario ja esta em uso')
+      if (!newCode || newCode.length < 3 || newCode.length > 20) throw new Error('Codigo invalido: use de 3 a 20 caracteres (letras e numeros)')
+      const taken = getAllUsers(store).concat(data.users).some((u) => u.id !== body.id && normalizeFriendCode(u.friendCode) === newCode)
+      if (taken) throw new Error('Este codigo ja esta em uso')
       body.data.friendCode = newCode
     }
-    const prevUser = data.users[index]
     const prevSettings = prevUser?.settings && typeof prevUser.settings === 'object' ? prevUser.settings : {}
     const nextSettings = body.data?.settings && typeof body.data.settings === 'object' ? body.data.settings : {}
     const prevStatus = String(prevSettings.statusMessage || '')
@@ -2024,35 +2022,36 @@ const actions = {
         if (pi !== -1) profile.users[pi] = updatedUser
       }
     }
-    data.users[index] = updatedUser
-    upsertGlobalUser(store, data.users[index])
+    if (index === -1) data.users.push(updatedUser)
+    else data.users[index] = updatedUser
+    upsertGlobalUser(store, updatedUser)
     if ((prevStatus !== nextStatus || prevPresence !== nextPresence) && (nextStatus || nextPresence)) {
       for (const friendId of acceptedFriendIds(store, prevUser.id)) {
         addNotification(store, {
           toUserId: friendId,
           fromUserId: prevUser.id,
-          fromName: data.users[index].name,
-          fromPhoto: data.users[index].photoUrl || '',
+          fromName: updatedUser.name,
+          fromPhoto: updatedUser.photoUrl || '',
           type: 'status',
-          title: `${data.users[index].name} atualizou status`,
+          title: `${updatedUser.name} atualizou status`,
           body: nextStatus || '',
           data: { status: nextPresence },
         })
       }
     }
-    return { user: withPublicFlags(data.users[index]), users: withPublicUsers(data.users) }
+    return { user: withPublicFlags(updatedUser), users: withPublicUsers(data.users) }
   },
   getUser: async (store, data, body) =>
     withPublicFlags(getAllUsers(store).find((user) => user.id === body.id)
     || data.users.find((user) => user.id === body.id)),
   findUserByFriendCode: async (store, data, body) => {
+    // Match EXATO (nao substring): adicionar amigo e a checagem de unicidade
+    // do codigo dependem disso. Antes, digitar um codigo parcial casava com
+    // qualquer nome/id/friendCode que CONTIVESSE o texto — dava para adicionar
+    // a pessoa errada e o check de disponibilidade mentia.
     const code = normalizeFriendCode(body.friendCode)
     if (!code) return undefined
-    const search = (list) => list.find((user) =>
-      normalizeFriendCode(user.friendCode).includes(code)
-      || normalizeFriendCode(user.id).includes(code)
-      || normalizeFriendCode(user.name || '').includes(code)
-    )
+    const search = (list) => list.find((user) => normalizeFriendCode(user.friendCode) === code)
     return search(getAllUsers(store)) || search(data.users)
   },
   searchDirectory: async (store, data, body) => {
@@ -2185,12 +2184,6 @@ const actions = {
   refreshSession: async (store, data, body) => {
     const actor = actorOf(store, body)
     return { sessionToken: await issueSession(actor) }
-  },
-  getMyApproval: async (store, data, body) => {
-    const actor = actorOf(store, body)
-    const me = getAllUsers(store).find((u) => u && u.id === actor)
-    if (!me) deny('Sessão expirada. Entre de novo.')
-    return { approved: me.approved !== false }
   },
   getUserDiagnostics: async (store, data, body) => {
     requireFlags(store, body, 'dev', 'support')
@@ -3487,55 +3480,6 @@ const actions = {
     else data.users[index] = updated
     return { ok: true, user: updated, users: data.users }
   },
-  giftAstro: async (store, data, body) => {
-    const fromId = String(body.fromUserId || '')
-    if (fromId !== String(body.__actor || '')) deny('Operação negada (403)')
-    const toId = String(body.toUserId || '')
-    const months = Math.max(1, Math.min(120, Number(body.months) || 1))
-    const tier = ['astro', 'astro_plus', 'astro_ultimate'].includes(body.tier) ? body.tier : 'astro'
-    const from = getAllUsers(store).find((u) => u && u.id === fromId)
-    const to = getAllUsers(store).find((u) => u && u.id === toId)
-    if (!from || !to) throw new Error('Usuario nao encontrado')
-    if (!(await rateCheck('gift:' + fromId, 5, 86400000))) throw rateLimitError()
-    if (fromId === toId) throw new Error('Nao pode presentear a si mesmo')
-    const fromSettings = from.settings || {}
-    if (!(fromSettings.astroPaymentPending === true || fromSettings.astroPaymentPending === 'true')) throw new Error('Pagamento nao confirmado')
-    const toSettings = to.settings || {}
-    const toWasActive = (toSettings.astro === true || toSettings.astro === 'true') && !(Number(toSettings.astroUntil || 0) > 0 && Number(toSettings.astroUntil) < now())
-    const updated = {
-      ...to,
-      settings: {
-        ...(to.settings || {}),
-        astro: true,
-        astroMonths: months,
-        astroTier: tier,
-        astroPurchasedAt: now(),
-        astroFirstPaidAt: toWasActive && toSettings.astroFirstPaidAt ? toSettings.astroFirstPaidAt : now(),
-        astroRefundedAt: 0,
-        astroUntil: Math.max(now(), Number(toSettings.astroUntil) || 0) + months * 30 * 24 * 3600 * 1000,
-      },
-    }
-    const fromUpdated = { ...from, settings: { ...(from.settings || {}), astroPaymentPending: false } }
-    upsertGlobalUser(store, fromUpdated)
-    const fromIndex = data.users.findIndex((u) => u && u.id === fromId)
-    if (fromIndex === -1) data.users.push(fromUpdated)
-    else data.users[fromIndex] = fromUpdated
-    upsertGlobalUser(store, updated)
-    const index = data.users.findIndex((u) => u.id === toId)
-    if (index === -1) data.users.push(updated)
-    else data.users[index] = updated
-    addNotification(store, {
-      toUserId: toId,
-      fromUserId: fromId,
-      fromName: from.name,
-      fromPhoto: from.photoUrl || '',
-      type: 'astro-gift',
-      title: `${from.name} te presenteou com Astro`,
-      body: `${months} ${months === 1 ? 'mes' : 'meses'}`,
-      data: { months },
-    })
-    return { user: updated, users: data.users }
-  },
   applyTheme: async (store, data, body) => {
     const userId = String(body.userId || '')
     const themeId = String(body.themeId || '')
@@ -3842,68 +3786,6 @@ const actions = {
     }
     if (Array.isArray(data.stories)) {
       data.stories = data.stories.filter(drop)
-    }
-    return { ok: true }
-  },
-  loadWallPosts: async (store, data, body) => {
-    actorOf(store, body)
-    const ownerId = String(body.ownerId || '')
-    if (!ownerId) return []
-    return getAllWallPosts(store)
-      .filter((w) => w && w.ownerId === ownerId)
-      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
-      .slice(0, 100)
-  },
-  createWallPost: async (store, data, body) => {
-    const actor = actorOf(store, body)
-    const ownerId = String(body.ownerId || '')
-    const authorId = String(body.authorId || '')
-    if (!ownerId || !authorId) throw new Error('Mural inválido')
-    if (authorId !== actor) deny('Operação negada (403)')
-    const content = String(body.content || '').trim().slice(0, 1000)
-    if (!content) throw new Error('Post vazio')
-    const author = getAllUsers(store).find((u) => u && u.id === authorId)
-    const post = {
-      id: id(),
-      ownerId,
-      authorId,
-      authorName: author?.name || 'usuário',
-      authorPhoto: author?.photoUrl || '',
-      content,
-      likes: [],
-      createdAt: now(),
-    }
-    if (!Array.isArray(data.wallPosts)) data.wallPosts = []
-    data.wallPosts.push(post)
-    upsertGlobalItem(store, 'wallPosts', post)
-    return { post }
-  },
-  toggleWallLike: async (store, data, body) => {
-    const actor = actorOf(store, body)
-    const userId = String(body.userId || '')
-    if (!userId || userId !== actor) deny('Operação negada (403)')
-    const post = getAllWallPosts(store).find((w) => w && w.id === body.postId)
-    if (!post) throw new Error('Post não encontrado')
-    const likes = Array.isArray(post.likes) ? [...post.likes] : []
-    const i = likes.indexOf(userId)
-    if (i === -1) likes.push(userId)
-    else likes.splice(i, 1)
-    post.likes = likes
-    upsertGlobalItem(store, 'wallPosts', post)
-    return { post }
-  },
-  deleteWallPost: async (store, data, body) => {
-    const actor = actorOf(store, body)
-    const post = getAllWallPosts(store).find((w) => w && w.id === body.postId)
-    if (!post) throw new Error('Post não encontrado')
-    if (post.authorId !== actor && post.ownerId !== actor) deny('Operação negada (403)')
-    if (store.directory && Array.isArray(store.directory.wallPosts)) {
-      store.directory.wallPosts = store.directory.wallPosts.filter((w) => !w || w.id !== post.id)
-    }
-    for (const profile of Object.values(store.profiles || {})) {
-      if (profile && Array.isArray(profile.wallPosts)) {
-        profile.wallPosts = profile.wallPosts.filter((w) => !w || w.id !== post.id)
-      }
     }
     return { ok: true }
   },
@@ -4230,16 +4112,6 @@ const actions = {
       .map((s) => ({ id: s.id, name: s.name, photoUrl: s.photoUrl || '', members: (s.members || []).length, onlineCount: onlineCountOf(store, s.members), inviteCode: s.inviteCode || '', verified: Boolean(s.verified), member: mine.has(s.id) || s.ownerId === userId, category: String(s.category || (s.settings && s.settings.category) || '').slice(0, 40) }))
     return { ok: true, servers: list }
   },
-  searchPeople: async (store, data, body) => {
-    const userId = String(body.userId || '')
-    const q = String(body.q || '').trim().toLowerCase()
-    if (!userId || q.length < 2) return { ok: true, people: [] }
-    const people = getAllUsers(store)
-      .filter((u) => u && u.id !== userId && !u.flags?.banned && !u.flags?.official && (`${u.name || ''} ${u.friendCode || ''}`.toLowerCase().includes(q)))
-      .slice(0, 20)
-      .map((u) => ({ id: u.id, name: u.name, photoUrl: u.photoUrl || '', friendCode: u.friendCode || '' }))
-    return { ok: true, people }
-  },
   searchServers: async (store, data, body) => {
     const userId = String(body.userId || '')
     const q = String(body.q || '').trim().toLowerCase()
@@ -4267,18 +4139,6 @@ const actions = {
       .slice(0, 20)
       .map(toCard)
     return { ok: true, servers }
-  },
-  suggestedPeople: async (store, data, body) => {
-    // Pessoas sugeridas (sem precisar digitar): contas recentes ativas, sem
-    // banidos, sem a conta oficial e sem eu. Para a aba de amizades.
-    const userId = String(body.userId || '')
-    if (!userId) return { ok: true, people: [] }
-    const people = getAllUsers(store)
-      .filter((u) => u && u.id !== userId && !u.flags?.banned && !u.flags?.official)
-      .sort((a, b) => ((b.lastSeenAt || b.createdAt || 0)) - ((a.lastSeenAt || a.createdAt || 0)))
-      .slice(0, 8)
-      .map((u) => ({ id: u.id, name: u.name, photoUrl: u.photoUrl || '', friendCode: u.friendCode || '' }))
-    return { ok: true, people }
   },
   getFeed: async (store, data, body) => {
     const userId = String(body.userId || '')
@@ -4734,13 +4594,6 @@ const actions = {
     else data.servers[index] = updated
     return { server: updated, servers: data.servers }
   },
-  resetAllData: async (store, data, body) => {
-    requireFlags(store, body, 'dev')
-    const empty = emptyStore()
-    Object.keys(store).forEach(key => delete store[key])
-    Object.assign(store, empty)
-    return { ok: true }
-  },
   upsertCallSession: async (store, data, body) => {
     const incoming = body.session || {}
     cleanupCallSessions(store, now())
@@ -4793,8 +4646,21 @@ const actions = {
     // peers restantes "ressuscitam" o fantasma uns aos outros para sempre.
     // Mantem: selfId + ids com stamp fresco ou sem stamp (join recente cujo
     // primeiro sync ainda nao chegou). Remove: stamp expirado.
+    // Tumba de quem saiu: quem deu leaveUserId nao pode ser re-adicionado pelo
+    // sync dos outros (o front reenvia a lista local COMPLETA, que ainda contem
+    // o fantasma; sem a tumba o cara que saiu voltava para a sessao, a sessao
+    // continuava ativa e o poll de chamadas recebidas re-disparava o ring
+    // ("a pessoa me liga uma vez e fica aparecendo que ela ta me ligando").
+    // A propria pessoa limpa a tumba quando volta (sync com selfId).
+    const leftAt = { ...(existing?.leftAt || {}) }
+    if (body.leaveUserId) leftAt[body.leaveUserId] = now()
+    if (selfId) delete leftAt[selfId]
+    const leftGrace = now() - CALL_LEAVE_TOMBSTONE_MS
+    for (const id of Object.keys(leftAt)) {
+      if (Number(leftAt[id] || 0) <= leftGrace) delete leftAt[id]
+    }
     let mergedIds = [...new Set([...(existing?.participantIds || []), ...participantIds])]
-    mergedIds = mergedIds.filter((id) => id === selfId || !hasStaleStamp(stamps, id, staleThreshold))
+    mergedIds = mergedIds.filter((id) => id === selfId || (!hasStaleStamp(stamps, id, staleThreshold) && !(Number(leftAt[id] || 0) > leftGrace)))
     if (body.leaveUserId) mergedIds = mergedIds.filter((id) => id !== body.leaveUserId)
     // (O "ultimo a sair apaga na hora" roda DEPOIS do session existir — antes
     // era feito aqui citando `session` antes do const (ReferenceError/500).)
@@ -4803,6 +4669,25 @@ const actions = {
       stamps[selfId] = now()
     }
     if (body.leaveUserId && stamps[body.leaveUserId]) delete stamps[body.leaveUserId]
+    // Convite ativo (botao "Adicionar pessoa na call"): marca quem foi
+    // convidado para o cliente DELE entrar sozinho na call (auto-join), sem
+    // precisar aceitar. O convidado tambem ganha um stamp inicial para a
+    // sessao lista-lo por ate CALL_SYNC_GRACE_MS — tempo do poll dele
+    // descobrir e entrar; sem stamp ficaria listado para sempre (buraco do
+    // "join recente") e viraria fantasma na call de quem ja esta nela.
+    const invitedIds = Array.isArray(body.invitedIds) ? body.invitedIds.map((v) => String(v)) : []
+    const invitedAt = { ...(existing?.invitedAt || {}) }
+    for (const id of invitedIds) {
+      if (id && id !== selfId) invitedAt[id] = now()
+    }
+    if (selfId) delete invitedAt[selfId]
+    const inviteGrace = now() - CALL_INVITE_TTL_MS
+    for (const id of Object.keys(invitedAt)) {
+      if (Number(invitedAt[id] || 0) <= inviteGrace) delete invitedAt[id]
+    }
+    for (const id of invitedIds) {
+      if (id && id !== selfId && !stamps[id]) stamps[id] = now()
+    }
     // Poda explicita: um peer viu a PC de outro morrer e avisa. Sem isso, o
     // stamp fresco do morto o mantem para todos. Nunca poda o selfId; se o
     // "morto" estiver vivo em outra aba, o sync dele o readiciona.
@@ -4911,10 +4796,13 @@ const actions = {
       active: serverId === 'dm' ? mergedIds.length > 0 : true,
       hostUserId: String(existing?.hostUserId || incoming.hostUserId || ''),
       participantIds: [...new Set(mergedIds)],
+      invitedAt,
       screenSharingUserId: String(incoming.screenSharingUserId || existing?.screenSharingUserId || ''),
+      callMode: String(incoming.callMode || existing?.callMode || ''),
       connectionStats: incoming.connectionStats || existing?.connectionStats || {},
       participantLastSync: stamps,
       peerViews: views,
+      leftAt,
       updatedAt: now(),
       createdAt: existing ? Number(existing.createdAt || now()) : Number(incoming.createdAt || now()),
     }
@@ -4964,10 +4852,6 @@ const actions = {
     return { ok: true }
   },
   refreshPushRegistration: async () => ({ ok: true }),
-  runMaintenance: async (store, data, body) => {
-    requireFlags(store, body, 'dev', 'support')
-    return runMaintenance(store, now())
-  },
   loadCallSessions: async (store, data, body) => {
     const serverId = String(body.serverId || '')
     const userId = String(body.userId || '')
@@ -4981,57 +4865,6 @@ const actions = {
       && (!userId || session.participantIds.includes(userId))
       && ((session.participantIds || []).includes(body.__actor) || isServerMember(store, body.__actor, session.serverId)))
       .map((session) => ({ ...session, watch: sessionWatch(session) }))
-  },
-  migrateData: async (store, data, body) => {
-    requireFlags(store, body, 'dev')
-    if (!isTurso()) throw new Error('Destino Turso nao configurado: defina TURSO_DATABASE_URL e TURSO_AUTH_TOKEN')
-    let storeValue
-    if (body.data) {
-      storeValue = normalizeStore(typeof body.data === 'string' ? JSON.parse(body.data) : body.data)
-    } else {
-      try {
-        const kv = await kvGet(STORE_KEY)
-        if (kv) storeValue = normalizeStore(kv)
-      } catch (mainErr) {
-        const readOnly = process.env.KV_REST_API_READ_ONLY_TOKEN
-        if (readOnly && process.env.KV_REST_API_URL) {
-          try {
-            const response = await fetch(`${process.env.KV_REST_API_URL}/get/${STORE_KEY}`, {
-              headers: { authorization: `Bearer ${readOnly}`, 'content-type': 'application/json' },
-            })
-            if (response.ok) {
-              const kv = await response.json()
-              if (kv) storeValue = normalizeStore(decodeRedisStore(kv.result))
-            }
-          } catch {}
-        }
-        if (!storeValue) {
-          throw new Error(`Fonte Upstash inacessivel (${mainErr.message}). Cole o store em body.data ou exporte manualmente.`)
-        }
-      }
-    }
-    if (!storeValue) storeValue = emptyStore()
-    const merged = body.merge ? mergeStores(store, storeValue) : storeValue
-    let presence = body.presence && typeof body.presence === 'object' ? body.presence : {}
-    try {
-      const kv = await kvGet(PRESENCE_KEY)
-      if (kv && typeof kv === 'object') presence = kv
-    } catch {}
-    const currentPresence = (await tursoGet(PRESENCE_KEY)) || '{}'
-    let currentPresenceObj = {}
-    try { currentPresenceObj = JSON.parse(currentPresence) } catch {}
-    const mergedPresence = { ...currentPresenceObj, ...presence }
-    await tursoSet(PRESENCE_KEY, JSON.stringify(mergedPresence))
-    Object.keys(store).forEach((key) => delete store[key])
-    Object.assign(store, merged)
-    return {
-      ok: true,
-      keys: [STORE_KEY, PRESENCE_KEY],
-      storeBytes: JSON.stringify(merged).length,
-      presenceUsers: Object.keys(mergedPresence).length,
-      source: body.data ? 'body' : 'api',
-      merged: !!body.merge,
-    }
   },
 }
 
@@ -5082,7 +4915,13 @@ export default async function handler(req, res) {
       if (!ids.includes(qActor)) {
         const me = getAllUsers(store).find((u) => u && u.id === qActor)
         if (!me) { json(res, 401, { ok: false, error: 'Sessão expirada. Entre de novo.' }); return }
-        json(res, 200, { ok: true, result: { users: [], servers: [], friends: [] } })
+        // Formato AppData direto (o cliente espera users/servers/friends sem
+        // wrapper ok/result). Inclui o usuario logado mesmo que a fatia do
+        // perfil ainda nao o tenha (o login grava na fatia "anonymous").
+        json(res, 200, {
+          ...data,
+          users: withPublicUsers([...(data.users || []), me]),
+        })
         return
       }
       json(res, 200, {
@@ -5169,7 +5008,6 @@ export default async function handler(req, res) {
     const READONLY_ACTIONS = new Set([
       'state',
       'directoryState',
-      'storageHealth',
       'loadUserServers',
       'getServer',
       'getUser',

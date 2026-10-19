@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { Fa } from '../../utils/fa'
 import { useUserStore } from '../../stores/userStore'
 import { useServerStore } from '../../stores/serverStore'
-import { ASTRO_PLANS, getAstroTier } from '../../utils/astro'
-
+import { getAstroTier } from '../../utils/astro'
 const METHODS = [
   { key: 'pix', label: 'Pix', icon: 'qrcode' },
   { key: 'googlepay', label: 'Google Pay', icon: 'google-pay' },
@@ -33,7 +32,6 @@ export function SubscriptionTab() {
 
   const tier = getAstroTier(currentUser)
   const settings = (currentUser?.settings || {}) as Record<string, unknown>
-  const until = Number(settings.astroUntil || 0)
   const payMethod = String(settings.astroPayMethod || '')
   const firstPaid = Number(settings.astroFirstPaidAt) || Number(settings.astroPurchasedAt) || 0
   const refundLeft = firstPaid > 0 ? Math.max(0, 7 - (Date.now() - firstPaid) / 86400000) : 0
@@ -84,18 +82,11 @@ export function SubscriptionTab() {
     }
   })
 
-  const row: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 10, padding: '12px 0', borderBottom: '1px solid var(--border)' }
+  const row: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 10, padding: '11px 0', borderBottom: '1px solid var(--border)' }
+  const btnGhost: React.CSSProperties = { padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-primary)', fontWeight: 700, fontSize: 12, cursor: 'pointer' }
 
   return (
     <div className="profile-form">
-      <div style={{ textAlign: 'center', marginBottom: 8 }}>
-        <div style={{ fontSize: 40 }}>🚀</div>
-        <h3 style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 800, margin: '8px 0 4px' }}>Assinatura Astro</h3>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: 0 }}>
-          {tier === 'none' ? 'Você está no plano gratuito.' : `${ASTRO_PLANS[tier].name} · válido até ${until > 0 ? new Date(until).toLocaleDateString() : '—'}`}
-        </p>
-      </div>
-
       {msg && (
         <div style={{ background: 'rgba(74,222,128,.1)', border: '1px solid rgba(74,222,128,.35)', borderRadius: 10, padding: '10px 12px', fontSize: 12.5, color: 'var(--text-primary)', marginBottom: 8 }}>
           {msg}
@@ -105,14 +96,14 @@ export function SubscriptionTab() {
       {tier !== 'none' && (
         <div style={row}>
           <div style={{ flex: 1 }}>
-            <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13.5 }}>Renovar / adicionar meses</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Estende a validade atual, sem perder dias.</div>
+            <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13 }}>Renovar / adicionar meses</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 11.5 }}>Estende a validade atual, sem perder dias.</div>
           </div>
           <select value={months} onChange={e => setMonths(Number(e.target.value))}
             style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 13 }}>
             {MONTHS.map(m => <option key={m} value={m}>{m} {m === 1 ? 'mês' : 'meses'}</option>)}
           </select>
-          <button onClick={handleRenew} disabled={busy === 'renew'} className="profile-save-btn" style={{ padding: '8px 16px' }}>
+          <button onClick={handleRenew} disabled={busy === 'renew'} style={btnGhost}>
             {busy === 'renew' ? '...' : 'Renovar'}
           </button>
         </div>
@@ -120,8 +111,8 @@ export function SubscriptionTab() {
 
       <div style={row}>
         <div style={{ flex: 1 }}>
-          <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13.5 }}>Método de pagamento</div>
-          <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Usado como padrão no checkout.</div>
+          <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13 }}>Método de pagamento</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: 11.5 }}>Usado como padrão no checkout.</div>
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {METHODS.map(m => (
@@ -136,8 +127,8 @@ export function SubscriptionTab() {
       {tier !== 'none' && (
         <div style={row}>
           <div style={{ flex: 1 }}>
-            <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13.5 }}>Reembolso</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
+            <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13 }}>Reembolso</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 11.5 }}>
               {canRefund ? `Disponível por mais ${Math.ceil(refundLeft)} ${Math.ceil(refundLeft) === 1 ? 'dia' : 'dias'} (7 dias após a compra).` : 'Disponível até 7 dias após a primeira compra.'}
             </div>
           </div>
@@ -151,7 +142,7 @@ export function SubscriptionTab() {
               </button>
             </span>
           ) : (
-            <button onClick={() => setConfirmRefund(true)} disabled={!canRefund} className="profile-save-btn" style={{ padding: '8px 16px', opacity: canRefund ? 1 : 0.4 }}>
+            <button onClick={() => setConfirmRefund(true)} disabled={!canRefund} style={{ ...btnGhost, opacity: canRefund ? 1 : 0.4 }}>
               Reembolsar
             </button>
           )}
@@ -161,8 +152,8 @@ export function SubscriptionTab() {
       {tier !== 'none' && (
         <div style={row}>
           <div style={{ flex: 1 }}>
-            <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13.5 }}>Cancelar assinatura</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Volta ao gratuito na hora.</div>
+            <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13 }}>Cancelar assinatura</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 11.5 }}>Volta ao gratuito na hora.</div>
           </div>
           {confirmCancel ? (
             <span style={{ display: 'flex', gap: 6 }}>
@@ -183,10 +174,10 @@ export function SubscriptionTab() {
 
       <div style={{ ...row, borderBottom: 'none' }}>
         <div style={{ flex: 1 }}>
-          <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13.5 }}>Suporte da assinatura</div>
-          <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Abre um ticket com a equipe.</div>
+          <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 13 }}>Suporte da assinatura</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: 11.5 }}>Abre um ticket com a equipe.</div>
         </div>
-        <button onClick={() => { setTicketId(null); setSupportOpen(true) }} className="profile-save-btn" style={{ padding: '8px 16px' }}>
+        <button onClick={() => { setTicketId(null); setSupportOpen(true) }} style={btnGhost}>
           Falar com suporte
         </button>
       </div>

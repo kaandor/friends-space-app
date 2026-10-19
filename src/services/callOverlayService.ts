@@ -74,10 +74,3 @@ export function startCallOverlay() {
     cleanup()
   })
 }
-
-export function notifyOverlaySilence() {
-  // Forca o overlay a sumir imediatamente (sem esperar o timeout do main).
-  const api = getApi()
-  if (api) api.setOverlay!([])
-  prevSignature = ''
-}

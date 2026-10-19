@@ -13,6 +13,7 @@ import { getDriveStorage, isDriveConnected, type DriveStorageInfo } from '../../
 import { canOpenAdminPanel } from '../../services/admin'
 import { AdminPanel, type Tab } from '../Admin/AdminPanel'
 import { UserHistoryModal } from '../Social/UserHistoryModal'
+import { StatusIcon, statusFromSettings } from '../../utils/userStatus'
 
 interface TopBarProps {
   activeUser: User | null
@@ -96,6 +97,8 @@ export function TopBar({ activeUser, onShowPrivacy, onShowEditProfile, onShowAst
   const pendingUsers = pendingRequests
     .map(req => users.find(u => u.id === req.userId))
     .filter((u): u is User => Boolean(u))
+
+  const myStatus = statusFromSettings(activeUser?.settings)
 
   const changeLang = (lang: 'pt-BR' | 'en-US') => {
     setLang(lang)
@@ -337,7 +340,7 @@ export function TopBar({ activeUser, onShowPrivacy, onShowEditProfile, onShowAst
         >
           <span className="fs-avatar-wrap">
             <Avatar src={activeUser?.photoUrl || ''} name={activeUser?.name || 'U'} size={26} />
-            <span className="fs-status-dot" />
+            <span className="fs-status-dot"><StatusIcon status={myStatus} size={7} /></span>
           </span>
           <span className="fs-user-mini-name">{activeUser?.name || 'Usuario'}</span>
           <ChevronDown size={14} strokeWidth={2.5} className="fs-chevron" />

@@ -3,7 +3,7 @@ import { useCallStore } from '../../stores/callStore'
 import { applyRemoteGain, applySinkId } from '../../services/antiloud'
 import { unlockAudio } from '../../services/audioUnlock'
 
-const clampVolume = (v?: number) => (typeof v === 'number' && !Number.isNaN(v) ? Math.min(1, Math.max(0, v)) : 1)
+const clampVolume = (v?: number) => (typeof v === 'number' && !Number.isNaN(v) ? Math.min(2, Math.max(0, v)) : 1)
 
 const setSrc = (id: string, stream: MediaStream | null) => {
   const el = document.getElementById(id) as HTMLAudioElement | null
@@ -69,7 +69,7 @@ export function CallAudioLayer() {
     for (const userId of Object.keys(remoteScreenStreams)) {
       const el = document.getElementById(`call-screen-audio-${userId}`) as HTMLAudioElement | null
       if (el) {
-        el.volume = deafened ? 0 : clampVolume(volumes[`screen:${userId}`])
+        applyRemoteGain(el, deafened ? 0 : clampVolume(volumes[`screen:${userId}`]))
         applySinkId(el, output)
       }
     }

@@ -11,21 +11,17 @@ import { loadKnownAccounts } from '../../services/knownAccounts'
 import { canOpenAdminPanel } from '../../services/admin'
 import { AdminPanel } from '../Admin/AdminPanel'
 import { toImageUrl } from '../../services/driveService'
+import { USER_STATUS, StatusIcon, statusFromSettings, type UserStatusId } from '../../utils/userStatus'
 import './UserDock.css'
 
-type StatusId = 'online' | 'away' | 'dnd' | 'invisible'
+type StatusId = UserStatusId
 type MenuKind = 'profile' | 'mic' | 'output' | 'gear'
 type SubKind = 'status' | 'badges' | 'accounts' | 'micDevice' | 'inputProfile' | 'outDevice'
 
 interface MenuState { kind: MenuKind; left: number; bottom: number; width: number }
 interface SubState { kind: SubKind; left: number; bottom: number }
 
-const STATUS: Record<StatusId, { label: string; description: string; color: string }> = {
-  online: { label: 'Disponível', description: 'Online e pronto para conversar', color: '#22c55e' },
-  away: { label: 'Ausente', description: 'Longe do teclado', color: '#f0b232' },
-  dnd: { label: 'Não perturbar', description: 'Silencia notificações e avisos', color: '#f23f43' },
-  invisible: { label: 'Invisível', description: 'Aparece offline para todos', color: '#80848e' },
-}
+const STATUS = USER_STATUS
 
 const MENU_WIDTH: Record<MenuKind, number> = { profile: 340, mic: 300, output: 300, gear: 250 }
 const SUB_WIDTH = 232
@@ -94,6 +90,7 @@ export function UserDock({ floating = false, aboveDiscover = false }: UserDockPr
 
   const dockRef = useRef<HTMLDivElement | null>(null)
   const popupRef = useRef<HTMLDivElement | null>(null)
+  const subRef = useRef<HTMLDivElement | null>(null)
   const closeTimer = useRef<number | null>(null)
   const [menu, setMenu] = useState<MenuState | null>(null)
   const [sub, setSub] = useState<SubState | null>(null)
@@ -110,7 +107,9 @@ export function UserDock({ floating = false, aboveDiscover = false }: UserDockPr
     if (!menu) return
     const onPointerDown = (e: PointerEvent) => {
       const t = e.target as Node
-      if (dockRef.current?.contains(t) || popupRef.current?.contains(t)) return
+      // O submenu é um portal separado: sem o subRef aqui, o pointerdown fechava
+      // o menu ANTES do clique chegar na linha (status/mic/conta não aplicavam).
+      if (dockRef.current?.contains(t) || popupRef.current?.contains(t) || subRef.current?.contains(t)) return
       setMenu(null)
       setSub(null)
     }
@@ -129,7 +128,7 @@ export function UserDock({ floating = false, aboveDiscover = false }: UserDockPr
   if (settingsOpen) return null
 
   const settings = (currentUser.settings || {}) as Record<string, unknown>
-  const status: StatusId = typeof settings.status === 'string' && settings.status in STATUS ? settings.status as StatusId : 'online'
+  const status: StatusId = statusFromSettings(settings)
   const statusMessage = typeof settings.statusMessage === 'string' ? settings.statusMessage : ''
   const micPref = (() => { try { return localStorage.getItem('friends-space:mic') || '' } catch { return '' } })()
   const outPref = (() => { try { return localStorage.getItem('friends-space:output') || '' } catch { return '' } })()
@@ -247,7 +246,7 @@ export function UserDock({ floating = false, aboveDiscover = false }: UserDockPr
         >
           <span className="ud-avatar">
             <Avatar src={currentUser.photoUrl || ''} name={currentUser.name || 'U'} size={32} />
-            <span className="ud-dot" style={{ background: STATUS[status].color }} />
+            <span className="ud-dot"><StatusIcon status={status} size={9} /></span>
           </span>
           <span className="ud-identity">
             <span className="ud-name">{currentUser.name || 'Usuário'}</span>
@@ -293,7 +292,7 @@ export function UserDock({ floating = false, aboveDiscover = false }: UserDockPr
                 <div className="ud-banner" style={banner ? { backgroundImage: `url(${banner})` } : undefined} />
                 <span className="ud-profile-avatar">
                   <Avatar src={currentUser.photoUrl || ''} name={currentUser.name || 'U'} size={54} />
-                  <span className="ud-dot ud-dot-lg" style={{ background: STATUS[status].color }} />
+                  <span className="ud-dot ud-dot-lg"><StatusIcon status={status} size={12} /></span>
                 </span>
                 <div className="ud-profile-names">
                   <strong>{currentUser.name || 'Usuário'}</strong>
@@ -303,7 +302,7 @@ export function UserDock({ floating = false, aboveDiscover = false }: UserDockPr
               </div>
               <div className="ud-divider" />
               <MenuRow icon={<Pen size={14} strokeWidth={2} />} label="Editar perfil" onClick={() => { closeAll(); fire('friends-space:edit-profile') }} />
-              <MenuRow icon={<span className="ud-dot" style={{ background: STATUS[status].color }} />} label="Status" hint={STATUS[status].label} arrow onMouseEnter={hoverSub('status')} onClick={() => openSub('status')} />
+              <MenuRow icon={<span className="ud-dot"><StatusIcon status={status} size={9} /></span>} label="Status" hint={STATUS[status].label} arrow onMouseEnter={hoverSub('status')} onClick={() => openSub('status')} />
               <MenuRow icon={<Sparkles size={14} strokeWidth={2} />} label="Insígnias" arrow onMouseEnter={hoverSub('badges')} onClick={() => openSub('badges')} />
               <MenuRow icon={<Rocket size={14} strokeWidth={2} />} label="ASTRO" onClick={() => { closeAll(); fire('friends-space:open-astro') }} />
               <MenuRow icon={<HelpCircle size={14} strokeWidth={2} />} label="Ajuda" onClick={() => { closeAll(); fire('friends-space:open-help') }} />
@@ -364,6 +363,7 @@ export function UserDock({ floating = false, aboveDiscover = false }: UserDockPr
 
       {menu && sub && createPortal(
         <div
+          ref={subRef}
           className="ud-portal ud-submenu"
           style={{ left: sub.left, bottom: sub.bottom, width: SUB_WIDTH }}
           onMouseEnter={cancelCloseSub}
@@ -373,7 +373,7 @@ export function UserDock({ floating = false, aboveDiscover = false }: UserDockPr
             <>
               {(Object.keys(STATUS) as StatusId[]).map(id => (
                 <button key={id} type="button" className="ud-row ud-status-row" onClick={() => saveStatus(id)}>
-                  <span className="ud-dot" style={{ background: STATUS[id].color }} />
+                  <span className="ud-dot"><StatusIcon status={id} size={9} /></span>
                   <span className="ud-status-text">
                     <span className="ud-row-label">{STATUS[id].label}</span>
                     <span className="ud-status-desc">{STATUS[id].description}</span>

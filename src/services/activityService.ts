@@ -155,13 +155,14 @@ async function pollOnce() {  const api = getApi()
   if (settings.autoStatus === false) return true
   const app = await api.getActiveApp!()
   if (!app || !app.name) {
-    if (lastApp !== null) {
-      lastApp = null
-      const prev = useUserStore.getState().currentUser
-      if (prev && (prev.activityName || (prev.settings && (prev.settings as Record<string, unknown>).statusMessage))) {
-        const nextSettings = { ...(prev.settings || {}), statusMessage: '' }
-        void useUserStore.getState().updateUser({ activityName: '', activityDetails: '', activityStartedAt: 0, settings: nextSettings })
-      }
+    // Sem app em foco: SEMPRE limpa atividade/status antigos (antes isso só
+    // rodava se lastApp tivesse sido setado NESTA sessão — fechar o app com o
+    // VS Code aberto deixava "Jogando VS Code" preso para sempre no perfil).
+    lastApp = null
+    const prev = useUserStore.getState().currentUser
+    if (prev && (prev.activityName || (prev.settings && (prev.settings as Record<string, unknown>).statusMessage))) {
+      const nextSettings = { ...(prev.settings || {}), statusMessage: '' }
+      void useUserStore.getState().updateUser({ activityName: '', activityDetails: '', activityStartedAt: 0, settings: nextSettings })
     }
     return true
   }

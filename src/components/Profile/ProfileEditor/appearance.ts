@@ -2,7 +2,6 @@ import type { CSSProperties } from "react";
 import { getAstroTier } from "../../../utils/astro";
 
 export type Plan = "free" | "astro" | "astroPlus" | "astroPlusGold";
-export type SocialStatus = "online" | "away" | "dnd" | "invisible";
 
 export type AppearanceThemeId = "default" | "white" | "green" | "blue" | "red" | "pink" | "electron" | "yellow" | "purple" | "gray" | "babyblue" | "black" | "beige" | "brown" | "khaki" | "gradient";
 export type AppearanceTextColorId = "default" | "white" | "silver" | "green" | "blue" | "pink" | "yellow" | "purple" | "gold";
@@ -191,21 +190,52 @@ export function serializeAppearance(appearance: AppearanceSettings): Record<stri
 // Conjuntos de temas/fundos liberados por plano (cumulativo: o plano superior
 // inclui tudo do inferior). Usado para REGREDIR a aparência quando o usuário
 // cancela a assinatura ou o astroUntil expira: o tema do site volta ao free.
-// FREE: Preto e Branco (default=preto/verde escuro, white=modo branco) + todas
-// as 9 fontes + todas as 9 cores de letra + 2 fundos.
+// FREE: Padrão e Branco. ASTRO: + Verde, Azul, Roxo, Elétron (fundos Papel,
+// Carbono, Espaço). ASTRO+: + Rosa, Vermelho, Amarelo, Cinza, Azul Claro
+// (fundos Aurora, Pôr do Sol). ASTRO PLUS: + Preto, Bege, Marrom, Caqui,
+// Gradiente (fundo Galáxia). Fontes e cores de letra são livres em todos.
 export const PLAN_THEMES: Record<Plan, AppearanceThemeId[]> = {
   free: ["default", "white"],
-  astro: ["default", "white"],
-  astroPlus: ["default", "white"],
-  astroPlusGold: ["default", "white"],
+  astro: ["default", "white", "green", "blue", "purple", "electron"],
+  astroPlus: ["default", "white", "green", "blue", "purple", "electron", "red", "pink", "yellow", "gray", "babyblue"],
+  astroPlusGold: ["default", "white", "green", "blue", "purple", "electron", "red", "pink", "yellow", "gray", "babyblue", "black", "beige", "brown", "khaki", "gradient"],
 };
 
 export const PLAN_BACKGROUNDS: Record<Plan, AppearanceBgId[]> = {
   free: ["default", "white"],
-  astro: ["default", "white"],
-  astroPlus: ["default", "white"],
-  astroPlusGold: ["default", "white"],
+  astro: ["default", "white", "paper", "carbon", "space"],
+  astroPlus: ["default", "white", "paper", "carbon", "space", "aurora", "sunset"],
+  astroPlusGold: ["default", "white", "paper", "carbon", "space", "aurora", "sunset", "galaxy"],
 };
+
+export const PLAN_LABELS: Record<Plan, string> = {
+  free: "GRATUITO",
+  astro: "ASTRO",
+  astroPlus: "ASTRO+",
+  astroPlusGold: "ASTRO PLUS",
+};
+
+// Catalogo completo (ordem de exibicao no editor: do free para o topo).
+export const ALL_APPEARANCE_THEMES: AppearanceThemeId[] = ["default", "white", "green", "blue", "purple", "electron", "red", "pink", "yellow", "gray", "babyblue", "black", "beige", "brown", "khaki", "gradient"];
+export const ALL_APPEARANCE_BACKGROUNDS: AppearanceBgId[] = ["default", "white", "paper", "carbon", "space", "aurora", "sunset", "galaxy"];
+
+export const APPEARANCE_THEME_LABELS: Record<AppearanceThemeId, string> = {
+  default: "Padrão", white: "Branco", green: "Verde", blue: "Azul", red: "Vermelho", pink: "Rosa", electron: "Elétron", yellow: "Amarelo", purple: "Roxo", gray: "Cinza", babyblue: "Azul Claro", black: "Preto", beige: "Bege", brown: "Marrom", khaki: "Caqui", gradient: "Gradiente",
+};
+
+export const APPEARANCE_BG_LABELS: Record<AppearanceBgId, string> = {
+  default: "Padrão", white: "Branco", paper: "Papel", carbon: "Carbono", space: "Espaço", aurora: "Aurora", sunset: "Pôr do Sol", galaxy: "Galáxia",
+};
+
+const PLAN_ORDER: Plan[] = ["free", "astro", "astroPlus", "astroPlusGold"];
+
+export function requiredPlanForTheme(theme: AppearanceThemeId): Plan {
+  return PLAN_ORDER.find((plan) => PLAN_THEMES[plan].includes(theme)) ?? "astroPlusGold";
+}
+
+export function requiredPlanForBackground(bg: AppearanceBgId): Plan {
+  return PLAN_ORDER.find((plan) => PLAN_BACKGROUNDS[plan].includes(bg)) ?? "astroPlusGold";
+}
 
 export function planFromUser(user?: { settings?: Record<string, unknown> } | null): Plan {
   const tier = getAstroTier(user);

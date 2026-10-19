@@ -34,10 +34,9 @@ export const useFriendStore = create<FriendState>((set, get) => ({
   loadFriends: async (userId) => {
     try {
       const result = await requestBackend<{ friends: Friend[], friendUsers: User[] }>('loadFriends', { userId })
-      const prev = get()
-      if (prev.friends.length === result.friends.length && prev.friendUsers.length === result.friendUsers.length) {
-        if (prev.friends.length === 0 || (prev.friends[0].id === result.friends[0]?.id && prev.friendUsers[0]?.id === result.friendUsers[0]?.id)) return
-      }
+      // SEMPRE aplica o resultado: o short-circuit antigo (mesmo length/ids
+      // iguais -> return) congelava lastSeenAt/atividade para sempre, e a UI
+      // mostrava "Offline" e "Jogando X" eternos mesmo com dado novo no banco.
       set(result)
       try {
         const db = getDb(localStorage.getItem('friends-space:profile-id') || userId)

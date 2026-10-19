@@ -13,11 +13,16 @@ let authEpoch = 0
 let lastKnownUser: User | null = null
 
 const ONLINE_THRESHOLD_MS = 45000
-const HEARTBEAT_INTERVAL_MS = 15000
+// O ticker de background dispara a cada 15s; o gate precisa ser MENOR que o
+// tick, senao o batimento e pulado (antes 15000 = 15000: ~metade dos ticks era
+// descartada e a presenca efetiva ficava em ~30s, colada no limite de 45s —
+// quem saia de uma call "ficava offline" ate dar refresh na pagina).
+const HEARTBEAT_INTERVAL_MS = 10000
 let heartbeatStarted = false
 let heartbeatOff: (() => void) | null = null
 let presenceTimer: number | null = null
 let lastBeatAt = 0
+let heartbeatTabsCounted = false
 
 export function isUserOnline(user: { lastSeenAt?: number } | null | undefined): boolean {
   if (!user || !user.lastSeenAt) return false
@@ -41,6 +46,11 @@ async function sendHeartbeat() {
       })
     }
   } catch { }
+}
+
+export function pokeHeartbeat() {
+  lastBeatAt = 0
+  void sendHeartbeat()
 }
 
 function startPresencePoll() {
@@ -80,6 +90,7 @@ function startHeartbeat() {
   try {
     const n = Number(window.localStorage.getItem('friends-space:tabs') || '0')
     window.localStorage.setItem('friends-space:tabs', String(n + 1))
+    heartbeatTabsCounted = true
   } catch { }
   lastBeatAt = 0
   void sendHeartbeat()
@@ -108,6 +119,15 @@ function stopHeartbeat() {
   if (presenceTimer !== null) {
     window.clearInterval(presenceTimer)
     presenceTimer = null
+  }
+  // Devolve a contagem de abas: sem isso, ciclos start/stop inflavam o
+  // contador e o markOffline do pagehide nunca disparava (fantasma online).
+  if (heartbeatTabsCounted) {
+    try {
+      const n = Math.max(0, Number(window.localStorage.getItem('friends-space:tabs') || '1') - 1)
+      window.localStorage.setItem('friends-space:tabs', String(n))
+    } catch { }
+    heartbeatTabsCounted = false
   }
   heartbeatStarted = false
 }
@@ -142,7 +162,7 @@ interface UserState {
   users: User[]
   loadCurrentUser: () => Promise<void>
   signInWithGoogle: (profile: GoogleProfile, idToken?: string, accessToken?: string) => Promise<User>
-  signInWithName: (name: string) => Promise<User>
+  signInWithName: (name: string, devKey?: string) => Promise<User>
   signOut: () => Promise<void>
   handleSessionExpired: () => void
   trySilentReauth: () => Promise<boolean>
@@ -277,10 +297,10 @@ export const useUserStore = create<UserState>((set, get) => ({
     startHeartbeat()
     return result.user
   },
-  signInWithName: async (name: string) => {
+  signInWithName: async (name: string, devKey?: string) => {
     authEpoch += 1
     const requestEpoch = authEpoch
-    const result = await requestBackend<{ user: User, users: User[] }>('signInWithName', { name })
+    const result = await requestBackend<{ user: User, users: User[] }>('signInWithName', { name, devKey })
     if (requestEpoch !== authEpoch) return result.user
     localStorage.removeItem('friends-space:signed-out')
     localStorage.setItem(CURRENT_PROFILE_KEY, result.user.id)

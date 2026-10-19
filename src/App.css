@@ -472,8 +472,10 @@
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background-color: #23a55a;
-  border: 2px solid var(--bg-secondary);
+  background-color: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .fs-user-mini-name {
@@ -2137,7 +2139,7 @@
 
 .vc-mosaic {
   position: absolute;
-  inset: 0;
+  inset: 0 0 210px 0;
   background: #000;
   display: flex;
   flex-direction: column;
@@ -3996,19 +3998,7 @@
    CALL REDESIGN — estilo moderno escuro + verde (Discord/Meet)
    ══════════════════════════════════════════════════════════ */
 .vc-bg {
-  background:
-    radial-gradient(900px 480px at 15% -5%, rgba(41, 163, 255, 0.10), transparent 60%),
-    radial-gradient(800px 500px at 90% 110%, rgba(88, 101, 242, 0.12), transparent 60%),
-    linear-gradient(180deg, #0b0e12 0%, #10141a 55%, #0b0e12 100%);
-}
-.vc-bg::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 26px 26px;
-  mask-image: radial-gradient(70% 60% at 50% 40%, #000 30%, transparent 100%);
+  background: #0b0e12;
 }
 
 /* Header flutuante da call */
@@ -4073,7 +4063,7 @@
   white-space: nowrap;
 }
 
-/* Grade de participantes */
+/* Grade de participantes (cards de voz — canal de servidor) */
 .vc-tiles {
   flex: 1;
   width: 100%;
@@ -4159,6 +4149,83 @@
 .vc-tile-status.off {
   background: #ed4245;
   border-color: #ed4245;
+}
+
+/* Mosaico da call (DM/grupo) — estilo Discord: tiles preenchem a área */
+.vc-tiles-mosaic {
+  display: grid;
+  gap: 12px;
+  align-content: stretch;
+  grid-auto-rows: minmax(140px, 1fr);
+  padding: 68px 16px 116px;
+}
+.vc-tiles-mosaic .vc-tile {
+  width: 100%;
+  height: 100%;
+  min-height: 140px;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+  background: #111214;
+  border-radius: 16px;
+  backdrop-filter: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+.vc-tiles-mosaic .vc-tile:hover {
+  transform: none;
+}
+.vc-tiles-mosaic .vc-tile-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background: #000;
+}
+.vc-tile-bar {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 20px);
+  padding: 4px 9px;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 8px;
+  backdrop-filter: blur(6px);
+}
+.vc-tiles-mosaic .vc-tile-name {
+  font-size: 13px;
+}
+.vc-tiles-mosaic .vc-tile-status {
+  position: static;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+}
+.vc-tiles-mosaic .vc-tile-status.off {
+  background: transparent;
+  color: #ed4245;
+}
+.vc-ringing-hint {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 21;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary, #b5bac1);
+  background: rgba(13, 16, 20, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  padding: 6px 16px;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
 }
 
 /* Dock de controles flutuante */
@@ -4260,12 +4327,21 @@
 /* Palco de tela compartilhada */
 .vc-main-screen {
   position: absolute;
-  inset: 18px 18px 108px;
+  inset: 18px 18px 222px;
   background: #000;
   border-radius: 20px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(41, 163, 255, 0.08);
+}
+/* Faixa de pessoas abaixo das telas (durante compartilhamento) */
+.vc-screen-people {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 132px;
+  z-index: 24;
+  border-radius: 16px;
 }
 .vc-topbar {
   position: absolute;
@@ -4325,6 +4401,15 @@
     min-height: 170px;
     padding: 18px 10px 16px;
   }
+  .vc-tiles-mosaic {
+    gap: 8px;
+    padding: 64px 10px 150px;
+  }
+  .vc-tiles-mosaic .vc-tile {
+    width: 100%;
+    min-height: 120px;
+    padding: 0;
+  }
   .vc-call-title {
     max-width: 120px;
   }
@@ -4340,7 +4425,15 @@
     height: 54px;
   }
   .vc-main-screen {
-    inset: 10px 10px 120px;
+    inset: 10px 10px 206px;
+  }
+  .vc-mosaic {
+    inset: 0 0 192px 0;
+  }
+  .vc-screen-people {
+    left: 10px;
+    right: 10px;
+    bottom: 124px;
   }
 }
 
@@ -4770,6 +4863,8 @@ button, input, select, textarea {
 .appearance-color-grid button { display: flex; align-items: center; gap: 7px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-secondary); padding: 9px 10px; border-radius: 9px; font-size: 11.5px; font-weight: 600; cursor: pointer; transition: all 150ms ease; }
 .appearance-color-grid button:hover { border-color: var(--accent); color: var(--text-primary); }
 .appearance-color-grid button.selected { background: var(--accent); color: #04120a; border-color: transparent; font-weight: 800; }
+.appearance-color-grid button.locked { opacity: .5; }
+.appearance-color-grid button.locked:hover { border-color: var(--border); color: var(--text-secondary); }
 .appearance-color-swatch { width: 14px; height: 14px; min-width: 14px; border-radius: 50%; border: 1px solid rgba(128,128,128,.4); display: inline-block; }
 .appearance-modal-footer { padding: 14px 18px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; background: var(--bg-secondary); }
 .appearance-modal-footer button { background: var(--accent); color: #04120a; border: none; font-weight: 800; font-size: 13px; padding: 10px 26px; border-radius: 10px; cursor: pointer; }
@@ -4806,6 +4901,9 @@ button, input, select, textarea {
 .vp-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 .vp-btn.vp-active { background: var(--accent); border-color: var(--accent); color: #04120a; }
 .vp-btn.vp-active:hover { background: var(--accent); color: #04120a; }
+.vp-btn.vp-muted { background: #ed4245; border-color: #ed4245; color: #fff; }
+.vp-btn.vp-muted:hover { background: #f2555a; color: #fff; }
+.vp-mute-btn { flex: 0 0 auto; padding-left: 10px; padding-right: 10px; }
 .vp-btn.vp-danger { color: #ed4245; border-color: color-mix(in srgb, #ed4245 40%, transparent); flex: 0 0 40px; }
 .vp-btn.vp-danger:hover { background: color-mix(in srgb, #ed4245 14%, transparent); color: #ed4245; }
 .vp-name {

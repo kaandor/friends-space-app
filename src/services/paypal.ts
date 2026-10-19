@@ -8,10 +8,6 @@ const CURRENCY = 'BRL'
 let scriptLoaded = false
 let loadPromise: Promise<void> | null = null
 
-export function paypalEnabled(): boolean {
-  return Boolean(CLIENT_ID)
-}
-
 export function loadPayPalScript(): Promise<void> {
   if (!CLIENT_ID) return Promise.resolve()
   if (scriptLoaded) return Promise.resolve()

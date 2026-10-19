@@ -162,72 +162,6 @@ export async function selectBestMicDevice(): Promise<{ deviceId: string; label: 
   }
 }
 
-export interface SmartCapture {
-  stream: MediaStream
-  micLabel: string
-  micAuto: boolean
-  cleanAudio: boolean
-}
-
-// Captura inteligente: primeiro garante permissao/stream padrao, depois (so se
-// autoSelectMic, i.e. ASTRO) procura um mic dedicado e recaptura nele, e por
-// fim aplica o RNNoise se o usuario ativou o audio limpo. Falha em qualquer
-// etapa cai de volta para a stream padrao — nunca quebra a entrada na call.
-export async function acquireCallMediaSmart(
-  mode: CallMode,
-  quality: CallQuality,
-  fps: CallFps = 60,
-  autoSelectMic = false,
-): Promise<SmartCapture> {
-  const first = await acquireCallMedia(mode, quality, undefined, fps)
-  const firstLabel = (() => {
-    try { return first.getAudioTracks()[0]?.label || '' } catch { return '' }
-  })()
-  let stream = first
-  let micLabel = firstLabel
-  let micAuto = false
-  if (autoSelectMic) {
-    try {
-      const best = await selectBestMicDevice()
-      const curId = (() => {
-        try { return first.getAudioTracks()[0]?.getSettings?.().deviceId || '' } catch { return '' }
-      })()
-      if (best && best.deviceId && best.deviceId !== curId) {
-        try {
-          const second = await acquireCallMedia(mode, quality, best.deviceId, fps)
-          stopMediaStream(first)
-          try { localStorage.setItem('friends-space:mic', best.deviceId) } catch { }
-          stream = second
-          micLabel = best.label
-          micAuto = true
-        } catch {
-          // Mantem a primeira stream.
-        }
-      }
-    } catch {
-      // Mantem a primeira stream.
-    }
-  }
-  // Audio limpo (RNNoise): so Astro (autoSelectMic) + pref ativada. Qualquer
-  // falha mantem a stream sem filtro.
-  let cleanAudio = false
-  if (autoSelectMic) {
-    try {
-      const { isCleanAudioEnabledPref, enableCleanAudio } = await import('./rnnoise')
-      if (isCleanAudioEnabledPref()) {
-        const handle = await enableCleanAudio(stream)
-        if (handle) {
-          stream = handle.stream
-          cleanAudio = true
-        }
-      }
-    } catch {
-      // Mantem sem filtro.
-    }
-  }
-  return { stream, micLabel, micAuto, cleanAudio }
-}
-
 export async function acquireCallMedia(mode: CallMode, quality: CallQuality, deviceId?: string, fps: CallFps = 60) {
   const { unlockAudio } = await import('./audioUnlock')
   unlockAudio()
@@ -330,7 +264,46 @@ export function stopMediaStream(stream: MediaStream | null | undefined): void {
   stream.getTracks().forEach(track => track.stop())
 }
 
+// Volume remoto ate 200%: HTMLMediaElement.volume satura em 1, entao o ganho
+// extra (>100%) e feito por GainNode (WebAudio), um grafo por elemento.
+const remoteGainChains = new WeakMap<HTMLMediaElement, { ctx: AudioContext; gain: GainNode }>()
+let remoteGainCtx: AudioContext | null = null
+
+function remoteGainChain(el: HTMLMediaElement): { ctx: AudioContext; gain: GainNode } | null {
+  const existing = remoteGainChains.get(el)
+  if (existing) return existing
+  try {
+    const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!Ctor) return null
+    if (!remoteGainCtx || remoteGainCtx.state === 'closed') remoteGainCtx = new Ctor()
+    const ctx = remoteGainCtx
+    const source = ctx.createMediaElementSource(el)
+    const gain = ctx.createGain()
+    source.connect(gain)
+    gain.connect(ctx.destination)
+    const chain = { ctx, gain }
+    remoteGainChains.set(el, chain)
+    return chain
+  } catch {
+    return null
+  }
+}
+
 export function applyRemoteGain(el: HTMLMediaElement, volume: number): void {
-  const v = Math.max(0, Math.min(1, volume))
-  el.volume = v
+  const v = Math.max(0, Math.min(2, volume))
+  try {
+    el.volume = Math.min(1, v)
+    el.muted = v <= 0
+  } catch { }
+  if (v <= 1) {
+    const chain = remoteGainChains.get(el)
+    if (chain) { try { chain.gain.gain.value = 1 } catch { } }
+    return
+  }
+  const chain = remoteGainChain(el)
+  if (!chain) return
+  try {
+    if (chain.ctx.state === 'suspended') void chain.ctx.resume().catch(() => { })
+    chain.gain.gain.value = v
+  } catch { }
 }

@@ -19,10 +19,6 @@ export const DIAG_CODES = {
 
 export type DiagCode = keyof typeof DIAG_CODES
 
-export function diagMessage(code: DiagCode): string {
-  return DIAG_CODES[code]
-}
-
 export interface DiagEntry {
   code: DiagCode
   where: string

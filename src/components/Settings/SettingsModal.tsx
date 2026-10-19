@@ -5,7 +5,7 @@ import { Button } from '../ui/Button'
 import { useUserStore } from '../../stores/userStore'
 import { useLangStore } from '../../stores/langStore'
 import { useSettingsStore, type SettingsTabId } from '../../stores/settingsStore'
-import { useNotificationStore } from '../../stores/notificationStore'
+import { useNotificationStore, NOTIF_DEFAULT_OFF_SETTINGS } from '../../stores/notificationStore'
 import { getAudioInputDevices, getAudioOutputDevices, supportsSinkId, inputVolumePref, setInputVolume } from '../../services/antiloud'
 import { connectDrive, disconnectDrive, getDriveStorage, isDriveConnected, type DriveStorageInfo } from '../../services/driveService'
 import { pingBackend } from '../../services/backend'
@@ -52,11 +52,13 @@ const TAB_LABELS: Record<SettingsTabId, string> = {
 const NOTIF_TOGGLES: { key: string; label: string; description: string }[] = [
   { key: 'notifMentions', label: 'Menções (@)', description: 'Notificação quando alguém te mencionar em um chat.' },
   { key: 'notifDm', label: 'Mensagens diretas', description: 'Notificações de novas mensagens diretas.' },
+  { key: 'notifFriendRequests', label: 'Solicitações de amizade', description: 'Pedidos e aceites de amizade.' },
+  { key: 'notifFriendAlerts', label: 'Amigos online e status', description: 'Quando amigos ficarem online ou mudarem de status.' },
+  { key: 'notifFeed', label: 'Feed e mural', description: 'Comentários no seu post do feed.' },
+  { key: 'notifCallInvites', label: 'Convites para calls', description: 'Notificações de convites para chamadas.' },
   { key: 'notifServerMessages', label: 'Mensagens em servidores', description: 'Notificações de mensagens nos servidores.' },
   { key: 'notifServerEvents', label: 'Eventos de servidores', description: 'Notificações de eventos dos servidores.' },
-  { key: 'notifFriendAlerts', label: 'Avisos de amigos', description: 'Quando amigos ficarem online ou mudarem de status.' },
   { key: 'notifCallAlerts', label: 'Atividade em calls', description: 'Avisos de atividade em chamadas (entrou/saiu, tela).' },
-  { key: 'notifCallInvites', label: 'Convites para calls', description: 'Notificações de convites para chamadas.' },
   { key: 'notifAstro', label: 'Novidades do ASTRO', description: 'Atualizações e novidades do plano ASTRO.' },
 ]
 
@@ -142,7 +144,10 @@ export function SettingsModal() {
 
   const notifOn = (key: string) => {
     const v = settings[key]
-    return v !== false && v !== 'off'
+    if (v === true || v === 'on') return true
+    if (v === false || v === 'off') return false
+    // Nasce desligado: só notifica se o usuário ligar (mesmo padrão do store).
+    return !NOTIF_DEFAULT_OFF_SETTINGS.includes(key)
   }
 
   const toggleNotif = (key: string) => {

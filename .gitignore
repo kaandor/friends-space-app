@@ -1,4 +1,4 @@
-# Logs
+﻿# Logs
 logs
 *.log
 npm-debug.log*
@@ -35,7 +35,7 @@ firebase-functions/app.js
 .env*
 # Secret do Google do app desktop (lido pelo electron/main.cjs, vai no asar)
 electron/auth-secret.json
-# Instaladores e builds desktop (vão para Releases via CI, nunca no git)
+# Instaladores e builds desktop (vÃ£o para Releases via CI, nunca no git)
 release/
 win-unpacked/
 linux-unpacked/
@@ -46,3 +46,5 @@ linux-unpacked/
 *.tar.xz
 *.rar
 *.blockmap
+.dev.vars
+.wrangler/

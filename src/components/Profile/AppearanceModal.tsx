@@ -1,8 +1,11 @@
 import { useState } from 'react'
-import { X, Sparkles } from 'lucide-react'
+import { X, Sparkles, LockKeyhole } from 'lucide-react'
 import { useUserStore } from '../../stores/userStore'
 import {
-  APPEARANCE_FONTS, APPEARANCE_TEXT_COLORS, PLAN_THEMES, PLAN_BACKGROUNDS,
+  APPEARANCE_FONTS, APPEARANCE_THEMES, APPEARANCE_TEXT_COLORS, APPEARANCE_BACKGROUNDS,
+  APPEARANCE_THEME_LABELS, APPEARANCE_BG_LABELS, ALL_APPEARANCE_THEMES, ALL_APPEARANCE_BACKGROUNDS,
+  PLAN_LABELS, requiredPlanForTheme, requiredPlanForBackground,
+  PLAN_THEMES, PLAN_BACKGROUNDS,
   parseAppearance, serializeAppearance, planFromUser,
   type AppearanceThemeId, type AppearanceFontId, type AppearanceBgId, type AppearanceTextColorId,
 } from './ProfileEditor/appearance'
@@ -53,13 +56,29 @@ export function AppearanceModal({ onClose }: Props) {
             </div>
           </div>
           <div className="appearance-group">
-            <label>Tema de Cores ({plan.toUpperCase()})</label>
-            <div className="appearance-options-grid">
-              {PLAN_THEMES[plan].map((tid) => (
-                <button key={tid} className={theme === tid ? 'selected' : ''} onClick={() => setTheme(tid)}>
-                  {tid === 'default' ? 'Padrão' : 'Branco'}
-                </button>
-              ))}
+            <label>Tema de Cores ({PLAN_LABELS[plan]})</label>
+            <div className="appearance-color-grid">
+              {ALL_APPEARANCE_THEMES.map((tid) => {
+                const locked = !PLAN_THEMES[plan].includes(tid)
+                return (
+                  <button
+                    key={tid}
+                    className={[theme === tid ? 'selected' : '', locked ? 'locked' : ''].filter(Boolean).join(' ')}
+                    onClick={() => {
+                      if (locked) {
+                        setMsg(`${APPEARANCE_THEME_LABELS[tid]} — disponível no plano ${PLAN_LABELS[requiredPlanForTheme(tid)]}. Faça upgrade para desbloquear.`)
+                        return
+                      }
+                      setTheme(tid)
+                      setMsg(`Tema ${APPEARANCE_THEME_LABELS[tid]} selecionado`)
+                    }}
+                  >
+                    <span className="appearance-color-swatch" style={{ background: APPEARANCE_THEMES[tid].accent }} />
+                    {APPEARANCE_THEME_LABELS[tid]}
+                    {locked && <LockKeyhole size={11} style={{ marginLeft: 'auto', opacity: 0.65 }} />}
+                  </button>
+                )
+              })}
             </div>
           </div>
           <div className="appearance-group">
@@ -91,12 +110,28 @@ export function AppearanceModal({ onClose }: Props) {
           </div>
           <div className="appearance-group">
             <label>Plano de Fundo (Background)</label>
-            <div className="appearance-options-grid">
-              {PLAN_BACKGROUNDS[plan].map((bid) => (
-                <button key={bid} className={bg === bid ? 'selected' : ''} onClick={() => setBg(bid)}>
-                  {bid === 'default' ? 'Padrão' : 'Branco'}
-                </button>
-              ))}
+            <div className="appearance-color-grid">
+              {ALL_APPEARANCE_BACKGROUNDS.map((bid) => {
+                const locked = !PLAN_BACKGROUNDS[plan].includes(bid)
+                return (
+                  <button
+                    key={bid}
+                    className={[bg === bid ? 'selected' : '', locked ? 'locked' : ''].filter(Boolean).join(' ')}
+                    onClick={() => {
+                      if (locked) {
+                        setMsg(`${APPEARANCE_BG_LABELS[bid]} — disponível no plano ${PLAN_LABELS[requiredPlanForBackground(bid)]}. Faça upgrade para desbloquear.`)
+                        return
+                      }
+                      setBg(bid)
+                      setMsg(`Fundo ${APPEARANCE_BG_LABELS[bid]} selecionado`)
+                    }}
+                  >
+                    <span className="appearance-color-swatch" style={{ background: APPEARANCE_BACKGROUNDS[bid].color }} />
+                    {APPEARANCE_BG_LABELS[bid]}
+                    {locked && <LockKeyhole size={11} style={{ marginLeft: 'auto', opacity: 0.65 }} />}
+                  </button>
+                )
+              })}
             </div>
           </div>
           {msg && <p style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 700 }}>{msg}</p>}

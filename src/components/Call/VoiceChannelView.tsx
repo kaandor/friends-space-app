@@ -21,17 +21,18 @@ import { CallChatPanel } from './CallChatPanel'
 import { getStreamPlanLabel, isQualityBlocked, getMaxStreamFps, getMaxBitrateKbps } from '../../utils/astro'
 import { requestBackend } from '../../services/backend'
 
-const clampVcVolume = (v?: number) => (typeof v === 'number' && !Number.isNaN(v) ? Math.min(1, Math.max(0, v)) : 1)
+const clampVcVolume = (v?: number) => (typeof v === 'number' && !Number.isNaN(v) ? Math.min(2, Math.max(0, v)) : 1)
 
 function VcVolumeSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
     <input
       type="range"
       min={0}
-      max={100}
+      max={200}
       value={Math.round(value * 100)}
       onChange={event => onChange(Number(event.target.value) / 100)}
       style={{ width: 110, accentColor: 'var(--accent)' }}
+      title="Volume (até 200%)"
     />
   )
 }

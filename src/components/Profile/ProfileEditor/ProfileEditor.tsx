@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { APPEARANCE_FONTS, APPEARANCE_TEXT_COLORS, clampAppearanceToPlan, parseAppearance, serializeAppearance, PLAN_THEMES, PLAN_BACKGROUNDS, type AppearanceBgId, type AppearanceFontId, type AppearanceTextColorId, type AppearanceThemeId } from "./appearance";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { APPEARANCE_FONTS, APPEARANCE_THEMES, APPEARANCE_TEXT_COLORS, APPEARANCE_BACKGROUNDS, APPEARANCE_THEME_LABELS, APPEARANCE_BG_LABELS, ALL_APPEARANCE_THEMES, ALL_APPEARANCE_BACKGROUNDS, PLAN_LABELS, requiredPlanForTheme, requiredPlanForBackground, clampAppearanceToPlan, parseAppearance, serializeAppearance, PLAN_THEMES, PLAN_BACKGROUNDS, type AppearanceBgId, type AppearanceFontId, type AppearanceTextColorId, type AppearanceThemeId } from "./appearance";
 import { useUserStore } from "../../../stores/userStore";
 import { getAstroTier } from "../../../utils/astro";
 import { NAME_COLORS, type NameEffect } from "../../../utils/nameStyle";
@@ -47,9 +47,10 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "./cn";
+import { USER_STATUS, StatusIcon, statusFromSettings, statusCssVars, type UserStatusId } from "../../../utils/userStatus";
 
 export type Plan = "free" | "astro" | "astroPlus" | "astroPlusGold";
-export type SocialStatus = "online" | "away" | "dnd" | "invisible";
+export type SocialStatus = UserStatusId;
 export type ProfileActionId = "request" | "message" | "report";
 export type ProfileActivityInfo = { name: string; details?: string; startedAt?: number };
 export type MutualProfileUser = { id: string; name: string; username?: string; photoUrl?: string };
@@ -462,13 +463,6 @@ function ProfilePreview({ plan, displayName, username, about, statusMessage, sho
 
 /* ─────────────────────────── perfil público ─────────────────────────── */
 
-const PROFILE_STATUS_COLOR: Record<SocialStatus, string> = {
-  online: "#22c55e",
-  away: "#f59e0b",
-  dnd: "#ef4444",
-  invisible: "#94a3b8",
-};
-
 const formatProfileDate = (value?: number) => (value ?? 0) > 0 ? new Date(value as number).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" }) : undefined;
 
 export function PublicProfileModal({ plan, displayName, username, about, socialStatus, statusMessage, showActivity, showServers, showMutualFriends, mural, selectedMuralFields, selectedFrame, photoUrl, bannerUrl, isSelf, nameplateId, profileFrameId, profileEffectId, nameColorId, nameEffectId, showAstroBadge, verified, isFriend, joinedAt, pronoun, friendsSince, activity, mutualFriends, mutualServers, mutualLoading, targetUserId, following, blocked, busy, onFollow, onBlock, onEdit, onClose, onProfileAction }: {
@@ -576,7 +570,7 @@ export function PublicProfileModal({ plan, displayName, username, about, socialS
     <div className="public-profile-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section className="pfm-modal" role="dialog" aria-modal="true" aria-label={isSelf ? "Seu perfil" : `Perfil de ${displayName || "usuário"}`} onMouseDown={(event) => event.stopPropagation()}>
         <button className="pfm-close" type="button" aria-label="Fechar perfil" onClick={onClose}><X size={18} /></button>
-        <aside className="pfm-left" style={{ "--pfm-status": PROFILE_STATUS_COLOR[socialStatus] } as CSSProperties}>
+        <aside className="pfm-left" style={statusCssVars(socialStatus)}>
           <ProfileCardView
             displayName={displayName}
             username={username}
@@ -721,7 +715,7 @@ export function PublicProfileModal({ plan, displayName, username, about, socialS
 
 /* ─────────────────────────── modal Social (status/privacidade/mural) ─────────────────────────── */
 
-function SocialSettingsModal({ plan, displayName, username, about, selectedFrame, status, onStatusChange, statusMessage, onStatusMessageChange, showActivity, setShowActivity, showServers, setShowServers, showMutualFriends, setShowMutualFriends, mural, selectedMuralFields, onMuralFieldToggle, onMuralItemAdd, onMuralAutoFill, onMuralItemChange, onMuralImageChange, onMuralItemRemove, onClose, onNotify, onViewProfile, onProfileAction }: {
+function SocialSettingsModal({ plan, displayName, username, about, selectedFrame, status, onStatusChange, statusMessage, onStatusMessageChange, showActivity, setShowActivity, showServers, setShowServers, showMutualFriends, setShowMutualFriends, mural, selectedMuralFields, onMuralFieldToggle, onMuralItemAdd, onMuralAutoFill, onMuralItemChange, onMuralImageChange, onMuralItemRemove, onClose, onSave, onViewProfile, onProfileAction }: {
   plan: Plan;
   displayName: string;
   username: string;
@@ -746,16 +740,11 @@ function SocialSettingsModal({ plan, displayName, username, about, selectedFrame
   onMuralImageChange: (field: MuralFieldId, itemId: string, image: string) => void;
   onMuralItemRemove: (field: MuralFieldId, itemId: string) => void;
   onClose: () => void;
-  onNotify: (message: string) => void;
+  onSave: () => void;
   onViewProfile: () => void;
   onProfileAction: (action: ProfileActionId) => void;
 }) {
-  const statuses: Array<{ id: SocialStatus; label: string; color: string }> = [
-    { id: "online", label: "Online", color: "#22c55e" },
-    { id: "away", label: "Ausente", color: "#f59e0b" },
-    { id: "dnd", label: "Não Perturbe", color: "#ef4444" },
-    { id: "invisible", label: "Invisível", color: "#94a3b8" },
-  ];
+  const statuses: Array<{ id: SocialStatus; label: string; color: string }> = (Object.keys(USER_STATUS) as SocialStatus[]).map((id) => ({ id, label: USER_STATUS[id].label, color: USER_STATUS[id].color }));
   const toggles = [["Mostrar atividade", showActivity, setShowActivity], ["Mostrar servidores em comum", showServers, setShowServers], ["Mostrar amigos em comum", showMutualFriends, setShowMutualFriends]] as const;
   return (
     <div className="social-modal-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
@@ -763,14 +752,14 @@ function SocialSettingsModal({ plan, displayName, username, about, selectedFrame
         <header className="social-modal-header"><div><span className="social-modal-kicker">VISIBILIDADE DO PERFIL</span><h2 id="social-settings-title">Social</h2><p>Escolha como outras pessoas verão sua presença, conexões e mural.</p></div><button className="frames-shop-close" type="button" aria-label="Fechar configurações sociais" onClick={onClose}><X size={18} /></button></header>
         <div className="social-modal-layout">
           <div className="social-modal-body">
-            <div className="social-control-group"><label>Status</label><div className="social-status-grid">{statuses.map((item) => <button key={item.id} type="button" className={cn("social-status-btn", status === item.id && "selected")} onClick={() => onStatusChange(item.id)} aria-pressed={status === item.id}><span className="social-status-dot" style={{ background: item.color }} />{item.label}</button>)}</div></div>
+            <div className="social-control-group"><label>Status</label><div className="social-status-grid">{statuses.map((item) => <button key={item.id} type="button" className={cn("social-status-btn", status === item.id && "selected")} onClick={() => onStatusChange(item.id)} aria-pressed={status === item.id}><StatusIcon status={item.id} size={14} />{item.label}</button>)}</div></div>
             <div className="social-control-group"><label htmlFor="social-status-message">Mensagem de Status</label><input id="social-status-message" className="social-input" maxLength={80} value={statusMessage} onChange={(event) => onStatusMessageChange(event.target.value)} placeholder="O que você está fazendo?" /><small className="social-character-count">{statusMessage.length}/80</small></div>
             <div className="social-control-group"><label>Privacidade</label>{toggles.map(([label, value, setter]) => <div className="social-toggle-row" key={label}><span>{label}</span><button type="button" className={cn("social-switch", value && "active")} aria-pressed={value} aria-label={`${label}: ${value ? "ativado" : "desativado"}`} onClick={() => setter(!value)}><span /></button></div>)}</div>
             <div className="social-control-group mural-settings-group"><div className="mural-settings-heading"><div><label>Mural</label><p>Escolha as categorias que deseja mostrar. Você pode adicionar vários itens em todas elas.</p></div><span>{selectedMuralFields.length}/9 categorias</span></div><div className="mural-category-selector">{MURAL_FIELD_DEFS.map((definition) => { const selected = selectedMuralFields.includes(definition.id); return <button className={cn("mural-category-toggle", selected && "selected")} type="button" key={definition.id} aria-pressed={selected} onClick={() => onMuralFieldToggle(definition.id)}><span>{selected ? "✓" : "+"}</span>{definition.label}</button>; })}</div><div className="mural-selected-categories">{selectedMuralFields.length ? selectedMuralFields.map((field) => { const definition = MURAL_FIELD_DEFS.find((item) => item.id === field)!; return <MuralCategoryEditor key={field} definition={definition} items={mural[field]} onAdd={() => onMuralItemAdd(field)} onAutoFill={field === 'recentGames' ? () => onMuralAutoFill(field) : undefined} onChange={(itemId, value) => onMuralItemChange(field, itemId, value)} onImageChange={(itemId, image) => onMuralImageChange(field, itemId, image)} onRemove={(itemId) => onMuralItemRemove(field, itemId)} />; }) : <p className="mural-selection-empty">Escolha uma ou mais categorias acima para começar a montar seu Mural.</p>}</div></div>
           </div>
           <ProfilePreview plan={plan} displayName={displayName} username={username} about={about} socialStatus={status} statusMessage={statusMessage} showActivity={showActivity} showServers={showServers} showMutualFriends={showMutualFriends} mural={mural} selectedMuralFields={selectedMuralFields} selectedFrame={selectedFrame} onViewProfile={onViewProfile} onProfileAction={onProfileAction} />
         </div>
-        <footer className="social-modal-footer"><button type="button" onClick={() => { onNotify("Configurações sociais e mural atualizados"); onClose(); }}>Concluir</button></footer>
+        <footer className="social-modal-footer"><button type="button" onClick={() => { onSave(); onClose(); }}>Concluir</button></footer>
       </section>
     </div>
   );
@@ -803,11 +792,11 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
   const [astroBadge, setAstroBadge] = useState(userSettings.astroBadge !== false);
   const [wishlist, setWishlist] = useState<WishlistEntry[]>(() => parseWishlist(userSettings.wishlist));
 
-  const [socialStatus, setSocialStatus] = useState<SocialStatus>("online");
-  const [statusMessage, setStatusMessage] = useState("");
-  const [showActivity, setShowActivity] = useState(true);
-  const [showServers, setShowServers] = useState(true);
-  const [showMutualFriends, setShowMutualFriends] = useState(true);
+  const [socialStatus, setSocialStatus] = useState<SocialStatus>(() => statusFromSettings(userSettings));
+  const [statusMessage, setStatusMessage] = useState(() => typeof userSettings.statusMessage === "string" ? userSettings.statusMessage : "");
+  const [showActivity, setShowActivity] = useState(userSettings.showActivity !== false);
+  const [showServers, setShowServers] = useState(userSettings.showServers !== false);
+  const [showMutualFriends, setShowMutualFriends] = useState(userSettings.showFriends !== false && userSettings.showMutualFriends !== false);
   const [mural, setMural] = useState<MuralState>(() => {
     const raw = (userSettings.mural || {}) as Record<string, unknown>
     const out = { ...EMPTY_MURAL }
@@ -988,8 +977,8 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
     try {
       const { requestBackend } = await import("../../../services/backend");
       const existing = await requestBackend<{ friendCode?: string } | undefined>("findUserByFriendCode", { friendCode: value });
-      if (existing && existing.friendCode && existing.friendCode.toUpperCase() === value.toUpperCase()) {
-        setUsernameError("Este nome de usuario ja esta em uso");
+      if (existing) {
+        setUsernameError("Este codigo ja esta em uso");
         return false;
       }
     } catch { }
@@ -1059,7 +1048,13 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
       notify("Nome e nome de usuario sao obrigatorios");
       return;
     }
-    const unique = await checkUsernameUnique(username);
+    const codeValue = username.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (codeValue.length < 3 || codeValue.length > 20) {
+      setUsernameError("Use de 3 a 20 caracteres (letras e numeros)");
+      notify("O codigo precisa ter de 3 a 20 caracteres (letras e numeros)");
+      return;
+    }
+    const unique = await checkUsernameUnique(codeValue);
     if (!unique) return;
     setSaving(true);
     try {
@@ -1089,6 +1084,7 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
         statusMessage,
         showActivity,
         showServers,
+        showFriends: showMutualFriends,
         showMutualFriends,
         mural,
         muralFields: selectedMuralFields,
@@ -1105,7 +1101,7 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
       };
       await updateUser({
         name: displayName.trim(),
-        friendCode: username.toUpperCase(),
+        friendCode: username.trim().toUpperCase().replace(/[^A-Z0-9]/g, ""),
         bio: about.trim(),
         photoUrl: finalPhotoUrl,
         bannerUrl: finalBannerUrl,
@@ -1118,6 +1114,15 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
       notify(e instanceof Error && e.message ? e.message : "Erro ao salvar alterações");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveSocialNow = async () => {
+    try {
+      await updateUser({ settings: { ...userSettings, status: socialStatus, statusMessage, showActivity, showServers, showFriends: showMutualFriends, showMutualFriends, mural, muralFields: selectedMuralFields } });
+      notify("Configurações sociais salvas");
+    } catch {
+      notify("Não foi possível salvar as configurações sociais");
     }
   };
 
@@ -1278,7 +1283,7 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
                             autoFocus
                             maxLength={20}
                             value={username}
-                            onChange={(event) => { setUsername(event.target.value.toUpperCase()); setUsernameError(""); }}
+                            onChange={(event) => { setUsername(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "")); setUsernameError(""); }}
                             onBlur={() => { if (!username.trim()) setUsername(currentUser?.friendCode || ""); setEditingField(null); }}
                             onKeyDown={(event) => { if (event.key === "Enter") (event.target as HTMLInputElement).blur(); if (event.key === "Escape") { setUsername(currentUser?.friendCode || ""); setEditingField(null); } }}
                           />
@@ -1492,7 +1497,7 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
         />
       )}
 
-      {isSocialOpen && <SocialSettingsModal plan={savedPlan} displayName={displayName} username={username} about={about} selectedFrame={decoration as FrameId} status={socialStatus} onStatusChange={setSocialStatus} statusMessage={statusMessage} onStatusMessageChange={setStatusMessage} showActivity={showActivity} setShowActivity={setShowActivity} showServers={showServers} setShowServers={setShowServers} showMutualFriends={showMutualFriends} setShowMutualFriends={setShowMutualFriends} mural={mural} selectedMuralFields={selectedMuralFields} onMuralFieldToggle={toggleMuralField} onMuralItemAdd={addMuralItem} onMuralAutoFill={() => void fillRecentFromActivity()} onMuralItemChange={updateMuralItem} onMuralImageChange={updateMuralImage} onMuralItemRemove={removeMuralItem} onClose={() => setIsSocialOpen(false)} onNotify={notify} onViewProfile={() => setIsPublicProfileOpen(true)} onProfileAction={handleProfileAction} />}
+      {isSocialOpen && <SocialSettingsModal plan={savedPlan} displayName={displayName} username={username} about={about} selectedFrame={decoration as FrameId} status={socialStatus} onStatusChange={setSocialStatus} statusMessage={statusMessage} onStatusMessageChange={setStatusMessage} showActivity={showActivity} setShowActivity={setShowActivity} showServers={showServers} setShowServers={setShowServers} showMutualFriends={showMutualFriends} setShowMutualFriends={setShowMutualFriends} mural={mural} selectedMuralFields={selectedMuralFields} onMuralFieldToggle={toggleMuralField} onMuralItemAdd={addMuralItem} onMuralAutoFill={() => void fillRecentFromActivity()} onMuralItemChange={updateMuralItem} onMuralImageChange={updateMuralImage} onMuralItemRemove={removeMuralItem} onClose={() => setIsSocialOpen(false)} onSave={() => { void saveSocialNow(); }} onViewProfile={() => setIsPublicProfileOpen(true)} onProfileAction={handleProfileAction} />}
 
       {isPublicProfileOpen && <PublicProfileModal plan={renderPlan} displayName={displayName} username={username} about={about} socialStatus={socialStatus} statusMessage={statusMessage} showActivity={showActivity} showServers={showServers} showMutualFriends={showMutualFriends} mural={mural} selectedMuralFields={selectedMuralFields} selectedFrame={decoration as FrameId} photoUrl={photoUrl ? imgSrc(photoUrl, 512) : undefined} bannerUrl={bannerUrl ? imgSrc(bannerUrl, 1200) : undefined} isSelf joinedAt={Number(currentUser?.createdAt || 0)} verified={Boolean((currentUser?.googleId || currentUser?.authProvider === "google") && userSettings.showBadges !== false)} activity={showActivity && currentUser?.activityName ? { name: currentUser.activityName, details: currentUser.activityDetails, startedAt: currentUser.activityStartedAt } : undefined} nameplateId={nameplate} profileFrameId={profileFrame} profileEffectId={profileEffect} nameColorId={nameColor} nameEffectId={nameEffect} showAstroBadge={renderPaid && astroBadge} onClose={() => setIsPublicProfileOpen(false)} onProfileAction={handleProfileAction} />}
 
@@ -1511,20 +1516,29 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
                 </div>
               </div>
               <div className="appearance-group">
-                <label>Tema de Cores ({savedPlan.toUpperCase()})</label>
-                <div className="appearance-options-grid">
-                  {PLAN_THEMES[savedPlan].map((tid) => (
-                    <button
-                      key={tid}
-                      className={selectedTheme === tid ? "selected" : ""}
-                      onClick={() => {
-                        setSelectedTheme(tid);
-                        notify(tid === "default" ? "Tema Padrão aplicado" : "Tema Branco aplicado");
-                      }}
-                    >
-                      {tid === "default" ? "Padrão" : "Branco"}
-                    </button>
-                  ))}
+                <label>Tema de Cores ({PLAN_LABELS[savedPlan]})</label>
+                <div className="appearance-color-grid">
+                  {ALL_APPEARANCE_THEMES.map((tid) => {
+                    const locked = !PLAN_THEMES[savedPlan].includes(tid);
+                    return (
+                      <button
+                        key={tid}
+                        className={cn(selectedTheme === tid ? "selected" : "", locked && "locked")}
+                        onClick={() => {
+                          if (locked) {
+                            notify(`${APPEARANCE_THEME_LABELS[tid]} — disponível no plano ${PLAN_LABELS[requiredPlanForTheme(tid)]}. Faça upgrade para desbloquear.`);
+                            return;
+                          }
+                          setSelectedTheme(tid);
+                          notify(`Tema ${APPEARANCE_THEME_LABELS[tid]} aplicado`);
+                        }}
+                      >
+                        <span className="appearance-color-swatch" style={{ background: APPEARANCE_THEMES[tid].accent }} />
+                        {APPEARANCE_THEME_LABELS[tid]}
+                        {locked && <LockKeyhole size={11} style={{ marginLeft: "auto", opacity: 0.65 }} />}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1559,19 +1573,28 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
 
               <div className="appearance-group">
                 <label>Plano de Fundo (Background)</label>
-                <div className="appearance-options-grid">
-                  {PLAN_BACKGROUNDS[savedPlan].map((bid) => (
-                    <button
-                      key={bid}
-                      className={selectedBg === bid ? "selected" : ""}
-                      onClick={() => {
-                        setSelectedBg(bid);
-                        notify(bid === "default" ? "Fundo Padrão aplicado" : "Fundo Branco aplicado");
-                      }}
-                    >
-                      {bid === "default" ? "Padrão" : "Branco"}
-                    </button>
-                  ))}
+                <div className="appearance-color-grid">
+                  {ALL_APPEARANCE_BACKGROUNDS.map((bid) => {
+                    const locked = !PLAN_BACKGROUNDS[savedPlan].includes(bid);
+                    return (
+                      <button
+                        key={bid}
+                        className={cn(selectedBg === bid ? "selected" : "", locked && "locked")}
+                        onClick={() => {
+                          if (locked) {
+                            notify(`${APPEARANCE_BG_LABELS[bid]} — disponível no plano ${PLAN_LABELS[requiredPlanForBackground(bid)]}. Faça upgrade para desbloquear.`);
+                            return;
+                          }
+                          setSelectedBg(bid);
+                          notify(`Fundo ${APPEARANCE_BG_LABELS[bid]} aplicado`);
+                        }}
+                      >
+                        <span className="appearance-color-swatch" style={{ background: APPEARANCE_BACKGROUNDS[bid].color }} />
+                        {APPEARANCE_BG_LABELS[bid]}
+                        {locked && <LockKeyhole size={11} style={{ marginLeft: "auto", opacity: 0.65 }} />}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>

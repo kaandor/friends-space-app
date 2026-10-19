@@ -6,6 +6,7 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
+    "api:local": "node scripts/local-api.mjs",
     "dev:electron": "concurrently -k \"vite\" \"wait-on http://127.0.0.1:5173 && electron .\"",
     "build": "node scripts/stamp-version.mjs && tsc -b && vite build",
     "build:cloudflare": "node scripts/stamp-version.mjs && tsc -b && vite build --mode cloudflare",
@@ -22,7 +23,6 @@
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",
-    "@jitsi/rnnoise-wasm": "^0.2.1",
     "@twemoji/api": "^17.0.3",
     "dexie": "^4.4.4",
     "electron-updater": "^6.8.9",
@@ -30,7 +30,6 @@
     "lucide-react": "^1.31.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-router-dom": "^7.18.2",
     "web-push": "^3.6.7",
     "zustand": "^5.0.14"
   },

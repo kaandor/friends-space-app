@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Camera, MonitorUp, Music, PhoneOff } from 'lucide-react'
+import { Camera, Mic, MicOff, MonitorUp, Music, PhoneOff } from 'lucide-react'
 import { Fa } from '../../utils/fa'
-import { useCallStore } from '../../stores/callStore'
+import { useCallStore, requestCallViewOpen } from '../../stores/callStore'
 import { useServerStore } from '../../stores/serverStore'
 import { WatchPartyModal } from './WatchPartyModal'
 
@@ -39,6 +39,8 @@ export function VoicePanel({ onReturnToCall }: { onReturnToCall?: () => void }) 
   const participants = useCallStore(s => s.participants)
   const screenSharing = useCallStore(s => s.screenSharing)
   const toggleScreenShare = useCallStore(s => s.toggleScreenShare)
+  const muted = useCallStore(s => s.muted)
+  const toggleMute = useCallStore(s => s.toggleMute)
   const cameraOn = useCallStore(s => s.cameraOn)
   const toggleCamera = useCallStore(s => s.toggleCamera)
   const cameraDevices = useCallStore(s => s.cameraDevices)
@@ -75,7 +77,7 @@ export function VoicePanel({ onReturnToCall }: { onReturnToCall?: () => void }) 
           {(connectedAt || createdAt) ? fmtElapsed(now - ((connectedAt || createdAt) as number)) : '--:--'}
         </span>
       </div>
-      <button className="vp-name" onClick={() => { try { onReturnToCall?.() } catch { } }} title="Voltar para a call">
+      <button className="vp-name" onClick={() => { try { requestCallViewOpen(); window.dispatchEvent(new CustomEvent('friends-space:open-call')) } catch { } try { onReturnToCall?.() } catch { } }} title="Voltar para a call">
         <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3 }}>
           {channelName}
         </div>
@@ -84,6 +86,13 @@ export function VoicePanel({ onReturnToCall }: { onReturnToCall?: () => void }) 
         </div>
       </button>
       <div style={{ display: 'flex', gap: 6 }}>
+        <button
+          className={`vp-btn vp-mute-btn${muted ? ' vp-muted' : ''}`}
+          onClick={() => { try { toggleMute() } catch { } }}
+          title={muted ? 'Reativar microfone (você está mudo)' : 'Mutar microfone (mudo total)'}
+        >
+          {muted ? <MicOff size={15} /> : <Mic size={15} />} {muted ? 'Mudo' : 'Mutar'}
+        </button>
         <div style={{ position: 'relative', flex: 1, display: 'flex', minWidth: 0 }}>
           <button
             className={`vp-btn${cameraOn ? ' vp-active' : ''}`}

@@ -50,6 +50,25 @@ function isDuplicateToast(n: AppNotification): boolean {
   return false
 }
 
+const EPHEMERAL_CALL_NOTE_TYPES = new Set(['call-invite', 'call-waiting'])
+function isEphemeralCallNote(n: AppNotification): boolean {
+  return EPHEMERAL_CALL_NOTE_TYPES.has(String(n.type || ''))
+}
+
+// Chaves de configuração que nascem DESLIGADAS (só notificam se o usuário
+// ligar explicitamente em Configurações → Notificações). Evita o "notifica
+// tudo": mensagens de servidor, status de amigos, atividade de call etc.
+export const NOTIF_DEFAULT_OFF_SETTINGS = ['notifServerMessages', 'notifServerEvents', 'notifFriendAlerts', 'notifCallAlerts', 'notifAstro']
+
+// Tipos de notificação "barulhentos" (ligados a essas configurações). Tudo que
+// não está aqui e não tem configuração notifica por padrão.
+const DEFAULT_OFF_TYPES = new Set([
+  'server-message', 'server-event', 'folder-share',
+  'status', 'online',
+  'astro', 'astro-gift',
+  'call-join', 'call-leave', 'screen-start', 'screen-stop',
+])
+
 function allowed(type: string): boolean {
   const me = useUserStore.getState().currentUser
   if (!me) return false
@@ -67,21 +86,27 @@ function allowed(type: string): boolean {
     'call-invite-response': 'notifCallInvites',
     'call-waiting': 'notifCallInvites',
     'folder-share': 'notifServerMessages',
-    'friend-accept': 'notifFriendAlerts',
-    'pending-user': 'notifFriendAlerts',
-    'server-invite': 'notifServerMessages',
-    'friend-request': 'notifFriendAlerts',
-    'online': 'notifFriendAlerts',
+    'friend-request': 'notifFriendRequests',
+    'friend-accept': 'notifFriendRequests',
     'status': 'notifFriendAlerts',
+    'online': 'notifFriendAlerts',
     'astro': 'notifAstro',
     'astro-gift': 'notifAstro',
+    'feed-comment': 'notifFeed',
   }
   const key = map[type]
-  if (!key) return true
-  const value = s[key]
-  if (value === false) return false
-  if (value === 'off') return false
-  return true
+  if (key) {
+    const value = s[key]
+    if (value === false || value === 'off') return false
+    if (value === true || value === 'on') return true
+  }
+  return !DEFAULT_OFF_TYPES.has(type)
+}
+
+// Item que aparece no histórico (sino) e pode gerar toast: fora os avisos
+// efêmeros de call e tudo que as configurações do usuário silenciaram.
+function isVisibleNotification(n: AppNotification): boolean {
+  return !isEphemeralCallNote(n) && allowed(n.type)
 }
 
 export const useNotificationStore = create<NotificationState>((set, get) => ({
@@ -96,9 +121,10 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       if (!initialLoadDone) {
         for (const n of result) lastSeenIds.add(n.id)
         initialLoadDone = true
+        const persisted = result.filter(isVisibleNotification)
         set({
-          notifications: result,
-          unread: result.filter((n) => !n.read).length,
+          notifications: persisted,
+          unread: persisted.filter((n) => !n.read).length,
         })
         return
       }
@@ -137,8 +163,8 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
         set({ toasts: [...get().toasts, ...fresh].slice(-3) })
       }
       set({
-        notifications: result,
-        unread: result.filter((n) => !n.read).length,
+        notifications: result.filter(isVisibleNotification),
+        unread: result.filter((n) => isVisibleNotification(n) && !n.read).length,
       })
     } catch {
       return

@@ -370,6 +370,7 @@ export interface CallSession {
   active: boolean
   hostUserId: string
   participantIds: string[]
+  invitedAt?: Record<string, number>
   screenSharingUserId: string
   callMode?: 'audio' | 'video'
   quality?: '480p' | '720p' | '1080p' | '2k' | '4k'
@@ -403,17 +404,6 @@ export interface CallSignal {
   type: 'offer' | 'answer' | 'candidate' | 'renegotiate' | 'decline' | 'cancel' | 'resync'
   payload: RTCSessionDescriptionInit | RTCIceCandidateInit | Record<string, unknown>
   createdAt: number
-}
-
-export interface WallPost {
-  id: string
-  ownerId: string
-  authorId: string
-  authorName: string
-  authorPhoto: string
-  content: string
-  createdAt: number
-  likes: string[]
 }
 
 export interface AppNotification {

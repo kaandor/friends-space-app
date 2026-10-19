@@ -2,7 +2,7 @@ import { Fa } from '../../utils/fa'
 import { WatchPartyBar } from './WatchPartyBar'
 import { useState, useEffect, useRef, type CSSProperties } from 'react'
 import { IconScreenShare, IconVolume, IconClose } from '../../utils/icons'
-import { useCallStore, CALL_PROTO } from '../../stores/callStore'
+import { useCallStore, CALL_PROTO, consumeCallViewOpenRequest } from '../../stores/callStore'
 import { useUserStore } from '../../stores/userStore'
 import { useFriendStore } from '../../stores/friendStore'
 import { Avatar } from '../ui/Avatar'
@@ -18,7 +18,7 @@ import { useServerStore } from '../../stores/serverStore'
 import {
   Mic, MicOff, Video, VideoOff, ScreenShare, ScreenShareOff,
   Headphones, HeadphoneOff, VolumeX, Volume2, PhoneOff, UserPlus, Ellipsis,
-  Minus, Settings, Gauge, Check, PictureInPicture2,
+  Settings, Gauge, Check, PictureInPicture2, Minimize2,
 } from 'lucide-react'
 import { RemoteControlOverlay } from './RemoteControlOverlay'
 import { isElectronDevice, useCallFullscreen } from './callFullscreen'
@@ -44,17 +44,18 @@ const setSrc = (id: string, stream: MediaStream | null) => {
   if (el && el.srcObject !== stream) el.srcObject = stream
 }
 
-const clampVolume = (v?: number) => (typeof v === 'number' && !Number.isNaN(v) ? Math.min(1, Math.max(0, v)) : 1)
+const clampVolume = (v?: number) => (typeof v === 'number' && !Number.isNaN(v) ? Math.min(2, Math.max(0, v)) : 1)
 
 function VolumeSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
     <input
       type="range"
       min={0}
-      max={100}
+      max={200}
       value={Math.round(value * 100)}
       onChange={event => onChange(Number(event.target.value) / 100)}
       style={{ width: 110, accentColor: 'var(--accent)' }}
+      title="Volume (até 200%)"
     />
   )
 }
@@ -85,6 +86,7 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
   const { currentUser } = useUserStore()
   const { friendUsers } = useFriendStore()
   const speakingUsers = useCallStore(s => s.speakingUsers)
+  const callingUser = useCallStore(s => s.callingUser)
   const recordingActive = useCallStore(s => s.recordingActive)
   const recordingBy = useCallStore(s => s.recordingBy)
   const sharingPeers = useCallStore(s => s.sharingPeers)
@@ -120,7 +122,18 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
   const [winPos, setWinPos] = useState(() => ({ x: Math.max(16, window.innerWidth - 520), y: 56 }))
   const [showDebugWindow, setShowDebugWindow] = useState(false)
   const [liveStats, setLiveStats] = useState<LocalVideoStats>({ width: 0, height: 0, fps: 0, kind: null })
-  const [minimized, setMinimized] = useState(false)
+  // Call DM embutida na conversa: o chat fica visivel durante a call (sem card
+  // flutuante). O painel "Voz conectada" (VoicePanel) pede para abrir a visao
+  // da call — via evento (ja montado) ou pedido pendente (clique antes de
+  // montar, ex.: voltando de outra tela).
+  const [embeddedExpanded, setEmbeddedExpanded] = useState(false)
+  useEffect(() => {
+    if (!embedded) return
+    const open = () => setEmbeddedExpanded(true)
+    if (consumeCallViewOpenRequest()) setEmbeddedExpanded(true)
+    window.addEventListener('friends-space:open-call', open)
+    return () => window.removeEventListener('friends-space:open-call', open)
+  }, [embedded])
   // Relogio do painel de debug: hora atual + tempo decorrido da call, atualizado
   // a cada 1s. Ajuda a perceber bug de minutagem alta (createdAt errado).
   const [nowClock, setNowClock] = useState(() => Date.now())
@@ -154,6 +167,7 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
     ? (allRemoteScreenIds.includes(focusedScreenId || '') ? focusedScreenId : allRemoteScreenIds[0])
     : null
   const isLocalScreen = Boolean(screenStream)
+  const totalScreens = allRemoteScreenIds.length + (isLocalScreen ? 1 : 0)
   const hasActiveScreen = isLocalScreen || Boolean(screenUserId)
   const screenLabel = screenUserId
     ? (participants.find(p => p.userId === screenUserId)?.userName || 'Usuário')
@@ -161,6 +175,18 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
   const stageVideoId = screenUserId ? `call-video-screen-${screenUserId}` : 'call-video-screen-mini'
   const popoutVideoId = screenUserId ? 'call-video-screen-remote-focus' : 'call-video-screen-focus'
   const hasCamera = Boolean(localStream?.getVideoTracks().length)
+  const anyRemoteVideo = Object.values(remoteStreams).some(s => { try { return s.getVideoTracks().length > 0 } catch { return false } })
+  const anyVideo = hasCamera || anyRemoteVideo
+  // Card compacto: so em call DM embutida de VOZ. Com video/tela ativos (ou
+  // expandido pelo usuario) renderiza a tela cheia para nao quebrar o palco.
+  const embeddedCompact = embedded && !embeddedExpanded && !hasActiveScreen && !anyVideo
+
+  // Mosaico e o layout PADRAO quando ha 2+ telas (a pessoa compartilhando ve
+  // todas as telas em grade + faixa de pessoas embaixo). "Sair do mosaico"
+  // (menu) volta ao palco de tela unica antigo quando quiser.
+  const [mosaic, setMosaic] = useState(true)
+  const [mosaicFocus, setMosaicFocus] = useState<string | null>(null)
+  const showMosaic = totalScreens > 1 && mosaic && !popout && !controlling
 
   const dragging = (e: { clientX: number; clientY: number }) => {
     const startX = e.clientX
@@ -194,25 +220,25 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
     for (const [userId, stream] of Object.entries(remoteStreams)) {
       setSrc(`call-video-${userId}`, stream)
       setSrc(`call-audio-${userId}`, stream)
+      setSrc(`call-tile-${userId}`, stream)
     }
     if (screenUserId && remoteScreenStreams[screenUserId]) setSrc('call-video-screen-remote-focus', remoteScreenStreams[screenUserId])
   }, [remoteStreams, remoteScreenStreams, screenUserId])
-
-  const [mosaic, setMosaic] = useState(false)
-  const [mosaicFocus, setMosaicFocus] = useState<string | null>(null)
 
   useEffect(() => {
     for (const [userId, stream] of Object.entries(remoteScreenStreams)) {
       setSrc(`call-video-screen-${userId}`, stream)
       setSrc(`call-screen-audio-${userId}`, stream)
     }
+    setSrc('call-video-screen-local', screenStream)
     // Os tiles do mosaico/destaque montam depois (ao abrir o mosaico ou
     // destacar): sem re-vincular aqui o video nasce sem srcObject (tela preta).
-  }, [remoteScreenStreams, mosaic, mosaicFocus])
+  }, [remoteScreenStreams, mosaic, mosaicFocus, showMosaic, screenStream])
 
   useEffect(() => {
     setSrc('call-video-screen-mini', screenStream)
     setSrc('call-video-screen-focus', screenStream)
+    setSrc('call-video-screen-local', screenStream)
     setSrc('call-screen-audio-local', screenStream)
   }, [screenStream])
 
@@ -221,11 +247,10 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
   }, [localStream])
 
   const applyScreenMute = (userId: string, volume: number) => {
-    const v = clampVolume(volume)
     const ids = [`call-screen-audio-${userId}`, `call-video-screen-${userId}`]
     for (const id of ids) {
       const el = document.getElementById(id) as HTMLMediaElement | null
-      if (el) { el.volume = v; el.muted = v <= 0 }
+      if (el) applyRemoteGain(el, clampVolume(volume))
     }
   }
   useEffect(() => {
@@ -239,11 +264,11 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
     const local = document.getElementById('call-screen-audio-local') as HTMLAudioElement | null
     if (local) local.volume = 0
     const localVid = document.getElementById('call-video-screen-mini') as HTMLVideoElement | null
-    if (localVid) localVid.volume = clampVolume(volumes['screen:local'])
+    if (localVid) applyRemoteGain(localVid, clampVolume(volumes['screen:local']))
     const remoteFocusVid = document.getElementById('call-video-screen-remote-focus') as HTMLVideoElement | null
-    if (remoteFocusVid && screenUserId) remoteFocusVid.volume = clampVolume(volumes[`screen:${screenUserId}`])
+    if (remoteFocusVid && screenUserId) applyRemoteGain(remoteFocusVid, clampVolume(volumes[`screen:${screenUserId}`]))
     const localFocusVid = document.getElementById('call-video-screen-focus') as HTMLVideoElement | null
-    if (localFocusVid) localFocusVid.volume = clampVolume(volumes['screen:local'])
+    if (localFocusVid) applyRemoteGain(localFocusVid, clampVolume(volumes['screen:local']))
   }, [volumes, remoteStreams, remoteScreenStreams, screenUserId, mosaicFocus])
 
   useEffect(() => {
@@ -430,7 +455,18 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
   if (!activeCall) return null
 
   const fsKey = screenUserId ? `screen:${screenUserId}` : 'screen'
-  const showMosaic = allRemoteScreenIds.length > 0 && mosaic && !popout && !controlling
+  // Foco valido: ignora id que sumiu (parou de compartilhar) e aceita a tela local.
+  const mosaicFocusValid = mosaicFocus
+    ? (mosaicFocus === 'local' ? (isLocalScreen ? mosaicFocus : null) : (allRemoteScreenIds.includes(mosaicFocus) ? mosaicFocus : null))
+    : null
+  const mosaicThumbIds = [
+    ...(isLocalScreen && mosaicFocusValid !== 'local' ? ['local'] : []),
+    ...allRemoteScreenIds.filter(u => u !== mosaicFocusValid),
+  ]
+  // Nome para rotular uma tela do mosaico (local = "Sua tela").
+  const screenNameFor = (id: string) => id === 'local'
+    ? 'Sua tela'
+    : (participants.find(p => p.userId === id)?.userName || 'Usuário')
   // Ids mutados (anel vermelho fixo nas telas): Set por render (N pequeno).
   const mutedIds = new Set<string>()
   try { for (const p of participants) { if (p.muted || (p as { deafened?: boolean }).deafened) mutedIds.add(p.userId) } } catch { }
@@ -450,8 +486,14 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
   }
 
   /* -- Dados do header + grade de participantes -- */
+  // Enquanto a pessoa esta sendo CHAMADA (ainda nao atendeu/entrou), ela NAO
+  // conta/nao aparece como participante: tile e contagem so entram quando a
+  // stream dela chega (entrou de verdade). Antes ela ja surgia "presente".
+  const ringingTargetId = callingUser?.userId
+  const ringingNotJoined = Boolean(ringingTargetId && !remoteStreams[ringingTargetId]
+    && participants.some(p => p.userId === ringingTargetId))
   const hasSelf = currentUser ? participants.some(p => p.userId === currentUser.id) : true
-  const totalInCall = participants.length + (hasSelf ? 0 : 1)
+  const totalInCall = participants.length + (hasSelf ? 0 : 1) - (ringingNotJoined ? 1 : 0)
   const callElapsed = callCreatedAt && callCreatedAt > 0 && nowClock >= callCreatedAt
     ? formatCallTime(nowClock - callCreatedAt)
     : '--:--'
@@ -469,24 +511,25 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
     deafened,
     isSelf: true,
   } : null
+  // O tile dela so aparece quando ela realmente entra (stream ativa).
   const remoteTiles = participants
     .filter(p => p.userId !== currentUser?.id)
+    .filter(p => !(ringingTargetId === p.userId && !remoteStreams[p.userId]))
     .map(p => ({ ...p, isSelf: false }))
   const tiles = [...(localTile ? [localTile] : []), ...remoteTiles]
+  const tileCols = tiles.length <= 1 ? 1 : tiles.length <= 4 ? 2 : tiles.length <= 9 ? 3 : 4
 
   return (
     <>
       {showAstroPlans && <AstroPlansModal onClose={() => setShowAstroPlans(false)} />}
-      {minimized ? (
-        <div style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 2500, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 999, boxShadow: '0 8px 30px rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)' }}>
-          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#23a55a', animation: 'pulse 1.2s infinite', flexShrink: 0 }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>Em chamada</span>
-          <button onClick={() => setMinimized(false)} style={{ padding: '6px 14px', borderRadius: 7, background: 'var(--accent)', color: '#000', border: 'none', fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>Voltar</button>
-          <button onClick={endCall} style={{ padding: '6px 14px', borderRadius: 7, background: '#f23f43', color: 'var(--text-primary)', border: 'none', fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>Sair da chamada</button>
-        </div>
-      ) : (
-        <div className="vc-screen" style={{ position: embedded ? 'absolute' : 'fixed', inset: 0, zIndex: embedded ? 20 : 100, background: 'var(--bg-primary)', borderRadius: embedded ? 12 : 0, overflow: 'hidden' }}>
+      {embeddedCompact ? null : (
+        <div className="vc-screen" style={{ position: embedded ? 'absolute' : 'fixed', inset: 0, zIndex: embedded ? (embeddedExpanded ? 30 : 20) : 100, background: 'var(--bg-primary)', borderRadius: embedded ? 12 : 0, overflow: 'hidden' }}>
           <CameraOverlay />
+          {embedded && embeddedExpanded && !hasActiveScreen && !anyVideo && (
+            <button onClick={() => setEmbeddedExpanded(false)} title="Voltar para o chat" style={{ position: 'absolute', top: 12, right: 12, zIndex: 400, width: 34, height: 34, borderRadius: 10, background: 'rgba(0,0,0,0.55)', border: '1px solid var(--border)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <Minimize2 size={15} strokeWidth={2.2} />
+            </button>
+          )}
           {recordingActive && (
             <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 300, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,.72)', border: '1px solid #ef4444', borderRadius: 999, padding: '7px 16px', fontSize: 12, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' }}>
               <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', animation: 'fs-rec-blink 1.2s infinite' }} />
@@ -530,7 +573,7 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
                   <Fa name="grid-2" size={13} />
                   <span>Modo mosaico · todas as telas</span>
                   <div className="vc-mosaic-header-actions">
-                    {mosaicFocus && (
+                    {mosaicFocusValid && (
                       <button onClick={() => setMosaicFocus(null)} title="Desfazer destaque (voltar a grade normal)">
                         <Fa name="xmark" size={11} /> Desfazer destaque
                       </button>
@@ -538,19 +581,19 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
                     <button onClick={() => { setMosaic(false); setMosaicFocus(null) }}>Voltar</button>
                   </div>
                 </div>
-                {mosaicFocus ? (
+                {mosaicFocusValid ? (
                   <div className="vc-mosaic-focused">
                     <div
-                      className={`vc-mosaic-main${mutedIds.has(mosaicFocus) ? ' muted' : ''}`}
-                      id={`call-fs-mosaic-${mosaicFocus}`}
-                      key={mosaicFocus}
+                      className={`vc-mosaic-main${mutedIds.has(mosaicFocusValid) ? ' muted' : ''}`}
+                      id={`call-fs-mosaic-${mosaicFocusValid}`}
+                      key={mosaicFocusValid}
                       onClick={() => setMosaicFocus(null)}
-                      onContextMenu={e => { e.preventDefault(); setScreenMenu({ x: e.clientX, y: e.clientY, userId: mosaicFocus }) }}
+                      onContextMenu={e => { e.preventDefault(); setScreenMenu({ x: e.clientX, y: e.clientY, userId: mosaicFocusValid === 'local' ? null : mosaicFocusValid }) }}
                       title="Clique para desfazer o destaque; botao direito: volume"
                     >
-                      <video id={`call-video-screen-${mosaicFocus}`} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
-                      <span className="vc-mosaic-label">{participants.find(p => p.userId === mosaicFocus)?.userName || 'Usuário'} <b style={{ color: '#fff' }}>· EM DESTAQUE</b></span>
-                      {isFullscreen && typeof document !== 'undefined' && document.fullscreenElement?.id === `call-fs-mosaic-${mosaicFocus}` && (
+                      <video id={`call-video-screen-${mosaicFocusValid}`} autoPlay playsInline muted={mosaicFocusValid === 'local'} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
+                      <span className="vc-mosaic-label">{screenNameFor(mosaicFocusValid)} <b style={{ color: '#fff' }}>· EM DESTAQUE</b></span>
+                      {isFullscreen && typeof document !== 'undefined' && document.fullscreenElement?.id === `call-fs-mosaic-${mosaicFocusValid}` && (
                         <button
                           className="vc-fs-exit"
                           onClick={e => { e.stopPropagation(); exitCallFullscreen() }}
@@ -559,17 +602,17 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
                       )}
                     </div>
                     <div className="vc-mosaic-thumbs">
-                      {allRemoteScreenIds.filter(u => u !== mosaicFocus).map(userId => (
+                      {mosaicThumbIds.map(userId => (
                         <div
                           className={`vc-mosaic-tile vc-mosaic-tile-thumb${mutedIds.has(userId) ? ' muted' : ''}`}
                           id={`call-fs-mosaic-${userId}`}
                           key={userId}
-                          onClick={() => selectScreen(userId)}
-                          onContextMenu={e => { e.preventDefault(); setScreenMenu({ x: e.clientX, y: e.clientY, userId }) }}
+                          onClick={() => { if (userId === 'local') setMosaicFocus('local'); else selectScreen(userId) }}
+                          onContextMenu={e => { e.preventDefault(); setScreenMenu({ x: e.clientX, y: e.clientY, userId: userId === 'local' ? null : userId }) }}
                           title="Clique para destacar esta tela; botao direito: volume"
                         >
-                          <video id={`call-video-screen-${userId}`} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
-                          <span className="vc-mosaic-label">{participants.find(p => p.userId === userId)?.userName || 'Usuário'}</span>
+                          <video id={`call-video-screen-${userId}`} autoPlay playsInline muted={userId === 'local'} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
+                          <span className="vc-mosaic-label">{screenNameFor(userId)}</span>
                           {isFullscreen && typeof document !== 'undefined' && document.fullscreenElement?.id === `call-fs-mosaic-${userId}` && (
                             <button
                               className="vc-fs-exit"
@@ -583,6 +626,26 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
                   </div>
                 ) : (
                   <div className="vc-mosaic-grid">
+                    {isLocalScreen && (
+                      <div
+                        className="vc-mosaic-tile"
+                        id="call-fs-mosaic-local"
+                        key="local"
+                        onClick={() => setMosaicFocus('local')}
+                        onContextMenu={e => { e.preventDefault(); setScreenMenu({ x: e.clientX, y: e.clientY, userId: null }) }}
+                        title="Sua tela · clique para destacar; botão direito: opções"
+                      >
+                        <video id="call-video-screen-local" autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
+                        <span className="vc-mosaic-label">Sua tela</span>
+                        {isFullscreen && typeof document !== 'undefined' && document.fullscreenElement?.id === 'call-fs-mosaic-local' && (
+                          <button
+                            className="vc-fs-exit"
+                            onClick={e => { e.stopPropagation(); exitCallFullscreen() }}
+                            title="Minimizar (sair da tela cheia)"
+                          ><Fa name="minimize" size={14} /></button>
+                        )}
+                      </div>
+                    )}
                     {allRemoteScreenIds.map(userId => (
                       <div
                         className={`vc-mosaic-tile${mutedIds.has(userId) ? ' muted' : ''}`}
@@ -593,7 +656,7 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
                         title="Clique para destacar a tela no centro; botao direito: volume"
                       >
                         <video id={`call-video-screen-${userId}`} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
-                        <span className="vc-mosaic-label">{participants.find(p => p.userId === userId)?.userName || 'Usuário'}</span>
+                        <span className="vc-mosaic-label">{screenNameFor(userId)}</span>
                         {isFullscreen && typeof document !== 'undefined' && document.fullscreenElement?.id === `call-fs-mosaic-${userId}` && (
                           <button
                             className="vc-fs-exit"
@@ -605,6 +668,27 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+            {hasActiveScreen && !popout && !controlling && (
+              <div className="vc-people-strip vc-screen-people">
+                {tiles.map(t => {
+                  const off = Boolean(t.muted || t.deafened)
+                  const speaking = Boolean(speakingUsers[t.userId]) && !off
+                  return (
+                    <div
+                      key={t.userId}
+                      className={`vc-strip-chip${speaking ? ' speaking' : ''}${off ? ' muted-ring' : ''}`}
+                      title={t.isSelf ? 'Você' : t.userName}
+                    >
+                      <div className="vc-strip-ring">
+                        <Avatar src={t.userPhoto} name={t.userName} size={34} />
+                      </div>
+                      <span className="vc-strip-name">{t.isSelf ? 'Você' : t.userName}</span>
+                      {off ? <MicOff size={11} color="#ff8085" /> : <Mic size={11} color="rgba(255,255,255,0.45)" />}
+                    </div>
+                  )
+                })}
               </div>
             )}
             {hasActiveScreen && !popout && !showMosaic && controlling !== screenUserId && (
@@ -621,7 +705,7 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
                       <span style={{ fontSize: 12, fontWeight: 700 }}>{controlling === screenUserId ? 'Parar controle' : 'Controlar'}</span>
                     </button>
                   )}
-                  {allRemoteScreenIds.length > 1 && (
+                  {totalScreens > 1 && (
                     <button className="vc-topbar-btn" onClick={() => setMosaic(true)} title="Modo mosaico (ver todas as telas ao mesmo tempo)"><Fa name="grid-2" size={12} /></button>
                   )}
                   <button className="vc-topbar-btn" onClick={() => setPopout(true)} title="Janela pop-up (sempre no topo)"><PictureInPicture2 size={14} strokeWidth={2} /></button>
@@ -651,20 +735,42 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
                     </button>
                   )}
                 </div>
-                <div className="vc-tiles">
+                {ringingNotJoined && (
+                  <div className="vc-ringing-hint">
+                    Ligando para {callingUser?.userName || dmPeer?.userName || 'seu amigo'}…
+                  </div>
+                )}
+                <div className={`vc-tiles vc-tiles-mosaic${anyVideo ? ' has-video' : ''}`} style={{ gridTemplateColumns: `repeat(${tileCols}, minmax(0, 1fr))` }}>
                   {tiles.map(t => {
                     const speaking = Boolean(speakingUsers[t.userId]) && !t.muted
+                    const tileStream: MediaStream | null | undefined = t.isSelf ? localStream : remoteStreams[t.userId]
+                    let hasTileVideo = false
+                    try { hasTileVideo = Boolean(tileStream) && (tileStream as MediaStream).getVideoTracks().length > 0 } catch { hasTileVideo = false }
+                    if (t.isSelf && !cameraOn) hasTileVideo = false
+                    const off = Boolean(t.muted || t.deafened)
                     return (
-                      <div key={t.userId} className={`vc-tile${speaking ? ' speaking' : ''}${t.muted || (t as { deafened?: boolean }).deafened ? ' muted-ring' : ''}`}>
-                        <div className="vc-tile-ring">
-                          <Avatar src={t.userPhoto} name={t.userName} size={84} />
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, maxWidth: '100%' }}>
+                      <div key={t.userId} className={`vc-tile${speaking ? ' speaking' : ''}${off ? ' muted-ring' : ''}${hasTileVideo ? ' has-video' : ''}`}>
+                        {hasTileVideo ? (
+                          <video
+                            id={`call-tile-${t.userId}`}
+                            autoPlay
+                            playsInline
+                            muted
+                            className="vc-tile-video"
+                            style={t.isSelf ? { transform: 'scaleX(-1)' } : undefined}
+                            ref={el => { if (el && tileStream && el.srcObject !== tileStream) el.srcObject = tileStream }}
+                          />
+                        ) : (
+                          <div className="vc-tile-ring">
+                            <Avatar src={t.userPhoto} name={t.userName} size={84} />
+                          </div>
+                        )}
+                        <div className="vc-tile-bar">
                           <span className="vc-tile-name">{t.isSelf ? 'Você' : t.userName}</span>
+                          <span className={`vc-tile-status${off ? ' off' : ''}`} title={t.deafened ? 'Com som desativado' : t.muted ? 'Mutado' : 'Falando / com áudio'}>
+                            {t.deafened ? <HeadphoneOff size={12} /> : t.muted ? <MicOff size={12} /> : <Mic size={12} />}
+                          </span>
                         </div>
-                        <span className={`vc-tile-status${t.muted || t.deafened ? ' off' : ''}`} title={t.deafened ? 'Com som desativado' : t.muted ? 'Mutado' : 'Falando / com áudio'}>
-                          {t.deafened ? <HeadphoneOff size={13} /> : t.muted ? <MicOff size={13} /> : <Mic size={13} />}
-                        </span>
                       </div>
                     )
                   })}
@@ -799,7 +905,7 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
       )}
 
       {/* Palco da tela compartilhada (popout) */}
-      {hasActiveScreen && popout && !minimized && (
+      {hasActiveScreen && popout && (
         <div
           id={`call-fs-${fsKey}`}
           style={{
@@ -1020,7 +1126,6 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
               { icon: <Volume2 size={16} />, label: 'Volume dos participantes', desc: 'Ajustar voz de cada um', active: showVolumePanel, onClick: () => { setShowVolumePanel(s => !s); setMoreMenu(false) } },
               { icon: <Gauge size={16} />, label: 'Qualidade de transmissão', desc: `${preferredQuality} · ${preferredFps} fps`, active: qualityMenu, onClick: () => { setQualityMenu(q => !q); setMoreMenu(false) } },
               { icon: <Settings size={16} />, label: 'Configurações', desc: 'Abrir ajustes do app', active: false, onClick: () => { useSettingsStore.getState().openSettings(); setMoreMenu(false) } },
-              { icon: <Minus size={16} />, label: 'Minimizar chamada', desc: 'Continuar em segundo plano', active: false, onClick: () => { setMinimized(true); setMoreMenu(false) } },
             ] as const).map(item => (
               <button
                 key={item.label}

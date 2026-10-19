@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { UserProfileModal } from '../Profile/UserProfileModal'
 import { IconSend, IconAdd, IconCheck, IconClose } from '../../utils/icons'
 import { useFriendStore } from '../../stores/friendStore'
-import { useUserStore } from '../../stores/userStore'
+import { useUserStore, isUserOnline } from '../../stores/userStore'
 import { useUserMenuStore } from '../../stores/userMenuStore'
 import { useLangStore } from '../../stores/langStore'
 import { useCallStore } from '../../stores/callStore'
@@ -16,17 +16,18 @@ import { ProfileCardView } from '../Profile/ProfileCardView'
 import { cn } from '../Profile/ProfileEditor/cn'
 import './UserContextMenu.css'
 
-const clampVolume = (v?: number) => (typeof v === 'number' && !Number.isNaN(v) ? Math.min(1, Math.max(0, v)) : 1)
+const clampVolume = (v?: number) => (typeof v === 'number' && !Number.isNaN(v) ? Math.min(2, Math.max(0, v)) : 1)
 
 function VolumeSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
     <input
       type="range"
       min={0}
-      max={100}
+      max={200}
       value={Math.round(value * 100)}
       onChange={event => onChange(Number(event.target.value) / 100)}
       style={{ flex: 1, accentColor: 'var(--accent)' }}
+      title="Volume (até 200%)"
     />
   )
 }
@@ -204,7 +205,7 @@ export function UserContextMenu() {
         className="ucm-profile-preview"
       />
 
-      {user.activityName && settings['showActivity'] !== false && user.activityPrivacy !== 'private' && (
+      {isUserOnline(user) && user.activityName && settings['showActivity'] !== false && user.activityPrivacy !== 'private' && (
         <div className="ucm-activity">
           <Fa name="gamepad" size={12} style={{ color: 'var(--text-primary)', flexShrink: 0 }} />
           <div style={{ minWidth: 0 }}>

@@ -137,13 +137,6 @@ export function assertUploadLimit(user?: { settings?: Record<string, unknown> } 
   return null
 }
 
-export function astroTierBadge(user?: { settings?: Record<string, unknown> } | null): { text: string; color: string } | null {
-  const tier = getAstroTier(user)
-  if (tier === 'none') return null
-  const plan = ASTRO_PLANS[tier]
-  return { text: plan.badge, color: plan.color }
-}
-
 export const FREE_SERVER_LIMIT = 2
 export const ASTRO_SERVER_LIMIT = 10
 export const ASTRO_PLUS_SERVER_LIMIT = 20
@@ -154,12 +147,6 @@ export function getServerLimit(user?: { settings?: Record<string, unknown> } | n
   if (tier === 'astro_ultimate') return Infinity
   if (tier === 'astro_plus') return ASTRO_PLUS_SERVER_LIMIT
   return ASTRO_SERVER_LIMIT
-}
-
-export function getServerLimitLabel(user?: { settings?: Record<string, unknown> } | null): string {
-  const limit = getServerLimit(user)
-  if (!Number.isFinite(limit)) return 'Sem limites'
-  return String(limit)
 }
 
 const QUALITY_ORDER: CallQuality[] = ['480p', '720p', '1080p', '2k', '4k']
@@ -182,12 +169,6 @@ export function isBitrateBlocked(user?: { settings?: Record<string, unknown> } |
 export function isFpsBlocked(user?: { settings?: Record<string, unknown> } | null, fps?: 30 | 60): boolean {
   if (!fps) return false
   return fps > getMaxStreamFps(user)
-}
-
-// Formata kbps em "3 Mbps" / "2500 kbps" para exibir junto ao cadeado.
-export function formatMbps(kbps?: number): string {
-  if (!kbps) return ''
-  return `${(kbps / 1000).toFixed(kbps % 1000 === 0 ? 0 : 1)} Mbps`
 }
 
 // App desktop (Electron) x navegador: o Chrome limita captura a 720p30,
@@ -217,12 +198,6 @@ export function getMaxStreamFps(user?: { settings?: Record<string, unknown> } | 
 export function getMaxBitrateKbps(user?: { settings?: Record<string, unknown> } | null): number {
   const b = getAstroPlan(user)?.maxBitrateKbps ?? 6000
   return isDesktopApp() ? b : Math.min(b, 6000)
-}
-
-// Retorna a altura maxima da tela compartilhada do plano (px). 0 = sem tela.
-export function getMaxScreenHeight(user?: { settings?: Record<string, unknown> } | null): number {
-  const h = getAstroPlan(user)?.maxScreenHeight ?? 0
-  return isDesktopApp() ? h : Math.min(h, 720)
 }
 
 // Bloqueia selecao de qualidade acima do plano. Retorna a qualidade permitida.

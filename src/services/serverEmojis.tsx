@@ -3,15 +3,10 @@ import type { ServerEmoji } from '../types'
 import { useServerStore } from '../stores/serverStore'
 import { withTwemoji } from '../utils/twemoji'
 
-const NAME_RE = /^[a-z0-9_]{1,32}$/
 const TOKEN_RE = /:([a-z0-9_]{1,32}):/g
 
 export function sanitizeEmojiName(name: string): string {
   return name.trim().toLowerCase().replace(/[^a-z0-9_]/g, '')
-}
-
-export function isValidEmojiName(name: string): boolean {
-  return NAME_RE.test(name)
 }
 
 export function collectAllServerEmojis(): ServerEmoji[] {

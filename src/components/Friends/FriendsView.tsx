@@ -2,17 +2,15 @@ import { useState, useEffect, useRef } from 'react'
 import { Search, SlidersHorizontal, Plus, Smile, Send, FileText, BadgeCheck, Rocket, ShieldCheck, Gamepad2, Gift, Phone, Video } from 'lucide-react'
 import { uiEnabled } from '../Profile/InterfaceTab'
 import { Avatar } from '../ui/Avatar'
-import { Button } from '../ui/Button'
-import { Input } from '../ui/Input'
-import { Modal } from '../ui/Modal'
 import { UserProfileModal } from '../Profile/UserProfileModal'
 import { useUserStore, isUserOnline } from '../../stores/userStore'
 import { useFriendStore } from '../../stores/friendStore'
 import { useServerStore } from '../../stores/serverStore'
-import { searchDirectory, requestBackend } from '../../services/backend'
+import { requestBackend } from '../../services/backend'
 import { uploadToDrive, isDriveConnected, toImageUrl } from '../../services/driveService'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { assertUploadLimit } from '../../utils/astro'
+import { USER_STATUS, StatusIcon, statusFromSettings } from '../../utils/userStatus'
 import { buildFileName, detectMediaKind, extractMediaUrl, extractEmbedUrl, driveFolderFor } from '../../services/mediaDetect'
 import { MediaAttachment } from '../Chat/MediaAttachment'
 import { LinkEmbed } from '../Chat/LinkEmbed'
@@ -44,13 +42,13 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
     sendDirectMessage, loadDirectMessages, setCurrentDMUser } = useFriendStore()
   const { servers } = useServerStore()
   const { open: openUserMenu, openProfile } = useUserMenuStore()
-  const [addQuery, setAddQuery] = useState('')
-  const [addResults, setAddResults] = useState<User[]>([])
-  const [addLoading, setAddLoading] = useState(false)
-  const [showAdd, setShowAdd] = useState(false)
-  const [showAddInline, setShowAddInline] = useState(false)
   const [addInput, setAddInput] = useState('')
   const [addMessage, setAddMessage] = useState<{ type: 'ok' | 'err', text: string } | null>(null)
+  const [showAddInline, setShowAddInline] = useState(false)
+  // Busca por CODIGO exato: mostra um cartao de pre-visualizacao da pessoa
+  // antes de enviar o pedido (nada de adicionar o "primeiro resultado").
+  const [codePreview, setCodePreview] = useState<User | null>(null)
+  const [codeLoading, setCodeLoading] = useState(false)
   const [dmInput, setDmInput] = useState('')
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState<FriendsTab>('todas')
@@ -152,23 +150,6 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
     return () => { cancelled = true }
   }, [currentUser, currentDMUser, friends, servers])
 
-  useEffect(() => {
-    if (!showAdd || addQuery.trim().length < 2) { setAddResults([]); return }
-    let cancelled = false
-    const timer = window.setTimeout(async () => {
-      setAddLoading(true)
-      try {
-        const result = await searchDirectory(addQuery, currentUser?.id)
-        if (!cancelled) setAddResults(result.users)
-      } catch {
-        if (!cancelled) setAddResults([])
-      } finally {
-        if (!cancelled) setAddLoading(false)
-      }
-    }, 250)
-    return () => { cancelled = true; window.clearTimeout(timer) }
-  }, [showAdd, addQuery, currentUser])
-
   const filteredFriends = friendUsers.filter(u => {
     const query = normalizeSearchValue(search)
     if (!query) return true
@@ -183,6 +164,42 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
   const copyFriendCode = () => {
     if (currentUser?.friendCode) {
       navigator.clipboard.writeText(currentUser.friendCode).catch(() => {})
+    }
+  }
+
+  const handleCodeLookup = async () => {
+    const code = addInput.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
+    if (!currentUser || code.length < 3 || codeLoading) return
+    setAddMessage(null)
+    setCodeLoading(true)
+    try {
+      const found = await requestBackend<User | undefined>('findUserByFriendCode', { friendCode: code })
+      if (!found) {
+        setCodePreview(null)
+        setAddMessage({ type: 'err', text: `Nenhum usuario com o codigo @${code}` })
+      } else if (found.id === currentUser.id) {
+        setCodePreview(null)
+        setAddMessage({ type: 'err', text: 'Esse codigo e o seu :)' })
+      } else {
+        setCodePreview(found)
+      }
+    } catch {
+      setCodePreview(null)
+      setAddMessage({ type: 'err', text: 'Erro ao buscar codigo' })
+    } finally {
+      setCodeLoading(false)
+    }
+  }
+
+  const handleConfirmAdd = async () => {
+    if (!currentUser || !codePreview) return
+    const added = await addFriendById(currentUser.id, codePreview.id)
+    if (added.ok) {
+      setAddMessage({ type: 'ok', text: `Solicitacao enviada para ${codePreview.name}!` })
+      setCodePreview(null)
+      setAddInput('')
+    } else {
+      setAddMessage({ type: 'err', text: added.error || 'Erro ao adicionar' })
     }
   }
 
@@ -323,7 +340,7 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
           {(!isMobile || showAddInline) && (<>
           <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>Adicionar amigo</h3>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8, lineHeight: 1.4 }}>
-            Voce pode adicionar amigos com o nome de usuario deles.
+            Cada pessoa tem um codigo unico. Cole o codigo abaixo para encontrar o usuario — o seu aparece aqui embaixo e pode ser editado no seu perfil.
           </p>
           {currentUser?.friendCode && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: '8px 12px', background: 'var(--bg-primary)', borderRadius: 8, border: '1px solid var(--border)' }}>
@@ -334,49 +351,42 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
               </button>
             </div>
           )}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input
-              value={addInput}
-              onChange={e => { setAddInput(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '')); setAddMessage(null) }}
-              onKeyDown={e => { if (e.key === 'Enter' && addInput.trim().length >= 2) { setAddQuery(addInput); setShowAdd(true) } }}
-              placeholder="Nome de usuario ou codigo"
-              style={{
-                flex: 1, minWidth: 0, padding: '10px 12px',
-                background: 'var(--bg-secondary)', border: `1px solid ${addMessage?.type === 'err' ? '#ed4245' : 'var(--border)'}`,
-                borderRadius: 8, color: 'var(--text-primary)', fontSize: 14, outline: 'none',
-              }}
-            />
-            <button
-              onClick={async () => {
-                if (!addInput.trim() || !currentUser) return
-                setAddMessage(null)
-                setAddLoading(true)
-                try {
-                  const result = await searchDirectory(addInput, currentUser.id)
-                  if (result.users.length > 0) {
-                    const target = result.users[0]
-                    const added = await addFriendById(currentUser.id, target.id)
-                    if (added.ok) {
-                      setAddMessage({ type: 'ok', text: `Solicitacao enviada para ${target.name}!` })
-                      setAddInput('')
-                    } else {
-                      setAddMessage({ type: 'err', text: added.error || 'Erro ao adicionar' })
-                    }
-                  } else {
-                    setAddMessage({ type: 'err', text: 'Nenhum usuario encontrado com este nome/codigo' })
-                  }
-                } catch {
-                  setAddMessage({ type: 'err', text: 'Erro ao buscar usuario' })
-                } finally {
-                  setAddLoading(false)
-                }
-              }}
-              disabled={addLoading || addInput.trim().length < 2}
-              style={{ padding: '10px 14px', background: addInput.trim().length < 2 ? 'var(--bg-tertiary)' : 'var(--accent)', border: 'none', borderRadius: 8, color: addInput.trim().length < 2 ? 'var(--text-dim)' : '#fff', fontSize: 13, fontWeight: 600, cursor: addInput.trim().length < 2 ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
-            >
-              {addLoading ? '...' : 'Adicionar'}
-            </button>
-          </div>
+          {codePreview ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 10 }}>
+              <Avatar src={codePreview.photoUrl} name={codePreview.name} size={36} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{codePreview.name}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>@{codePreview.friendCode}</div>
+              </div>
+              <button onClick={() => setCodePreview(null)} title="Trocar codigo" style={{ padding: '8px 10px', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
+                Trocar
+              </button>
+              <button onClick={() => void handleConfirmAdd()} style={{ padding: '8px 14px', background: 'var(--accent)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
+                Enviar pedido
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                value={addInput}
+                onChange={e => { setAddInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')); setAddMessage(null); setCodePreview(null) }}
+                onKeyDown={e => { if (e.key === 'Enter') void handleCodeLookup() }}
+                placeholder="Codigo do amigo (ex: A1B2C3D4)"
+                style={{
+                  flex: 1, minWidth: 0, padding: '10px 12px',
+                  background: 'var(--bg-secondary)', border: `1px solid ${addMessage?.type === 'err' ? '#ed4245' : 'var(--border)'}`,
+                  borderRadius: 8, color: 'var(--text-primary)', fontSize: 14, outline: 'none',
+                }}
+              />
+              <button
+                onClick={() => void handleCodeLookup()}
+                disabled={codeLoading || addInput.trim().length < 3}
+                style={{ padding: '10px 14px', background: addInput.trim().length < 3 ? 'var(--bg-tertiary)' : 'var(--accent)', border: 'none', borderRadius: 8, color: addInput.trim().length < 3 ? 'var(--text-dim)' : '#fff', fontSize: 13, fontWeight: 600, cursor: addInput.trim().length < 3 ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+              >
+                {codeLoading ? '...' : 'Buscar'}
+              </button>
+            </div>
+          )}
           {addMessage && (
             <p style={{ marginTop: 8, fontSize: 12, color: addMessage.type === 'ok' ? '#23a55a' : '#ed4245' }}>
               {addMessage.text}
@@ -451,17 +461,13 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
                 >
                   <div style={{ position: 'relative' }}>
                     <Avatar src={user.photoUrl} name={user.name} size={44} />
-                    {(() => {
-                      const s = (user.settings || {}) as Record<string, string | boolean | undefined>
-                      const statusKey = typeof s['status'] === 'string' ? s['status'] as string : 'online'
-                      const online = isUserOnline(user)
-                      const color = statusKey === 'ausente' ? '#faa81a' : statusKey === 'naoperturbe' ? '#f23f43' : statusKey === 'invisivel' ? '#80848e' : online ? '#23a55a' : '#80848e'
-                      return <span style={{ position: 'absolute', bottom: 0, right: 0, width: 13, height: 13, borderRadius: '50%', background: color, border: '2px solid var(--bg-secondary)' }} />
-                    })()}
+                    <span style={{ position: 'absolute', bottom: -1, right: -1, width: 16, height: 16, borderRadius: '50%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <StatusIcon status={isUserOnline(user) ? statusFromSettings(user.settings) : 'invisible'} size={11} />
+                    </span>
                   </div>
                   <span style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontWeight: 600, fontSize: 14 }}>{user.name}</span>
-                    <span style={{ color: isUserOnline(user) ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: 11 }}>{isUserOnline(user) ? 'Online' : 'Offline'}</span>
+                    <span style={{ color: isUserOnline(user) ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: 11 }}>{isUserOnline(user) ? USER_STATUS[statusFromSettings(user.settings)].label : 'Offline'}</span>
                     {(() => {
                       const s = (user.settings || {}) as Record<string, string | boolean | undefined>
                       const statusMessage = typeof s['statusMessage'] === 'string' ? s['statusMessage'] as string : ''
@@ -470,7 +476,7 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
                       }
                       return null
                     })()}
-                    {user.activityEnabled !== false && user.activityPrivacy !== 'private' && user.activityName && (
+                    {isUserOnline(user) && user.activityEnabled !== false && user.activityPrivacy !== 'private' && user.activityName && (
                       <span style={{ color: 'var(--text-primary)', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.activityName}{user.activityDetails ? ` — ${user.activityDetails}` : ''}</span>
                     )}
                   </span>
@@ -675,10 +681,13 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
         {currentDMUser && !isMobile && (
           <aside style={{ width: 280, flexShrink: 0, borderLeft: '1px solid var(--border)', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
             {(() => {
-              const u = currentDMUser
+              // Resolve SEMPRE a versão mais nova do amigo: currentDMUser é um
+              // snapshot tirado no clique e pode ter ficado velho (o painel
+              // mostrava "Offline"/atividade fantasma para sempre).
+              const u = friendUsers.find(f => f.id === currentDMUser.id) || currentDMUser
               const s = (u.settings || {}) as Record<string, unknown>
               const online = isUserOnline(u)
-              const statusKey = typeof s['status'] === 'string' ? s['status'] as string : 'online'
+              const status = statusFromSettings(u.settings)
               const statusMessage = typeof s['statusMessage'] === 'string' ? s['statusMessage'] as string : ''
               const verified = Boolean(u.googleId || u.authProvider === 'google')
               const astro = s['astro'] === true || s['astro'] === 'true'
@@ -686,7 +695,6 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
               const mural = (s['mural'] && typeof s['mural'] === 'object' ? s['mural'] : {}) as Record<string, unknown>
               const games = Array.isArray(mural['games']) ? (mural['games'] as { image?: string; title?: string; name?: string }[]) : []
               const isFriend = (friends || []).some(f => f.status === 'accepted' && ((f.userId === u.id) || (f.friendId === u.id)))
-              const statusColor = statusKey === 'ausente' ? '#faa81a' : statusKey === 'naoperturbe' ? '#f23f43' : statusKey === 'invisivel' ? '#80848e' : online ? '#23a55a' : '#80848e'
               return (<>
                 <div style={{ position: 'relative', height: 110, flexShrink: 0, background: u.bannerUrl ? 'var(--bg-tertiary)' : 'var(--bg-tertiary)' }}>
                   {u.bannerUrl && (
@@ -698,7 +706,9 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
                     <div style={{ borderRadius: '50%', padding: 3, background: 'var(--bg-secondary)', display: 'flex' }}>
                       <Avatar src={u.photoUrl || ''} name={u.name} size={70} />
                     </div>
-                    <span style={{ position: 'absolute', bottom: 4, right: 4, width: 16, height: 16, borderRadius: '50%', background: statusColor, border: '3px solid var(--bg-secondary)' }} />
+                    <span style={{ position: 'absolute', bottom: 4, right: 4, width: 20, height: 20, borderRadius: '50%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <StatusIcon status={online ? status : 'invisible'} size={14} />
+                    </span>
                   </div>
                   <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)', marginTop: 8 }}>{u.name}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>@{u.friendCode || 'usuario'}</div>
@@ -768,8 +778,8 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
                   <div style={{ marginTop: 12 }}>
                     <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>Status</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: statusColor }} />
-                      <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{online ? 'Online' : 'Offline'}</span>
+                      <StatusIcon status={online ? status : 'invisible'} size={12} />
+                      <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{online ? USER_STATUS[status].label : 'Offline'}</span>
                     </div>
                   </div>
                   <button onClick={() => setShowFullProfile(true)} style={{ marginTop: 16, width: '100%', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
@@ -787,48 +797,6 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
       )}
 
       {showAstroPlans && <AstroPlansModal onClose={() => setShowAstroPlans(false)} />}
-
-      <Modal open={showAdd} onClose={() => { setShowAdd(false); setAddQuery(''); setAddResults([]); setAddMessage(null) }} title="Adicionar Amigo">
-        <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 12 }}>
-          Digite nome, email ou codigo de amigo para encontrar pessoas.
-        </p>
-        <Input
-          value={addQuery}
-          onChange={setAddQuery}
-          placeholder="Pesquisar..."
-          style={{ marginBottom: 12 }}
-        />
-        <div style={{ maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-          {addLoading && <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Pesquisando...</p>}
-          {!addLoading && addQuery.trim().length >= 2 && addResults.length === 0 && (
-            <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Nenhum usuario encontrado.</p>
-          )}
-          {addResults.map(user => (
-            <div key={user.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
-              <Avatar src={user.photoUrl} name={user.name} size={34} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{user.name}</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>@{user.friendCode}</div>
-              </div>
-              <Button size="sm" onClick={async () => {
-                if (!currentUser) return
-                const added = await addFriendById(currentUser.id, user.id)
-                if (added.ok) {
-                  setAddMessage({ type: 'ok', text: `Solicitacao enviada para ${user.name}!` })
-                  setShowAdd(false); setAddQuery(''); setAddResults([])
-                } else {
-                  setAddMessage({ type: 'err', text: added.error || 'Erro ao adicionar' })
-                }
-              }}>Adicionar</Button>
-            </div>
-          ))}
-        </div>
-        {addMessage && (
-          <p style={{ fontSize: 12, color: addMessage.type === 'ok' ? '#23a55a' : '#ed4245' }}>
-            {addMessage.text}
-          </p>
-        )}
-      </Modal>
     </div>
   )
 }
