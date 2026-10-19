@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode, type CSSProperties } from 'react'
+﻿import { useEffect, useState, type ReactNode, type CSSProperties } from 'react'
 import { Check, X, Lock, Star, Sparkles, Crown, Gem, CalendarDays, Zap, Palette, Shield } from 'lucide-react'
 import { ASTRO_PLANS, ASTRO_ORDER, getAstroTier, type AstroTier } from '../../utils/astro'
 import { useUserStore } from '../../stores/userStore'
@@ -16,17 +16,23 @@ const VISUALS: Record<AstroTier, { color: string; icon: ReactNode }> = {
   astro_ultimate: { color: '#f59e0b', icon: <Crown size={18} strokeWidth={2.2} /> },
 }
 
+const OLD_PRICES: Record<AstroTier, string> = {
+  astro: 'R$ 14,90',
+  astro_plus: 'R$ 24,90',
+  astro_ultimate: 'R$ 39,90',
+}
+
 const ULTIMATE_FEATURES = [
   'Tudo do ASTRO Plus',
   'Limites ainda maiores',
-  'Efeitos e insígnias exclusivos',
-  'Prioridade máxima',
+  'Efeitos e insÃ­gnias exclusivos',
+  'Prioridade mÃ¡xima',
   'Suporte dedicado',
-  'Novos recursos em primeira mão',
+  'Novos recursos em primeira mÃ£o',
 ]
 
 const COMPARE_ROWS: Array<{ label: string; free: string | boolean; astro: string | boolean; astroplus: string | boolean; astroplus2: string | boolean; ultimate: string | boolean }> = [
-  { label: 'Upload de arquivos', free: 'Até 25 MB', astro: 'Até 250 MB', astroplus: 'Até 1 GB', astroplus2: 'Até 5 GB', ultimate: 'Até 10 GB' },
+  { label: 'Upload de arquivos', free: 'AtÃ© 25 MB', astro: 'AtÃ© 250 MB', astroplus: 'AtÃ© 1 GB', astroplus2: 'AtÃ© 5 GB', ultimate: 'AtÃ© 10 GB' },
   { label: 'Streaming', free: '480p / 30 FPS', astro: '1080p / 60 FPS', astroplus: '2K / 60 FPS', astroplus2: '2K / 60 FPS', ultimate: '4K / 60 FPS' },
   { label: 'Molduras premium', free: false, astro: false, astroplus: true, astroplus2: true, ultimate: true },
   { label: 'Recursos Beta', free: false, astro: false, astroplus: true, astroplus2: true, ultimate: true },
@@ -34,7 +40,7 @@ const COMPARE_ROWS: Array<{ label: string; free: string | boolean; astro: string
 
 function renderCell(value: string | boolean) {
   if (value === true) return <Check size={14} strokeWidth={2.6} color="#4ade80" />
-  if (value === false) return <span style={{ color: 'rgba(255,255,255,.3)' }}>–</span>
+  if (value === false) return <span style={{ color: 'rgba(255,255,255,.3)' }}>â€“</span>
   return <>{value}</>
 }
 
@@ -66,8 +72,8 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
       <div className="fsp-page" onMouseDown={e => e.stopPropagation()}>
         <style>{`
           .fsp-overlay { position: fixed; inset: 0; z-index: 3500; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(2,4,12,.78); backdrop-filter: blur(8px); }
-          .fsp-page { position: relative; width: 100%; max-width: 1180px; max-height: 94vh; overflow-y: auto; overflow-x: hidden; border-radius: 22px; border: 1px solid rgba(120,170,255,.25); box-shadow: 0 30px 120px rgba(0,0,0,.8); color: #fff; background: #030816 url('${assetUrl('astro-wallpaper.svg')}') center/cover no-repeat; }
-          .fsp-page::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(3,6,16,.18) 0%, rgba(3,6,16,.58) 45%, rgba(3,6,16,.86) 100%); pointer-events: none; border-radius: 22px; }
+          .fsp-page { position: relative; width: 100%; max-width: 1180px; max-height: 94vh; overflow-y: auto; overflow-x: hidden; border-radius: 22px; border: 1px solid rgba(120,170,255,.25); box-shadow: 0 30px 120px rgba(0,0,0,.8); color: #fff; background: #030816 url('${assetUrl('astro-wallpaper.png')}') center/cover no-repeat; }
+          .fsp-page::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(3,6,16,.10) 0%, rgba(3,6,16,.5) 45%, rgba(3,6,16,.82) 100%); pointer-events: none; border-radius: 22px; }
           .fsp-inner { position: relative; z-index: 1; padding: 16px 26px 0; }
           .fsp-head { display: flex; align-items: center; gap: 10px; padding: 2px 0 12px; }
           .fsp-wordmark { height: 32px; width: auto; object-fit: contain; filter: drop-shadow(0 4px 18px rgba(56,189,248,.35)); }
@@ -103,6 +109,8 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
           .fsp-card-head h2 { font-size: 16.5px; font-weight: 900; letter-spacing: -.01em; margin: 0; color: var(--pc); }
           .fsp-card-head p { font-size: 10.5px; color: #93a3c4; line-height: 1.35; margin: 0; min-height: 26px; }
           .fsp-price { text-align: center; padding: 2px 0; }
+          .fsp-price-old { font-size: 10px; color: #8fa0c4; margin-bottom: 2px; }
+          .fsp-price-old s { color: #ef8a8a; opacity: .85; }
           .fsp-price-main { font-size: 22px; font-weight: 900; color: #fff; line-height: 1.05; }
           .fsp-price-main span { font-size: 11px; font-weight: 500; color: #93a3c4; margin-left: 2px; }
           .fsp-price-year { font-size: 10px; color: #93a3c4; margin-top: 3px; }
@@ -141,8 +149,8 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
           <div className="fsp-content">
             <aside className="fsp-hero">
               <span className="fsp-eyebrow">ASSINATURA</span>
-              <h1>Leve sua experiência<br />para o <span>próximo nível</span></h1>
-              <p>Aproveite todos os recursos premium, personalize seu perfil e tenha uma experiência ainda mais completa no Friends Space.</p>
+              <h1>Leve sua experiÃªncia<br />para o <span>prÃ³ximo nÃ­vel</span></h1>
+              <p>Aproveite todos os recursos premium, personalize seu perfil e tenha uma experiÃªncia ainda mais completa no Friends Space.</p>
               <ul className="fsp-perks">
                 <li>
                   <span className="fsp-perk-ic" style={{ color: '#38bdf8', borderColor: 'rgba(56,189,248,.45)', background: 'rgba(56,189,248,.1)' }}><Gem size={13} /></span>
@@ -150,7 +158,7 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
                 </li>
                 <li>
                   <span className="fsp-perk-ic" style={{ color: '#a855f7', borderColor: 'rgba(168,85,247,.45)', background: 'rgba(168,85,247,.1)' }}><Palette size={13} /></span>
-                  <div><strong>Personalização total</strong><small>Deixe seu perfil do seu jeito.</small></div>
+                  <div><strong>PersonalizaÃ§Ã£o total</strong><small>Deixe seu perfil do seu jeito.</small></div>
                 </li>
                 <li>
                   <span className="fsp-perk-ic" style={{ color: '#38bdf8', borderColor: 'rgba(56,189,248,.45)', background: 'rgba(56,189,248,.1)' }}><Zap size={13} /></span>
@@ -158,13 +166,13 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
                 </li>
                 <li>
                   <span className="fsp-perk-ic" style={{ color: '#f59e0b', borderColor: 'rgba(245,158,11,.45)', background: 'rgba(245,158,11,.1)' }}><Shield size={13} /></span>
-                  <div><strong>Suporte prioritário</strong><small>Conte com a gente sempre que precisar.</small></div>
+                  <div><strong>Suporte prioritÃ¡rio</strong><small>Conte com a gente sempre que precisar.</small></div>
                 </li>
               </ul>
               <div className="fsp-mascot">
                 <img src={assetUrl('penguin-logo.png')} alt="" />
               </div>
-              <p className="fsp-hero-foot"><Crown size={11} color="#38bdf8" /> Assine agora e faça parte do maior.</p>
+              <p className="fsp-hero-foot"><Crown size={11} color="#38bdf8" /> Assine agora e faÃ§a parte do maior.</p>
             </aside>
 
             <main className="fsp-plans">
@@ -183,6 +191,7 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
                         <p>{plan.tagline}</p>
                       </div>
                       <div className="fsp-price">
+                        <div className="fsp-price-old">de <s>{OLD_PRICES[tier]}</s></div>
                         <div className="fsp-price-main">{fmtPrice(plan.monthlyPrice)}<span>/mês</span></div>
                         <div className="fsp-price-year">ou {fmtPrice(plan.yearlyPrice)} /ano <em>-17%</em></div>
                       </div>
@@ -199,11 +208,11 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
                 })}
 
                 <div className="fsp-card is-ultimate" style={{ '--pc': '#ffffff' } as CSSProperties}>
-                  <span className="fsp-pop fsp-pop-white">LANÇAMENTO</span>
+                  <span className="fsp-pop fsp-pop-white">LANÃ‡AMENTO</span>
                   <div className="fsp-card-head">
                     <span className="fsp-plan-ic"><Gem size={18} strokeWidth={2.2} /></span>
                     <h2>ASTRO Ultimate</h2>
-                    <p>A experiência definitiva do Friends Space.</p>
+                    <p>A experiÃªncia definitiva do Friends Space.</p>
                   </div>
                   <div className="fsp-price">
                     <div className="fsp-price-main" style={{ fontSize: 19 }}>Em breve</div>
@@ -221,7 +230,7 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
           </div>
 
           <div className="fsp-compare">
-            <h3>Comparação de planos</h3>
+            <h3>ComparaÃ§Ã£o de planos</h3>
             <div className="fsp-tablewrap">
               <table className="fsp-table">
                 <thead>
@@ -273,3 +282,4 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
     </div>
   )
 }
+
