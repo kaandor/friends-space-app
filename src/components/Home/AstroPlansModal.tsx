@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, type ReactNode, type CSSProperties } from 'react'
+import { useEffect, useState, type ReactNode, type CSSProperties } from 'react'
 import { Check, X, Lock, Star, Sparkles, Crown, Gem, CalendarDays, Zap, Palette, Shield } from 'lucide-react'
 import { ASTRO_PLANS, ASTRO_ORDER, getAstroTier, type AstroTier } from '../../utils/astro'
 import { useUserStore } from '../../stores/userStore'
@@ -25,14 +25,14 @@ const OLD_PRICES: Record<AstroTier, string> = {
 const ULTIMATE_FEATURES = [
   'Tudo do ASTRO Plus',
   'Limites ainda maiores',
-  'Efeitos e insÃ­gnias exclusivos',
-  'Prioridade mÃ¡xima',
+  'Efeitos e insígnias exclusivos',
+  'Prioridade máxima',
   'Suporte dedicado',
-  'Novos recursos em primeira mÃ£o',
+  'Novos recursos em primeira mão',
 ]
 
 const COMPARE_ROWS: Array<{ label: string; free: string | boolean; astro: string | boolean; astroplus: string | boolean; astroplus2: string | boolean; ultimate: string | boolean }> = [
-  { label: 'Upload de arquivos', free: 'AtÃ© 25 MB', astro: 'AtÃ© 250 MB', astroplus: 'AtÃ© 1 GB', astroplus2: 'AtÃ© 5 GB', ultimate: 'AtÃ© 10 GB' },
+  { label: 'Upload de arquivos', free: 'Até 25 MB', astro: 'Até 250 MB', astroplus: 'Até 1 GB', astroplus2: 'Até 5 GB', ultimate: 'Até 10 GB' },
   { label: 'Streaming', free: '480p / 30 FPS', astro: '1080p / 60 FPS', astroplus: '2K / 60 FPS', astroplus2: '2K / 60 FPS', ultimate: '4K / 60 FPS' },
   { label: 'Molduras premium', free: false, astro: false, astroplus: true, astroplus2: true, ultimate: true },
   { label: 'Recursos Beta', free: false, astro: false, astroplus: true, astroplus2: true, ultimate: true },
@@ -40,7 +40,7 @@ const COMPARE_ROWS: Array<{ label: string; free: string | boolean; astro: string
 
 function renderCell(value: string | boolean) {
   if (value === true) return <Check size={14} strokeWidth={2.6} color="#4ade80" />
-  if (value === false) return <span style={{ color: 'rgba(255,255,255,.3)' }}>â€“</span>
+  if (value === false) return <span style={{ color: 'rgba(255,255,255,.3)' }}>–</span>
   return <>{value}</>
 }
 
@@ -149,8 +149,8 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
           <div className="fsp-content">
             <aside className="fsp-hero">
               <span className="fsp-eyebrow">ASSINATURA</span>
-              <h1>Leve sua experiÃªncia<br />para o <span>prÃ³ximo nÃ­vel</span></h1>
-              <p>Aproveite todos os recursos premium, personalize seu perfil e tenha uma experiÃªncia ainda mais completa no Friends Space.</p>
+              <h1>Leve sua experiência<br />para o <span>próximo nível</span></h1>
+              <p>Aproveite todos os recursos premium, personalize seu perfil e tenha uma experiência ainda mais completa no Friends Space.</p>
               <ul className="fsp-perks">
                 <li>
                   <span className="fsp-perk-ic" style={{ color: '#38bdf8', borderColor: 'rgba(56,189,248,.45)', background: 'rgba(56,189,248,.1)' }}><Gem size={13} /></span>
@@ -158,7 +158,7 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
                 </li>
                 <li>
                   <span className="fsp-perk-ic" style={{ color: '#a855f7', borderColor: 'rgba(168,85,247,.45)', background: 'rgba(168,85,247,.1)' }}><Palette size={13} /></span>
-                  <div><strong>PersonalizaÃ§Ã£o total</strong><small>Deixe seu perfil do seu jeito.</small></div>
+                  <div><strong>Personalização total</strong><small>Deixe seu perfil do seu jeito.</small></div>
                 </li>
                 <li>
                   <span className="fsp-perk-ic" style={{ color: '#38bdf8', borderColor: 'rgba(56,189,248,.45)', background: 'rgba(56,189,248,.1)' }}><Zap size={13} /></span>
@@ -166,13 +166,13 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
                 </li>
                 <li>
                   <span className="fsp-perk-ic" style={{ color: '#f59e0b', borderColor: 'rgba(245,158,11,.45)', background: 'rgba(245,158,11,.1)' }}><Shield size={13} /></span>
-                  <div><strong>Suporte prioritÃ¡rio</strong><small>Conte com a gente sempre que precisar.</small></div>
+                  <div><strong>Suporte prioritário</strong><small>Conte com a gente sempre que precisar.</small></div>
                 </li>
               </ul>
               <div className="fsp-mascot">
                 <img src={assetUrl('penguin-logo.png')} alt="" />
               </div>
-              <p className="fsp-hero-foot"><Crown size={11} color="#38bdf8" /> Assine agora e faÃ§a parte do maior.</p>
+              <p className="fsp-hero-foot"><Crown size={11} color="#38bdf8" /> Assine agora e faça parte do maior.</p>
             </aside>
 
             <main className="fsp-plans">
@@ -208,11 +208,11 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
                 })}
 
                 <div className="fsp-card is-ultimate" style={{ '--pc': '#ffffff' } as CSSProperties}>
-                  <span className="fsp-pop fsp-pop-white">LANÃ‡AMENTO</span>
+                  <span className="fsp-pop fsp-pop-white">LANÇAMENTO</span>
                   <div className="fsp-card-head">
                     <span className="fsp-plan-ic"><Gem size={18} strokeWidth={2.2} /></span>
                     <h2>ASTRO Ultimate</h2>
-                    <p>A experiÃªncia definitiva do Friends Space.</p>
+                    <p>A experiência definitiva do Friends Space.</p>
                   </div>
                   <div className="fsp-price">
                     <div className="fsp-price-main" style={{ fontSize: 19 }}>Em breve</div>
@@ -230,7 +230,7 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
           </div>
 
           <div className="fsp-compare">
-            <h3>ComparaÃ§Ã£o de planos</h3>
+            <h3>Comparação de planos</h3>
             <div className="fsp-tablewrap">
               <table className="fsp-table">
                 <thead>
@@ -282,4 +282,3 @@ export function AstroPlansModal({ onClose, onSubscribe }: AstroPlansModalProps) 
     </div>
   )
 }
-
