@@ -1,0 +1,7 @@
+# Configuracao do deploy das Pages Functions (site friends-space.pages.dev).
+# O wrangler le este arquivo no `wrangler pages deploy dist` para ligar
+# nodejs_compat (api/app.js usa Buffer/createRequire) e registrar a pasta dist.
+name = "friends-space"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]

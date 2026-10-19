@@ -1,9 +1,21 @@
 const DEFAULT_API_BASE_URL = 'https://friends-space-api.kaandrofootball.workers.dev'
 
+// O backend real roda como Pages Function (functions/api/[[path]].js) na
+// MESMA origem do site — rota ~4x mais rapida que o workers.dev no Brasil.
+// Se as Functions estiverem indisponiveis (402/5xx), o backend.ts seta
+// apiBaseOverride para o Worker dev e tudo continua por la.
+let apiBaseOverride = ''
+export function setApiBaseUrlOverride(next: string) {
+  if (next && apiBaseOverride !== next) apiBaseOverride = next.replace(/\/+$/, '')
+}
+
 export function getApiBaseUrl() {
-  // Backend direto (o proxy same-origin do Pages está fora do ar para POST).
-  // O backend aplica CORS allowlist + auth em toda action.
+  if (apiBaseOverride) return apiBaseOverride
   const configured = import.meta.env.VITE_API_BASE_URL as string | undefined
+  if (typeof window !== 'undefined' && window.location?.hostname
+    && /(^|\.)(friends-space\.pages\.dev)$/.test(window.location.hostname)) {
+    return window.location.origin.replace(/\/+$/, '')
+  }
   if (configured && configured.trim()) {
     return configured.trim().replace(/\/+$/, '')
   }
@@ -15,3 +27,5 @@ export function getApiBaseUrl() {
 
   return DEFAULT_API_BASE_URL
 }
+
+export const FALLBACK_API_BASE_URL = DEFAULT_API_BASE_URL

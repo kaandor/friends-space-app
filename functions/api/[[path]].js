@@ -1,77 +1,59 @@
-﻿// Proxy para o backend real (api/app.js) publicado no Vercel.
-// Permite que o app seja servido pelo Cloudflare Pages (friends-space.pages.dev)
-// enquanto o processamento continua no backend completo.
-const TARGET = "https://friends-space-ecru.vercel.app/api/app";
-
-const ALLOWED_ORIGINS = new Set([
-  "https://friends-space.pages.dev",
-  "https://friends-space-ecru.vercel.app",
-]);
-
-function corsFor(request) {
-  const origin = request.headers.get("origin") || "";
-  // Sem Origin (curl, app nativo): permite — navegador exige Origin e é validado.
-  const allow = !origin || ALLOWED_ORIGINS.has(origin);
-  return {
-    "access-control-allow-origin": allow ? origin || "*" : "null",
-    "access-control-allow-methods": "GET, POST, OPTIONS",
-    "access-control-allow-headers": "content-type",
-    "access-control-max-age": "86400",
-  };
-}
+﻿// Backend REAL no Cloudflare Pages (Functions) — mesma origem do site.
+// Antes de 18/10/2026 este arquivo era um proxy para o Vercel (quota 402) e o
+// build apontava pro Worker dev (rota workers.dev lenta no BR: ~125ms base).
+// Com o handler embutido aqui, /api/app rota direto no edge da Pages
+// (~30-60ms), elimina o Vercel e o proxy duplicado.
+import handler from '../../api/app.js'
 
 export async function onRequest(context) {
-  const { request } = context;
+  const request = context.request
+  const url = new URL(request.url)
 
-  if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsFor(request) });
+  const headers = {}
+  for (const [key, value] of request.headers.entries()) headers[key.toLowerCase()] = value
+
+  let raw = null
+  if (request.body) {
+    const buf = await request.arrayBuffer()
+    if (buf.byteLength) raw = new Uint8Array(buf)
   }
 
-  const targetUrl = new URL(TARGET);
-  const incoming = new URL(request.url);
-
-  // Token de sessão nunca viaja na query (logs): move para o body.
-  const queryToken = incoming.searchParams.get("sessionToken") || "";
-  if (queryToken) incoming.searchParams.delete("sessionToken");
-
-  // repassa query string restante (ex.: ?profileId=..&health=1&_ts=..)
-  targetUrl.search = incoming.search;
-
-  const init = {
+  const req = {
     method: request.method,
-    headers: {
-      "content-type": request.headers.get("content-type") || "application/json",
-      // IP real do visitante para rate-limit/ban (Cloudflare fornece).
-      "cf-connecting-ip": request.headers.get("cf-connecting-ip") || "",
-      "x-forwarded-for": request.headers.get("x-forwarded-for") || "",
-      "x-real-ip": request.headers.get("x-real-ip") || "",
+    url: url.pathname + url.search,
+    headers,
+    socket: { remoteAddress: request.headers.get('cf-connecting-ip') || '' },
+    async *[Symbol.asyncIterator]() {
+      if (raw) yield Buffer.from(raw)
     },
-  };
-
-  if (request.method === "POST") {
-    const buf = await request.arrayBuffer();
-    if (queryToken) {
-      try {
-        const obj = JSON.parse(new TextDecoder().decode(buf));
-        if (obj && typeof obj === "object" && !obj.sessionToken) obj.sessionToken = queryToken;
-        init.body = new TextEncoder().encode(JSON.stringify(obj));
-      } catch {
-        init.body = buf;
-      }
-    } else {
-      init.body = buf;
-    }
   }
 
-  const upstream = await fetch(targetUrl.toString(), init);
+  let status = 200
+  const outHeaders = {}
+  let outBody = null
 
-  const upstreamBody = await upstream.arrayBuffer();
-  return new Response(upstreamBody, {
-    status: upstream.status,
-    headers: {
-      "content-type": upstream.headers.get("content-type") || "application/json; charset=utf-8",
-      "cache-control": "no-store",
-      ...corsFor(request),
-    },
-  });
+  const res = {
+    get statusCode() { return status },
+    set statusCode(value) { status = Number(value) || 200 },
+    setHeader(key, value) { outHeaders[String(key).toLowerCase()] = String(value) },
+    getHeader(key) { return outHeaders[String(key).toLowerCase()] },
+    removeHeader(key) { delete outHeaders[String(key).toLowerCase()] },
+    write(chunk) { outBody = outBody === null ? chunk : outBody + chunk; return true },
+    end(chunk) { if (chunk !== undefined && chunk !== null) outBody = outBody === null ? chunk : outBody + chunk },
+  }
+
+  try {
+    await handler(req, res)
+  } catch (error) {
+    console.error('[pages-api] erro nao tratado:', error?.stack || error)
+    status = 500
+    outHeaders['content-type'] = 'application/json; charset=utf-8'
+    outBody = JSON.stringify({ ok: false, error: 'Erro interno. Tente novamente.' })
+  }
+
+  let body = null
+  if (outBody !== null) {
+    body = typeof outBody === 'string' ? outBody : new TextDecoder().decode(outBody)
+  }
+  return new Response(body, { status, headers: outHeaders })
 }

@@ -1,5 +1,5 @@
 import type { CallSession, DirectMessage, Friend, Message, Server, User } from '../types'
-import { getApiBaseUrl } from './config'
+import { FALLBACK_API_BASE_URL, getApiBaseUrl, setApiBaseUrlOverride } from './config'
 
 type AppData = {
   users: User[]
@@ -134,7 +134,18 @@ async function requestBackendWithRetry<T>(action: string, payload: Record<string
       }
       return body.result as T
     } catch (error) {
-      const __m = error instanceof Error ? error.message : ''; if (/Sessão expirada|\(403\)/.test(__m)) throw error; lastError = error
+      const __m = error instanceof Error ? error.message : ''
+      // Pages Function indisponivel (quota/5xx/402): desvia para o Worker dev
+      // na proxima tentativa (mesma chamada, sem perder o request).
+      if (/^40[245]/.test(__m) || /Servidor respondeu 40[245]/.test(__m)
+        || /Failed to fetch/.test(__m) || /indisponível/.test(__m)) {
+        let base = ''
+        try { base = getApiBaseUrl() } catch { }
+        if (base && window.location?.origin && base === window.location.origin.replace(/\/+$/, '')) {
+          setApiBaseUrlOverride(FALLBACK_API_BASE_URL)
+        }
+      }
+      if (/Sessão expirada|\(403\)/.test(__m)) throw error; lastError = error
       if (attempt < (retryable ? 3 : 1) - 1) await new Promise(resolve => window.setTimeout(resolve, 350 * (attempt + 1)))
     } finally {
       window.clearTimeout(timeout)
