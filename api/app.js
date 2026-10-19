@@ -1827,6 +1827,12 @@ const actions = {
     }
   },
   ping: async () => ({ pong: Date.now() }),
+  dbInfo: async () => {
+    const url = String(process.env.TURSO_DATABASE_URL || '')
+    let host = ''
+    try { host = new URL(url.replace(/^libsql:\/\//, 'https://')).host } catch { }
+    return { driver: String(process.env.DB_DRIVER || ''), host, hasToken: !!String(process.env.TURSO_AUTH_TOKEN || '').trim(), env: String(process.env.ENVIRONMENT || '') }
+  },
   // Versão desktop via GitHub Releases (o app Electron usa electron-updater
   // direto; este endpoint serve instalações antigas sem feed + o modal web
   // "Baixar app"). Sem GH_OWNER/GH_REPO, retorna vazio (sem update).
@@ -5146,7 +5152,7 @@ export default async function handler(req, res) {
       const day = String(body.cv).slice(0, 10)
       if (day < '2026-09-08') { json(res, 403, { ok: false, error: 'Atualize o app (Ctrl+F5). Versão antiga.' }); return }
     }
-    const PUBLIC_ACTIONS = new Set(['ping', 'checkUpdate', 'signInWithName', 'signInWithGoogle'])
+    const PUBLIC_ACTIONS = new Set(['ping', 'checkUpdate', 'signInWithName', 'signInWithGoogle', 'dbInfo'])
     let __actor = null
     if (!PUBLIC_ACTIONS.has(body.action)) {
       __actor = await verifySession(body.sessionToken)
