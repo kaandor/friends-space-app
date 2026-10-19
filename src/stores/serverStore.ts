@@ -759,9 +759,13 @@ export const useServerStore = create<ServerState>((set, get) => ({
     const server = get().servers.find(s => s.id === serverId)
     if (!server) return
     if (server.members.includes(userId)) return
-    const updated = { ...server, members: [...server.members, userId] }
+    const autoRoleId = server.autoRoleId && (server.roles || []).some(r => r.id === server.autoRoleId) ? server.autoRoleId : null
+    const memberRoles = autoRoleId
+      ? { ...(server.memberRoles || {}), [userId]: Array.from(new Set([...(server.memberRoles?.[userId] || []), autoRoleId])) }
+      : null
+    const updated = { ...server, members: [...server.members, userId], ...(memberRoles ? { memberRoles } : {}) }
     try {
-      const result = await requestBackend<{ server: Server, servers: Server[] }>('updateServer', { serverId, data: { members: updated.members }, userId: useUserStore.getState().currentUser?.id })
+      const result = await requestBackend<{ server: Server, servers: Server[] }>('updateServer', { serverId, data: { members: updated.members, ...(memberRoles ? { memberRoles } : {}) }, userId: useUserStore.getState().currentUser?.id })
       set({
         servers: result.servers,
         currentServer: get().currentServer?.id === serverId ? result.server : get().currentServer,

@@ -1,6 +1,6 @@
 import { Fa } from '../../utils/fa'
 import { useState, useMemo, useEffect, useRef } from 'react'
-import type { Server } from '../../types'
+import type { Server, Role } from '../../types'
 
 /* ══ PARTE 2 (UI): helpers defensivos p/ contrato Server.settings/auditLog ══ */
 export function localDefaultSettings() {
@@ -75,7 +75,7 @@ function fmtTime(ts: number): string {
 }
 import { useServerStore } from '../../stores/serverStore'
 import { useUserStore } from '../../stores/userStore'
-import { canManageServer, canDeleteServer } from '../../config/permissions'
+import { canManageServer, canDeleteServer, SERVER_PERMISSIONS, ROLE_TEMPLATES, canAccessSection, isServerOwnerOrStaff } from '../../config/permissions'
 import { getAstroTier } from '../../utils/astro'
 import { ServerPostModal } from '../Social/ServerPostModal'
 
@@ -137,6 +137,7 @@ const NAV_GROUPS: { label: string; items: { key: string; label: string; icon: st
       { key: 'canais', label: 'Canais', icon: 'fa-hashtag' },
       { key: 'categorias', label: 'Categorias', icon: 'fa-folder-tree' },
       { key: 'cargos', label: 'Cargos e permissões', icon: 'fa-shield' },
+      { key: 'membros', label: 'Membros', icon: 'fa-user-group' },
       { key: 'eventos', label: 'Eventos', icon: 'fa-calendar-days' },
       { key: 'emojis', label: 'Emojis', icon: 'fa-face-smile' },
       { key: 'figurinhas', label: 'Figurinhas', icon: 'fa-stamp' },
@@ -151,7 +152,7 @@ const NAV_GROUPS: { label: string; items: { key: string; label: string; icon: st
       { key: 'visao_comunidade', label: 'Visão da comunidade', icon: 'fa-globe' },
       { key: 'habilitacao', label: 'Habilitação da comunidade', icon: 'fa-check-double' },
       { key: 'descoberta', label: 'Descoberta', icon: 'fa-magnifying-glass' },
-      { key: 'publicacoes', label: 'Publicações', icon: 'fa-bullhorn' },
+      { key: 'publicacoes', label: 'Publicações e anúncios', icon: 'fa-tower-broadcast' },
       { key: 'regras', label: 'Regras do servidor', icon: 'fa-scroll' },
       { key: 'moderacao', label: 'Moderação', icon: 'fa-gavel' },
       { key: 'automod', label: 'AutoMod', icon: 'fa-robot' },
@@ -288,13 +289,15 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
   // Seçoes basicas que contas free podem acessar (tema, calls, texto, icone, banner)
   const FREE_KEYS = new Set(['visao', 'config', 'canais', 'categorias'])
   // Se o usuario free tiver uma aba premium ativa (ex.: recarregou a pagina), mostra visao
-  const effectiveActive = isFree && !FREE_KEYS.has(active) ? 'visao' : active
+  const effectiveActive = (isFree && !FREE_KEYS.has(active)) || !canAccessSection(server, activeUserId, active) ? 'visao' : active
 
   const addChannel = useServerStore(s => s.addChannel)
   const deleteChannel = useServerStore(s => s.deleteChannel)
   const addCategory = useServerStore(s => s.addCategory)
   const deleteCategory = useServerStore(s => s.deleteCategory)
   const addRole = useServerStore(s => s.addRole)
+  const updateServer = useServerStore(s => s.updateServer)
+  const sendStoreMessage = useServerStore(s => s.sendMessage)
   const addServerEvent = useServerStore(s => s.addServerEvent)
   const deleteServerEvent = useServerStore(s => s.deleteServerEvent)
   /* Dados ao vivo do store (não usa props que ficam desatualizadas) */
@@ -503,7 +506,140 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
   }
   const userNameOf = (id: string) => allUsers.find(u => u.id === id)?.name || `Usuário ${id.slice(0, 6)}`
 
+  /* ── Cargos: editor, atribuição a membros, cargo automático ── */
+  const [editingRoleId, setEditingRoleId] = useState<string | null>(null)
+  const [roleNameDraft, setRoleNameDraft] = useState('')
+  const [roleColorDraft, setRoleColorDraft] = useState('#29A3FF')
+  const [rolePermDraft, setRolePermDraft] = useState<string[]>([])
+  const [memberSearch, setMemberSearch] = useState('')
+  const [addPersonQuery, setAddPersonQuery] = useState('')
+  const [rolePickerFor, setRolePickerFor] = useState<string | null>(null)
+  /* ── Anúncios ── */
+  const [annTitle, setAnnTitle] = useState('')
+  const [annBody, setAnnBody] = useState('')
+  const [annChannelId, setAnnChannelId] = useState('')
+  const [annEveryone, setAnnEveryone] = useState(false)
+  const [annBusy, setAnnBusy] = useState(false)
+
+  const iAmFullManager = isServerOwnerOrStaff(server, activeUserId)
+  const allowed = (key: string) => iAmFullManager || canAccessSection(server, activeUserId, key)
+
+  const memberRolesMap: Record<string, string[]> = useMemo(() => {
+    const raw = (liveServer as unknown as Record<string, unknown>)?.memberRoles
+    return raw && typeof raw === 'object' ? (raw as Record<string, string[]>) : {}
+  }, [liveServer])
+
   if (!server) return null
+
+  const roleIdsOf = (userId: string) => (Array.isArray(memberRolesMap[userId]) ? memberRolesMap[userId] : [])
+  const rolesOf = (userId: string) => liveRoles.filter(r => roleIdsOf(userId).includes(r.id))
+
+  const persistRoles = async (nextRoles: Role[], detail: string) => {
+    try {
+      await updateServer(server.id, { roles: nextRoles } as Partial<Server>)
+      void useServerStore.getState().logAudit(server.id, 'cargos', detail).catch(() => {})
+      notify('Salvo!')
+    } catch { notify('Falha ao salvar cargos') }
+  }
+  const persistMemberRoles = async (next: Record<string, string[]>, detail: string) => {
+    try {
+      await updateServer(server.id, { memberRoles: next } as Partial<Server>)
+      void useServerStore.getState().logAudit(server.id, 'cargos', detail).catch(() => {})
+    } catch { notify('Falha ao salvar cargo do membro') }
+  }
+  const openRoleEditor = (role: Role) => {
+    setEditingRoleId(role.id)
+    setRoleNameDraft(role.name)
+    setRoleColorDraft(role.color || '#29A3FF')
+    setRolePermDraft([...(role.permissions || [])])
+  }
+  const saveRoleEditor = async () => {
+    if (!editingRoleId) return
+    const name = roleNameDraft.trim() || 'Cargo'
+    const nextRoles = liveRoles.map(r => r.id === editingRoleId ? { ...r, name, color: roleColorDraft, permissions: rolePermDraft } : r)
+    await persistRoles(nextRoles, `Cargo "${name}" atualizado (${rolePermDraft.length} permissões)`)
+    setEditingRoleId(null)
+  }
+  const deleteRole = async (role: Role) => {
+    if (!window.confirm(`Excluir o cargo "${role.name}"?`)) return
+    const nextRoles = liveRoles.filter(r => r.id !== role.id)
+    const nextMR: Record<string, string[]> = {}
+    for (const [uid, ids] of Object.entries(memberRolesMap)) nextMR[uid] = (ids || []).filter(id => id !== role.id)
+    try {
+      await updateServer(server.id, { roles: nextRoles, memberRoles: nextMR, ...(liveServer?.autoRoleId === role.id ? { autoRoleId: '' } : {}) } as Partial<Server>)
+      void useServerStore.getState().logAudit(server.id, 'cargos', `Cargo "${role.name}" excluído`).catch(() => {})
+      if (editingRoleId === role.id) setEditingRoleId(null)
+      notify('Cargo excluído')
+    } catch { notify('Falha ao excluir cargo') }
+  }
+  const moveRole = async (role: Role, dir: -1 | 1) => {
+    const idx = liveRoles.findIndex(r => r.id === role.id)
+    const target = idx + dir
+    if (idx < 0 || target < 0 || target >= liveRoles.length) return
+    const next = [...liveRoles]
+    const [item] = next.splice(idx, 1)
+    next.splice(target, 0, item)
+    try {
+      await updateServer(server.id, { roles: next } as Partial<Server>)
+    } catch { notify('Falha ao reordenar') }
+  }
+  const createRoleFromTemplate = async (t: { name: string; color: string; permissions: string[] }) => {
+    const exists = liveRoles.some(r => r.name.toLowerCase() === t.name.toLowerCase())
+    const role: Role = { id: rid(), name: exists ? `${t.name} ${liveRoles.length + 1}` : t.name, color: t.color, serverId: server.id, permissions: [...t.permissions] }
+    await persistRoles([...liveRoles, role], `Cargo "${role.name}" criado (modelo)`)
+  }
+  const setAutoRole = async (roleId: string) => {
+    const next = liveServer?.autoRoleId === roleId ? '' : roleId
+    try {
+      await updateServer(server.id, { autoRoleId: next } as Partial<Server>)
+      notify(next ? 'Novos membros entram com este cargo' : 'Cargo automático desativado')
+    } catch { notify('Falha ao salvar cargo automático') }
+  }
+  const toggleMemberRole = async (userId: string, roleId: string) => {
+    const current = roleIdsOf(userId)
+    const has = current.includes(roleId)
+    const next = has ? current.filter(id => id !== roleId) : [...current, roleId]
+    const name = liveRoles.find(r => r.id === roleId)?.name || 'cargo'
+    await persistMemberRoles({ ...memberRolesMap, [userId]: next }, `${userNameOf(userId)} ${has ? 'perdeu' : 'recebeu'} o cargo ${name}`)
+  }
+
+  /* ── Membros: adicionar/remover/moderar ── */
+  const addPerson = async (userId: string) => {
+    try {
+      await useServerStore.getState().addMember(server.id, userId)
+      notify(`${userNameOf(userId)} entrou no servidor`)
+      setAddPersonQuery('')
+      void useServerStore.getState().logAudit(server.id, 'membros', `${userNameOf(userId)} adicionado`).catch(() => {})
+    } catch { notify('Falha ao adicionar pessoa') }
+  }
+  const memberMod = async (action: 'timeout' | 'kick' | 'ban' | 'unban', userId: string) => {
+    try {
+      const st = useServerStore.getState()
+      if (action === 'timeout') { await st.timeoutMember(server.id, userId, 10); notify('Membro silenciado por 10min') }
+      else if (action === 'kick') { if (!window.confirm(`Expulsar ${userNameOf(userId)}?`)) return; await st.kickMember(server.id, userId); notify('Membro expulso') }
+      else if (action === 'ban') { if (!window.confirm(`Banir ${userNameOf(userId)}?`)) return; await st.banMember(server.id, userId); notify('Membro banido') }
+      else { await st.unbanMember(server.id, userId); notify('Membro desbanido') }
+    } catch { notify('Ação falhou') }
+  }
+
+  /* ── Anúncios: publicar em um canal ── */
+  const publishAnnouncement = async () => {
+    if (!annBody.trim() || annBusy) return
+    const fallbackChannel = liveChannels.find(c => c.type === 'text')?.id || ''
+    const channelId = annChannelId || fallbackChannel
+    if (!channelId) { notify('Crie um canal de texto primeiro'); return }
+    setAnnBusy(true)
+    try {
+      const content = `📣 ${annTitle.trim() ? `**${annTitle.trim()}**\n` : ''}${annBody.trim()}${annEveryone ? '\n@todos' : ''}`
+      await sendStoreMessage(channelId, currentUser?.id || activeUserId || '', currentUser?.name || 'Servidor', currentUser?.photoUrl || '', content, 'text')
+      void useServerStore.getState().logAudit(server.id, 'anuncio', `Anúncio publicado em ${channelId}`).catch(() => {})
+      setAnnTitle('')
+      setAnnBody('')
+      setAnnEveryone(false)
+      notify('Anúncio publicado!')
+    } catch { notify('Falha ao publicar anúncio') } finally { setAnnBusy(false) }
+  }
+
   if (!liveServer) {
     const hasUser = Boolean(currentUser)
     const retryAll = () => {
@@ -966,7 +1102,7 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                   <Fa name={ch.type === 'voice' ? 'microphone' : 'hashtag'} size={13} />
                   <span>{ch.type === 'text' ? `# ${ch.name}` : ch.name}</span>
                   <small>{ch.type === 'voice' ? 'Voz' : 'Texto'}</small>
-                  {canManage && <button className="ssw-row-del" onClick={() => handleDeleteChannel(ch.id)} title="Excluir"><Fa name="trash" size={14} /></button>}
+                  {allowed('canais') && <button className="ssw-row-del" onClick={() => handleDeleteChannel(ch.id)} title="Excluir"><Fa name="trash" size={14} /></button>}
                 </div>
               ))}
               {(liveChannels || []).length === 0 && <div className="ssw-empty">Nenhum canal criado ainda.</div>}
@@ -988,7 +1124,7 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                   <Fa name="folder" size={14} />
                   <span>{cat.name}</span>
                   <small>Visível para todos</small>
-                  {canManage && <button className="ssw-row-del" onClick={() => handleDeleteCategory(cat.id)} title="Excluir"><Fa name="trash" size={14} /></button>}
+                  {allowed('categorias') && <button className="ssw-row-del" onClick={() => handleDeleteCategory(cat.id)} title="Excluir"><Fa name="trash" size={14} /></button>}
                 </div>
               ))}
               {(liveCategories || []).length === 0 && <div className="ssw-empty">Nenhuma categoria criada ainda.</div>}
@@ -1003,21 +1139,149 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
       return (
         <div className="ssw-stack">
           <section className="ssw-card">
-            <SectionTitle eyebrow="HIERARQUIA" title="Cargos e permissões" desc={`${stats.cargos} cargos no servidor`} />
+            <SectionTitle eyebrow="MODELOS" title="Cargos prontos" desc="Um clique cria um cargo já com as permissões certas." />
+            <div className="ssw-role-templates">
+              {ROLE_TEMPLATES.map(t => (
+                <button key={t.name} type="button" className="ssw-template-chip" onClick={() => void createRoleFromTemplate(t)} title={`Criar cargo ${t.name}`}>
+                  <span className="ssw-role-dot" style={{ background: t.color }} />
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          </section>
+          <section className="ssw-card">
+            <SectionTitle eyebrow="HIERARQUIA" title="Cargos e permissões" desc={`${stats.cargos} cargos · escolha o que cada cargo pode ver e fazer`} />
             <div className="ssw-add-row">
               <input value={newRole} onChange={e => setNewRole(e.target.value)} placeholder="Nome do cargo (ex: Moderador)" onKeyDown={e => e.key === 'Enter' && handleAddRole()} />
               <input type="color" value={newRoleColor} onChange={e => setNewRoleColor(e.target.value)} className="ssw-color-input" title="Cor do cargo" />
               <button className="ssw-primary-btn" onClick={handleAddRole} disabled={!newRole.trim()}><Fa name="plus" size={14} /> Criar</button>
             </div>
             <div className="ssw-list">
-              {(liveRoles || []).map(role => (
-                <div className="ssw-list-row" key={role.id}>
-                  <Fa name="shield" size={14} style={{ color: role.color }} />
-                  <span>{role.name}</span>
-                  <small>{role.permissions?.length || 0} permissões</small>
-                </div>
-              ))}
-              {(liveRoles || []).length === 0 && <div className="ssw-empty">Nenhum cargo criado ainda.</div>}
+              {liveRoles.map((role, idx) => {
+                const assignedCount = Object.values(memberRolesMap).filter(ids => (ids || []).includes(role.id)).length
+                const isAuto = liveServer?.autoRoleId === role.id
+                const editing = editingRoleId === role.id
+                return (
+                  <div key={role.id} className="ssw-role-item">
+                    <div className="ssw-list-row">
+                      <span className="ssw-role-dot" style={{ background: role.color }} />
+                      <span style={{ fontWeight: 700 }}>{role.name}</span>
+                      {isAuto && <small className="ssw-role-auto-tag">entrada automática</small>}
+                      <small>{role.permissions?.length || 0} permissões · {assignedCount} membros</small>
+                      <span style={{ display: 'flex', gap: 4 }}>
+                        <button className="ssw-small-btn" onClick={() => void moveRole(role, -1)} disabled={idx === 0} title="Subir"><Fa name="arrow-up" size={13} /></button>
+                        <button className="ssw-small-btn" onClick={() => void moveRole(role, 1)} disabled={idx === liveRoles.length - 1} title="Descer"><Fa name="arrow-down" size={13} /></button>
+                        <button className={`ssw-small-btn ${isAuto ? 'is-active' : ''}`} onClick={() => void setAutoRole(role.id)} title="Novos membros entram com este cargo"><Fa name="star" size={13} /></button>
+                        <button className="ssw-small-btn" onClick={() => editing ? setEditingRoleId(null) : openRoleEditor(role)} title="Editar cargo e permissões"><Fa name="pen" size={13} /></button>
+                        <button className="ssw-row-del" onClick={() => void deleteRole(role)} title="Excluir"><Fa name="trash" size={13} /></button>
+                      </span>
+                    </div>
+                    {editing && (
+                      <div className="ssw-role-editor">
+                        <div className="ssw-add-row">
+                          <input value={roleNameDraft} onChange={e => setRoleNameDraft(e.target.value)} placeholder="Nome do cargo" />
+                          <input type="color" value={roleColorDraft} onChange={e => setRoleColorDraft(e.target.value)} className="ssw-color-input" title="Cor do cargo" />
+                          <button className="ssw-primary-btn" onClick={() => void saveRoleEditor()}><Fa name="check" size={14} /> Salvar</button>
+                        </div>
+                        <p className="ssw-helper-text" style={{ marginTop: 8 }}>Permissões deste cargo — limitam o que ele pode ver e fazer nas configurações:</p>
+                        {Array.from(new Set(SERVER_PERMISSIONS.map(p => p.group))).map(group => (
+                          <div key={group} className="ssw-perm-group">
+                            <strong>{group}</strong>
+                            <div className="ssw-perm-grid">
+                              {SERVER_PERMISSIONS.filter(p => p.group === group).map(p => (
+                                <label key={p.key} className="ssw-perm-item" title={p.desc}>
+                                  <input type="checkbox" checked={rolePermDraft.includes(p.key)} onChange={() => setRolePermDraft(prev => prev.includes(p.key) ? prev.filter(k => k !== p.key) : [...prev, p.key])} />
+                                  <span><strong>{p.label}</strong><small>{p.desc}</small></span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+              {liveRoles.length === 0 && <div className="ssw-empty">Nenhum cargo criado ainda. Use um modelo acima ou crie do zero.</div>}
+            </div>
+          </section>
+        </div>
+      )
+    }
+
+    /* ═══ MEMBROS ═══ */
+    if (effectiveActive === 'membros') {
+      const q = memberSearch.trim().toLowerCase()
+      const visibleMembers = liveMembers.filter(id => !q || userNameOf(id).toLowerCase().includes(q))
+      const candidates = addPersonQuery.trim() ? allUsers.filter(u => !liveMembers.includes(u.id) && u.name.toLowerCase().includes(addPersonQuery.trim().toLowerCase())).slice(0, 8) : []
+      return (
+        <div className="ssw-stack">
+          <section className="ssw-card">
+            <SectionTitle eyebrow="PESSOAS" title="Adicionar pessoa" desc="Adicione ao servidor alguém que já usa o Friends Space." />
+            <div className="ssw-add-row">
+              <input value={addPersonQuery} onChange={e => setAddPersonQuery(e.target.value)} placeholder="Buscar pessoa pelo nome..." />
+            </div>
+            {candidates.length > 0 && (
+              <div className="ssw-list" style={{ marginTop: 10 }}>
+                {candidates.map(u => (
+                  <div className="ssw-list-row" key={u.id}>
+                    <Fa name="user-plus" size={14} />
+                    <span>{u.name}</span>
+                    <button className="ssw-primary-btn" onClick={() => void addPerson(u.id)}><Fa name="plus" size={13} /> Adicionar</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {addPersonQuery.trim() && candidates.length === 0 && <div className="ssw-empty" style={{ marginTop: 10 }}>Ninguém encontrado com esse nome (ou já está no servidor).</div>}
+          </section>
+          <section className="ssw-card">
+            <SectionTitle eyebrow="MEMBROS" title="Gerenciar membros" desc={`${liveMembers.length} membros · clique num cargo para tirar, ou em + cargo para dar`} />
+            <div className="ssw-add-row">
+              <input value={memberSearch} onChange={e => setMemberSearch(e.target.value)} placeholder="Buscar membro..." />
+            </div>
+            <div className="ssw-list">
+              {visibleMembers.map(id => {
+                const mRoles = rolesOf(id)
+                const isOwnerRow = liveServer?.ownerId === id
+                const open = rolePickerFor === id
+                const available = liveRoles.filter(r => !mRoles.some(mr => mr.id === r.id))
+                return (
+                  <div key={id} className="ssw-member-item">
+                    <div className="ssw-list-row">
+                      <Fa name={isOwnerRow ? 'star' : 'user'} size={14} />
+                      <span>{userNameOf(id)}{isOwnerRow ? ' (dono)' : ''}</span>
+                      <span className="ssw-member-roles">
+                        {mRoles.map(r => (
+                          <button key={r.id} type="button" className="ssw-role-badge" style={{ borderColor: r.color, color: r.color }} onClick={() => void toggleMemberRole(id, r.id)} title="Clique para remover este cargo">
+                            {r.name}<Fa name="xmark" size={10} />
+                          </button>
+                        ))}
+                        <button type="button" className="ssw-role-badge ssw-role-badge-add" onClick={() => setRolePickerFor(open ? null : id)} title="Dar cargo">
+                          <Fa name="plus" size={10} /> cargo
+                        </button>
+                      </span>
+                      <span style={{ display: 'flex', gap: 4 }}>
+                        <button className="ssw-small-btn" onClick={() => void memberMod('timeout', id)} title="Silenciar 10min"><Fa name="volume-xmark" size={13} /></button>
+                        <button className="ssw-small-btn" onClick={() => void memberMod('kick', id)} title="Expulsar"><Fa name="door-open" size={13} /></button>
+                        {bannedList.includes(id)
+                          ? <button className="ssw-small-btn" onClick={() => void memberMod('unban', id)} title="Desbanir"><Fa name="check" size={13} /></button>
+                          : <button className="ssw-row-del" onClick={() => void memberMod('ban', id)} title="Banir"><Fa name="gavel" size={13} /></button>}
+                      </span>
+                    </div>
+                    {open && (
+                      <div className="ssw-role-picker">
+                        {available.map(r => (
+                          <button key={r.id} type="button" className="ssw-role-badge" style={{ borderColor: r.color, color: r.color }} onClick={() => { void toggleMemberRole(id, r.id); setRolePickerFor(null) }}>
+                            <span className="ssw-role-dot" style={{ background: r.color }} />{r.name}
+                          </button>
+                        ))}
+                        {available.length === 0 && <span className="ssw-empty">Sem cargos disponíveis — crie na aba Cargos.</span>}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+              {visibleMembers.length === 0 && <div className="ssw-empty">Nenhum membro encontrado.</div>}
             </div>
           </section>
         </div>
@@ -1036,7 +1300,7 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                   <Fa name="calendar-days" size={14} />
                   <span>{ev.title}</span>
                   <small>{fmtDate(ev.date)}</small>
-                  {canManage && <button className="ssw-row-del" onClick={() => handleDeleteEvent(ev.id)} title="Excluir"><Fa name="trash" size={14} /></button>}
+                  {allowed('eventos') && <button className="ssw-row-del" onClick={() => handleDeleteEvent(ev.id)} title="Excluir"><Fa name="trash" size={14} /></button>}
                 </div>
               ))}
               {(liveEvents || []).length === 0 && <div className="ssw-empty">Nenhum evento criado ainda.</div>}
@@ -1521,11 +1785,34 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
       )
     }
 
-    /* ═══ PUBLICAÇÕES (feed + stories do servidor) ═══ */
+    /* ═══ PUBLICAÇÕES (anúncios + feed + stories do servidor) ═══ */
     if (effectiveActive === 'publicacoes') {
       const srv = liveServer || server
+      const textChannels = liveChannels.filter(c => c.type === 'text')
       return (
         <div className="ssw-stack">
+          <section className="ssw-card">
+            <SectionTitle eyebrow="ANÚNCIOS" title="Publicar anúncio" desc="Envie um aviso destacado direto para um canal de texto do servidor." />
+            <div className="ssw-ann-grid">
+              <input value={annTitle} onChange={e => setAnnTitle(e.target.value)} placeholder="Título (opcional)" maxLength={80} />
+              <textarea value={annBody} onChange={e => setAnnBody(e.target.value)} placeholder="Escreva o anúncio..." rows={3} className="ssw-ann-body" maxLength={1800} />
+              {textChannels.length > 0 && (
+                <select value={annChannelId || textChannels[0].id} onChange={e => setAnnChannelId(e.target.value)}>
+                  {textChannels.map(c => <option key={c.id} value={c.id}># {c.name}</option>)}
+                </select>
+              )}
+              <label className="ssw-perm-item" style={{ maxWidth: 260 }}>
+                <input type="checkbox" checked={annEveryone} onChange={() => setAnnEveryone(v => !v)} />
+                <span><strong>Chamar @todos</strong><small>Adiciona @todos no fim do anúncio</small></span>
+              </label>
+              <div>
+                <button type="button" className="ssw-primary-btn" disabled={!annBody.trim() || annBusy || textChannels.length === 0} onClick={() => void publishAnnouncement()}>
+                  <Fa name="tower-broadcast" size={14} /> {annBusy ? 'Publicando...' : 'Publicar anúncio'}
+                </button>
+                {textChannels.length === 0 && <span className="ssw-helper-text" style={{ marginLeft: 10 }}>Crie um canal de texto primeiro.</span>}
+              </div>
+            </div>
+          </section>
           <section className="ssw-card">
             <SectionTitle eyebrow="COMUNIDADE" title="Publicações do servidor" desc="Dono e staff postam no feed e nos stories como o servidor. Os seguidores veem no feed e nas histórias." />
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -1626,10 +1913,11 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
                 <p className="ssw-nav-group-label">{group.label}</p>
                 {group.items.map(item => {
                   const isLocked = isFree && !FREE_KEYS.has(item.key)
-                  if (isLocked) {
+                  const noPerm = !allowed(item.key)
+                  if (isLocked || noPerm) {
                     // Recurso premium: banner comum com cadeado — NAO e um botao.
                     return (
-                      <div key={item.key} className="ssw-nav-item ssw-nav-locked" title="Exclusivo ASTRO">
+                      <div key={item.key} className="ssw-nav-item ssw-nav-locked" title={isLocked ? 'Exclusivo ASTRO' : 'Seu cargo não permite esta seção'}>
                         <Fa name={item.icon} size={14} />
                         <span>{item.label}</span>
                         <Fa name="lock" size={12} className="ssw-nav-lock-icon" />

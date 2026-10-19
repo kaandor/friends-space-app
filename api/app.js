@@ -2490,6 +2490,11 @@ const actions = {
     if (server.members.includes(joinerId)) return { success: false, error: 'Voce ja e membro deste servidor' }
     if (server.members.length >= 50) return { success: false, error: 'Servidor cheio (max 50 membros)' }
     server.members.push(joinerId)
+    if (server.autoRoleId && Array.isArray(server.roles) && server.roles.some((r) => r && r.id === server.autoRoleId)) {
+      if (!server.memberRoles || typeof server.memberRoles !== 'object') server.memberRoles = {}
+      const current = Array.isArray(server.memberRoles[joinerId]) ? server.memberRoles[joinerId] : []
+      if (!current.includes(server.autoRoleId)) server.memberRoles[joinerId] = [...current, server.autoRoleId]
+    }
     upsertGlobalServer(store, server)
     if (!data.servers.some((item) => item.id === server.id)) data.servers.push(server)
     return { success: true, server, servers: data.servers }
@@ -2502,17 +2507,60 @@ const actions = {
     const isStaff = Array.isArray(server.staffMemberIds) && server.staffMemberIds.includes(actor)
     const patch = { ...(body.data || {}) }
     const onlyMembersChanged = Object.keys(patch).every((key) => key === 'members')
+    const onlyMembershipChanged = Object.keys(patch).every((key) => key === 'members' || key === 'memberRoles')
     const onlyAuditChanged = Object.keys(patch).every((key) => key === 'auditLog')
     const selfMembershipChange = Array.isArray(patch.members)
       ? patch.members.length !== (server.members || []).length && patch.members.every((id) => id === actor || (server.members || []).includes(id))
       : false
     const isMember = actor === server.ownerId || (Array.isArray(server.members) && server.members.includes(actor))
-    if (!isOwner && !isStaff && !(onlyMembersChanged && selfMembershipChange) && !(onlyAuditChanged && isMember)) {
+    const roleIds = server.memberRoles && Array.isArray(server.memberRoles[actor]) ? server.memberRoles[actor] : []
+    const rolePerms = new Set()
+    if (Array.isArray(server.roles)) {
+      for (const role of server.roles) {
+        if (role && roleIds.includes(role.id) && Array.isArray(role.permissions)) {
+          for (const perm of role.permissions) rolePerms.add(String(perm))
+        }
+      }
+    }
+    const isAdminRole = rolePerms.has('administrator')
+    const canAll = isOwner || isStaff || isAdminRole
+    const PATCH_PERMS = {
+      roles: ['manageRoles'], memberRoles: ['manageRoles'],
+      members: ['manageMembers', 'moderate'],
+      settings: ['manageServer', 'moderate'],
+      channels: ['manageChannels'], categories: ['manageChannels'],
+      events: ['manageEvents'],
+      name: ['manageServer'], photoUrl: ['manageServer'], bannerUrl: ['manageServer'],
+      description: ['manageServer'], accentColor: ['manageServer'],
+      callAccess: ['manageServer'], callPassword: ['manageServer'],
+      category: ['manageServer'], tags: ['manageServer'],
+    }
+    const allowedByRole = Object.keys(patch).length > 0 && Object.keys(patch).every((key) => {
+      if (key === 'auditLog') return isMember
+      const need = PATCH_PERMS[key]
+      if (!need) return false
+      return canAll || need.some((perm) => rolePerms.has(perm))
+    })
+    if (!isOwner && !isStaff && !allowedByRole && !(onlyMembershipChanged && selfMembershipChange) && !(onlyAuditChanged && isMember)) {
       throw new Error('Somente o dono e cargos podem editar este servidor')
     }
     if (!isOwner) {
       delete patch.ownerId
       delete patch.staffMemberIds
+    }
+    if (!canAll) {
+      if (Array.isArray(patch.roles)) {
+        patch.roles = patch.roles.map((role) => role && Array.isArray(role.permissions)
+          ? { ...role, permissions: role.permissions.filter((perm) => String(perm) !== 'administrator') }
+          : role)
+      }
+      if (onlyMembershipChanged && patch.memberRoles) {
+        const autoRoleId = server.autoRoleId && Array.isArray(server.roles) && server.roles.some((r) => r && r.id === server.autoRoleId) ? server.autoRoleId : null
+        const incoming = patch.memberRoles[actor]
+        patch.memberRoles = autoRoleId && Array.isArray(incoming) && incoming.includes(autoRoleId)
+          ? { [actor]: Array.from(new Set([...(server.memberRoles?.[actor] || []), autoRoleId])) }
+          : {}
+      }
     }
     const updated = { ...server, ...patch, id: server.id, ownerId: server.ownerId }
     upsertGlobalServer(store, updated)

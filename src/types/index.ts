@@ -148,6 +148,8 @@ export interface Server {
   members: string[]
   channels: Channel[]
   roles: Role[]
+  memberRoles?: Record<string, string[]>
+  autoRoleId?: string
   callAccess?: 'public' | 'members' | 'staff'
   callPassword?: string
   staffMemberIds?: string[]
