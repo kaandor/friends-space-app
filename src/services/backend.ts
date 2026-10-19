@@ -1,5 +1,5 @@
 import type { CallSession, DirectMessage, Friend, Message, Server, User } from '../types'
-import { FALLBACK_API_BASE_URL, getApiBaseUrl, setApiBaseUrlOverride } from './config'
+import { FALLBACK_API_BASE_URL, getApiBaseUrl, hasApiBaseOverride, setApiBaseUrlOverride } from './config'
 
 type AppData = {
   users: User[]
@@ -15,6 +15,46 @@ let stateCache: { data: AppData, loadedAt: number } | null = null
 let stateRequest: Promise<AppData> | null = null
 let stateCacheProfileId: string | null = null
 const STATE_CACHE_MS = 0
+
+// Quando cai no fallback (workers.dev), depois de 60s tentamos voltar para a
+// origem do Pages (rota ~4x mais rapida no Brasil): 1 probe leve; se ok, limpa
+// o override. Sem isso a sessao ficava presa no worker lento para sempre.
+let overrideAt = 0
+let probeInFlight = false
+function scheduleSameOriginProbe() {
+  if (probeInFlight || Date.now() - overrideAt < 60000) return
+  probeInFlight = true
+  const run = async () => {
+    try {
+      const hostname = window.location?.hostname || ''
+      if (!/(^|\.)(friends-space\.pages\.dev)$/.test(hostname)) return
+      const controller = new AbortController()
+      const timeout = window.setTimeout(() => controller.abort(), 8000)
+      let ok = false
+      try {
+        const r = await fetch(`${window.location.origin}/api/app`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ action: 'ping', profileId: getProfileId(), deviceId: getDeviceId() }),
+          signal: controller.signal,
+        })
+        const raw = await r.text()
+        let body: { ok?: boolean } = {}
+        try { body = raw ? JSON.parse(raw) : {} } catch { }
+        ok = r.ok && body.ok === true
+      } finally {
+        window.clearTimeout(timeout)
+      }
+      if (ok) {
+        setApiBaseUrlOverride(null)
+        overrideAt = 0
+      }
+    } catch { } finally {
+      probeInFlight = false
+    }
+  }
+  void run()
+}
 
 function clearStateCache() {
   stateCache = null
@@ -126,6 +166,7 @@ async function requestBackendWithRetry<T>(action: string, payload: Record<string
         throw err
       }
       void maybeRefreshSession()
+      if (hasApiBaseOverride()) void scheduleSameOriginProbe()
       const __res = body.result as Record<string, unknown> | null
       if (__res && typeof __res === 'object' && typeof (__res as { sessionToken?: unknown }).sessionToken === 'string' && (__res as { sessionToken: string }).sessionToken) {
         const __tok = (__res as { sessionToken: string }).sessionToken
@@ -143,6 +184,7 @@ async function requestBackendWithRetry<T>(action: string, payload: Record<string
         try { base = getApiBaseUrl() } catch { }
         if (base && window.location?.origin && base === window.location.origin.replace(/\/+$/, '')) {
           setApiBaseUrlOverride(FALLBACK_API_BASE_URL)
+          overrideAt = Date.now()
         }
       }
       if (/Sessão expirada|\(403\)/.test(__m)) throw error; lastError = error

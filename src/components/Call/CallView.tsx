@@ -670,27 +670,6 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
                 )}
               </div>
             )}
-            {hasActiveScreen && !popout && !controlling && (
-              <div className="vc-people-strip vc-screen-people">
-                {tiles.map(t => {
-                  const off = Boolean(t.muted || t.deafened)
-                  const speaking = Boolean(speakingUsers[t.userId]) && !off
-                  return (
-                    <div
-                      key={t.userId}
-                      className={`vc-strip-chip${speaking ? ' speaking' : ''}${off ? ' muted-ring' : ''}`}
-                      title={t.isSelf ? 'Você' : t.userName}
-                    >
-                      <div className="vc-strip-ring">
-                        <Avatar src={t.userPhoto} name={t.userName} size={34} />
-                      </div>
-                      <span className="vc-strip-name">{t.isSelf ? 'Você' : t.userName}</span>
-                      {off ? <MicOff size={11} color="#ff8085" /> : <Mic size={11} color="rgba(255,255,255,0.45)" />}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
             {hasActiveScreen && !popout && !showMosaic && controlling !== screenUserId && (
               <div className="vc-topbar">
                 <span className="vc-live-dot" />

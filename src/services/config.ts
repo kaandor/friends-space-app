@@ -5,8 +5,16 @@ const DEFAULT_API_BASE_URL = 'https://friends-space-api.kaandrofootball.workers.
 // Se as Functions estiverem indisponiveis (402/5xx), o backend.ts seta
 // apiBaseOverride para o Worker dev e tudo continua por la.
 let apiBaseOverride = ''
-export function setApiBaseUrlOverride(next: string) {
-  if (next && apiBaseOverride !== next) apiBaseOverride = next.replace(/\/+$/, '')
+export function setApiBaseUrlOverride(next: string | null) {
+  if (next) {
+    if (apiBaseOverride !== next) apiBaseOverride = next.replace(/\/+$/, '')
+  } else {
+    apiBaseOverride = ''
+  }
+}
+
+export function hasApiBaseOverride() {
+  return apiBaseOverride !== ''
 }
 
 export function getApiBaseUrl() {
