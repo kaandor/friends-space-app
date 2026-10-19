@@ -360,9 +360,19 @@ const tursoGet = async (key) => {
   return cell && typeof cell === 'object' && 'value' in cell ? cell.value : cell
 }
 
+// Quaisquer data URI de imagem acima desse tamanho e apagada ANTES de gravar no
+// banco: parse/stringify do store acima de ~3MB estoura o orcamento de CPU do
+// Workers free (10ms) por request, derrubando o site ("Failed to fetch").
+const MAX_INLINE_DATA = 320_000
+const HUGE_INLINE_RE = new RegExp(`data:image/[A-Za-z0-9.+-]+/[A-Za-z0-9+/=.;,:%_?&#-]{${MAX_INLINE_DATA},}`, 'g')
+const stripHugeInline = (text) => {
+  if (text.length <= MAX_INLINE_DATA) return text
+  return text.replace(HUGE_INLINE_RE, '')
+}
+
 const tursoSet = async (key, value) => {
   await ensureTursoSchema()
-  const text = typeof value === 'string' ? value : JSON.stringify(value)
+  const text = stripHugeInline(typeof value === 'string' ? value : JSON.stringify(value))
   await tursoFetch(
     `INSERT INTO kv (key, value, updated_at) VALUES (?, ?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
@@ -402,7 +412,8 @@ const kvGet = async (key) => {
 }
 
 const kvSet = async (key, value) => {
-  const text = typeof value === 'string' ? value : JSON.stringify(value)
+  let text = typeof value === 'string' ? value : JSON.stringify(value)
+  text = stripHugeInline(text)
   if (isTurso()) {
     await tursoSet(key, text)
     return true
@@ -1997,6 +2008,15 @@ const actions = {
     const ALLOWED_USER_FIELDS = ['name','bio','photoUrl','bannerUrl','accentColor','status','settings','activityName','activityDetails','activityStartedAt','friendCode','bookmarks']
     const safeData = {}
     for (const k of ALLOWED_USER_FIELDS) { if (body.data && body.data[k] !== undefined) safeData[k] = body.data[k] }
+    // Imagem inline (data URI) gigante afoga o store compartilhado e derruba a
+    // CPU do Workers free. Rejeita quem MANDE um valor novo maior que ~240KB.
+    // (valor igual ao anterior passa: limpeza/migracao cuida do historico)
+    for (const field of ['photoUrl', 'bannerUrl']) {
+      const v = typeof safeData[field] === 'string' ? safeData[field] : ''
+      if (v.startsWith('data:image/') && v.length > 360_000 && v !== String(prevUser[field] || '')) {
+        throw new Error('Imagem muito grande. Use um arquivo de até ~240 KB ou conecte o Google Drive.')
+      }
+    }
     // Blindagem Astro: chaves de assinatura só podem ser alteradas pelas
     // actions pagas (activate/renew/cancel/refund) ou por dev via admin.
     // Sem isso qualquer logado se dava Astro Ultimate de graça.

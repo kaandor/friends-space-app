@@ -374,7 +374,7 @@ handleSessionExpired: () => {
         } catch { }
       } else if (message.includes('muito grande')) {
         try {
-          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'A foto/GIF ficou grande demais. Use um arquivo de até ~1 MB.' }))
+          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'A imagem ficou grande demais. Use um arquivo de até ~200 KB.' }))
         } catch { }
       } else {
         try {

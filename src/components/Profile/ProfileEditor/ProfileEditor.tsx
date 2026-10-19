@@ -1090,8 +1090,8 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
       if (typeof finalBannerUrl === "string" && finalBannerUrl.startsWith("data:image/") && !finalBannerUrl.startsWith("data:image/gif")) {
         finalBannerUrl = await compressDataUrl(finalBannerUrl, 640, 0.72);
       }
-      if (inlineBytes(finalPhotoUrl) + inlineBytes(finalBannerUrl) > 1_400_000) {
-        notify("O arquivo ficou grande demais para o perfil (maximo ~1 MB). Escolha um menor.");
+      if (inlineBytes(finalPhotoUrl) + inlineBytes(finalBannerUrl) > 260_000) {
+        notify("O arquivo ficou grande demais para o perfil (maximo ~200 KB). Escolha um menor.");
         return;
       }
       const paidNow = paid;
