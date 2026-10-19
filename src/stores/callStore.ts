@@ -4322,6 +4322,9 @@ export interface CallDiagnostics {
   }>
 }
 
+// Ping do servidor: guardar as últimas amostras para mostrar a mediana.
+const serverLatencyRing: number[] = []
+
 // Diagnostico ao vivo da call: mostra se o microfono capta (audio local)
 // e se as tracks de midia chegam/saem por peer. Usado no painel de debug.
 const statsSampleCache = new Map<string, { bytes: number; ts: number }>()
@@ -4417,15 +4420,26 @@ export async function getCallDiagnostics(): Promise<CallDiagnostics> {
   // Ping do servidor (RTT do backend): o Discord mostra a latencia para o
   // servidor de voz mesmo quando voce esta sozinho no canal — aqui medimos o
   // tempo de ida-e-volta de uma requisicao leve ao backend (proxy Pages).
-  // Reusa o RTT real das requisições que já rodam (signal/presença) quando
-  // o ping dedicado falhar ou para evitar 1 request extra a cada 2.5s.
+  // Se um request real (signal/presença) mediu RTT ha menos de 5s, reusa e o
+  // ping extra desaparece. A amostra mostrada = mediana das ultimas 5, para
+  // não desmoralizar com um pico único de rede fria/instável; picos repetidos
+  // de verdade continuam aparecendo.
   let serverLatencyMs: number | null = null
+  let sample = lastSignalRttMs
   try {
-    const t0 = performance.now()
-    await requestBackend<{ ok: boolean }>('ping', {})
-    serverLatencyMs = Math.round(performance.now() - t0)
+    if (!(lastSignalRttMs != null && lastSignalRttAt && Date.now() - lastSignalRttAt < 5000)) {
+      const t0 = performance.now()
+      await requestBackend<{ ok: boolean }>('ping', {})
+      sample = Math.round(performance.now() - t0)
+    }
   } catch {
-    serverLatencyMs = lastSignalRttMs ?? lastPresenceRttMs ?? null
+    sample = lastSignalRttMs ?? lastPresenceRttMs ?? null
+  }
+  if (sample != null) {
+    serverLatencyRing.push(sample)
+    if (serverLatencyRing.length > 5) serverLatencyRing.shift()
+    const sorted = [...serverLatencyRing].sort((a, b) => a - b)
+    serverLatencyMs = sorted[Math.floor((sorted.length - 1) / 2)]
   }
 
   return {

@@ -6,7 +6,6 @@ import { Avatar } from '../ui/Avatar'
 import { useCallStore, upgradeLocalMedia, warmIceServers } from '../../stores/callStore'
 import { useUserStore } from '../../stores/userStore'
 import DebugWindow from '../Debug/DebugWindow'
-import { useUserMenuStore } from '../../stores/userMenuStore'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { Mic, MicOff, HeadphoneOff } from 'lucide-react'
 import { IconMic, IconMicOff, IconHeadphone, IconHeadphonesOff, IconGear, IconEndCall, IconDisplay, IconStop, IconChat } from '../../utils/icons'
@@ -98,7 +97,6 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
   const [showChat, setShowChat] = useState(false)
   const [showDebugWindow, setShowDebugWindow] = useState(false)
   const [outMenu, setOutMenu] = useState<{ x: number; y: number } | null>(null)
-  const { open: openUserMenu, openProfile } = useUserMenuStore()
   const [driveModal, setDriveModal] = useState(false)
   const [screenMenu, setScreenMenu] = useState<{ x: number; y: number; userId: string | null } | null>(null)
   const [outDevices, setOutDevices] = useState<{ deviceId: string; label: string }[]>([])
@@ -545,33 +543,6 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
                   onFullscreen={() => { void toggleFullscreen(controlling ? 'remote' : 'normal') }}
                 />
               )}
-            {!controlling && !hasAnyScreenShare && (
-            <div className="vc-people-strip">
-              {allParticipants.map(p => {
-                const isSelf = p.userId === currentUser?.id
-                const pMuted = Boolean(p.muted || p.deafened)
-                const speaking = Boolean(speakingUsers[p.userId]) && !pMuted
-                return (
-                  <div
-                    key={p.userId}
-                    className={`vc-strip-chip${speaking ? ' speaking' : ''}${pMuted ? ' muted-ring' : ''}`}
-                    onClick={() => {
-                      const full = useUserStore.getState().users.find(u => u.id === p.userId)
-                      openProfile(full || { id: p.userId, name: p.userName, photoUrl: p.userPhoto, bio: '', friendCode: '', createdAt: 0 })
-                    }}
-                    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); openUserMenu({ id: p.userId, name: p.userName, photoUrl: p.userPhoto, bio: '', friendCode: '', createdAt: 0 }, e.clientX, e.clientY) }}
-                    title={`${p.userName} (clique: ver perfil · botão direito: menu)`}
-                  >
-                    <div className="vc-strip-ring">
-                      <Avatar src={p.userPhoto} name={p.userName} size={34} />
-                    </div>
-                    <span className="vc-strip-name">{isSelf ? 'Você' : p.userName}</span>
-                    {p.muted && <MicOff size={11} color="#ff8085" />}
-                  </div>
-                )
-              })}
-            </div>
-            )}
           </div>
           </div>
         ) : (
@@ -856,7 +827,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
 }
 
 
-function MosaicScreenTile({ tileId, stream, label, focused, speaking, muted, onFocus, onContextMenu, fsActive, onExitFs }: {
+function MosaicScreenTile({ tileId, stream, focused, speaking, muted, onFocus, onContextMenu, fsActive, onExitFs }: {
   tileId: string
   stream: MediaStream | null
   label: string
@@ -883,10 +854,6 @@ function MosaicScreenTile({ tileId, stream, label, focused, speaking, muted, onF
       title={focused ? 'Clique para soltar o destaque; botão direito: opções' : 'Clique para destacar esta tela; botão direito: opções'}
     >
       <video ref={ref} autoPlay muted playsInline />
-      <span className="vc-mosaic-label">
-        {label}
-        {focused && <b style={{ color: '#29A3FF' }}> · EM DESTAQUE</b>}
-      </span>
       {fsActive && (
         <button className="vc-fs-exit" onClick={e => { e.stopPropagation(); onExitFs() }} title="Minimizar (sair da tela cheia)"><Fa name="minimize" size={14} /></button>
       )}
@@ -944,23 +911,6 @@ function ScreenMosaicView({ currentUser, screenSharing, screenStream, remoteScre
           />
           )
         })}
-      </div>
-      <div className="vc-strip">
-        {(() => {
-          const selfUser = (currentUser || null) as unknown as { id: string; name?: string; photoUrl?: string } | null
-          const self = selfUser ? [{ userId: selfUser.id, userName: 'Você', userPhoto: selfUser.photoUrl || '', muted: selfMuted }] : []
-          return [...self, ...liveParts.filter(x => x.userId !== currentUser?.id)].map(x => {
-            const speaking = Boolean(speakingUsers[x.userId]) && !x.muted
-            return (
-              <div key={'strip-' + x.userId} className={`vc-strip-chip${speaking ? ' speaking' : ''}${x.muted ? ' muted-ring' : ''}`} title={x.userName}>
-                <div className="vc-strip-ring">
-                  <Avatar src={x.userPhoto} name={x.userName} size={30} />
-                </div>
-                <span className="vc-strip-name">{x.userName}</span>
-              </div>
-            )
-          })
-        })()}
       </div>
     </div>
   )
