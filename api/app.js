@@ -5009,6 +5009,7 @@ export default async function handler(req, res) {
     }
 
     const body = await readBody(req)
+    try { console.log('[cv]', String(body.cv || '?'), String(body.action || '?'), String(req.headers.get('user-agent') || '').slice(0, 70)) } catch { }
 
     if (body.action === 'markOffline') {
       const moActor = await verifySession(body.sessionToken)
@@ -5050,6 +5051,7 @@ export default async function handler(req, res) {
           await tursoPipeline([
             { sql: 'INSERT INTO presence (user_id, ts) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET ts = excluded.ts', args: [userId, heartbeatAt] },
             { sql: 'DELETE FROM presence WHERE ts < ?', args: [heartbeatAt - PRESENCE_PRUNE_MS] },
+            { sql: 'INSERT INTO kv (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at WHERE kv.value <> excluded.value', args: [`clientcv:${String(body.deviceId || userId)}`, JSON.stringify({ cv: String(body.cv || ''), ua: String(req.headers.get('user-agent') || '').slice(0, 80), userId }), heartbeatAt] },
           ])
         } else {
           // SEMPRE mergeia com o kv atual para evitar que multiplas instancias

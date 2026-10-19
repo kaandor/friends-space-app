@@ -184,6 +184,34 @@ function FingerprintBar({ buildId, connectedCount, totalPeers, signalErrors, con
       signalErrors: (signalErrors || []).slice(-10),
       remote: diag?.remoteByPeer ?? {},
       ua: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 160) : '?',
+      ui: (() => {
+        try {
+          const q = (s: string) => document.querySelector(s) as HTMLElement | null
+          const rect = (e: HTMLElement | null) => { if (!e) return null; const r = e.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) } }
+          const footer = q('.csw-workspace-footer')
+          const ready = q('.csw-ready-btn')
+          const win = q('.csw-window')
+          const style = footer ? getComputedStyle(footer) : null
+          return {
+            cswOverlay: !!q('.csw-overlay'),
+            cswWindow: !!win,
+            cswFooter: !!footer,
+            cswActions: !!q('.csw-footer-actions'),
+            cswReadyBtn: !!ready,
+            footerRect: rect(footer),
+            readyRect: rect(ready),
+            winRect: rect(win),
+            winScrollH: win ? win.scrollHeight : null,
+            winClientH: win ? win.clientHeight : null,
+            footerDisplay: style ? style.display : null,
+            footerVisibility: style ? style.visibility : null,
+            vw: window.innerWidth,
+            vh: window.innerHeight,
+            dpr: window.devicePixelRatio,
+            overlays: Array.from(document.querySelectorAll('[class*="overlay"]')).map(e => String((e as HTMLElement).className).slice(0, 60)).slice(0, 8),
+          }
+        } catch (e) { return { err: String(e) } }
+      })(),
     }
     try {
       await navigator.clipboard.writeText(JSON.stringify(payload, null, 1))
