@@ -96,7 +96,7 @@ export function DownloadAppModal({ open, onClose }: DownloadAppModalProps) {
         </button>
 
         <header className="fs-dl-header">
-          <span className="fs-dl-logo"><img src={assetUrl('penguin-tux.svg')} alt="Friends Space" /></span>
+          <span className="fs-dl-logo"><img src={assetUrl('penguin-logo.png')} alt="Friends Space" /></span>
           <div className="fs-dl-header-copy">
             <h2>Baixar app</h2>
             <p>Leve o Friends Space pro desktop: voz, tela, câmera e controle remoto.</p>
@@ -107,7 +107,7 @@ export function DownloadAppModal({ open, onClose }: DownloadAppModalProps) {
         <div className="fs-dl-grid">
           {platforms.map((p, i) => (
             <div className="fs-dl-card" key={p.name} style={{ animationDelay: `${i * 70}ms` }}>
-              <span className="fs-dl-card-icon" style={{ color: p.accent }}><Fa name={p.icon} size={30} /></span>
+              <span className="fs-dl-card-icon" style={{ color: p.accent }}>{p.icon === 'linux' ? <img src={assetUrl('penguin-tux.svg')} style={{ height: 30, width: 'auto', objectFit: 'contain', display: 'block' }} alt="Linux" /> : <Fa name={p.icon} size={30} />}</span>
               <h3>{p.name}</h3>
               <p>{p.description}</p>
               <button
