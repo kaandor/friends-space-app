@@ -373,6 +373,8 @@ export interface CallSession {
   hostUserId: string
   participantIds: string[]
   invitedAt?: Record<string, number>
+  invitedBy?: Record<string, string>
+  declinedAt?: Record<string, number>
   screenSharingUserId: string
   callMode?: 'audio' | 'video'
   quality?: '480p' | '720p' | '1080p' | '2k' | '4k'

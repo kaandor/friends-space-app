@@ -902,7 +902,10 @@ const getAllCallSessions = (store) => {
 
 const CALL_SYNC_GRACE_MS = 35_000
 const CALL_LEAVE_TOMBSTONE_MS = 90_000
-const CALL_INVITE_TTL_MS = 600_000
+// Convite toca por 30s. Depois disso o convidado nao entra mais por ele (o
+// chamador tambem para de esperar e avisa "nao quis entrar").
+const CALL_INVITE_TTL_MS = 30_000
+const CALL_INVITE_DECLINE_TTL_MS = 120_000
 const CALL_LEGACY_OFFLINE_MS = 60_000
 const hasStaleStamp = (stamps, id, staleThreshold) => {
   const stamp = Number(stamps[id] || 0)
@@ -914,6 +917,8 @@ const cleanupCallSessions = (store, at = now()) => {
   const users = getAllUsers(store)
   const staleThreshold = at - CALL_SYNC_GRACE_MS
   const offlineThreshold = at - CALL_LEGACY_OFFLINE_MS
+  const inviteThreshold = at - CALL_INVITE_TTL_MS
+  const declineThreshold = at - CALL_INVITE_DECLINE_TTL_MS
   for (const session of getAllCallSessions(store)) {
     if (!session.active) continue
     const stamps = { ...(session.participantLastSync || {}) }
@@ -935,6 +940,22 @@ const cleanupCallSessions = (store, at = now()) => {
         changed = true
       }
     }
+    const invitedAt = { ...(session.invitedAt || {}) }
+    const invitedBy = { ...(session.invitedBy || {}) }
+    for (const id of Object.keys(invitedAt)) {
+      if (Number(invitedAt[id] || 0) <= inviteThreshold) {
+        delete invitedAt[id]
+        delete invitedBy[id]
+        changed = true
+      }
+    }
+    const declinedAt = { ...(session.declinedAt || {}) }
+    for (const id of Object.keys(declinedAt)) {
+      if (Number(declinedAt[id] || 0) <= declineThreshold) {
+        delete declinedAt[id]
+        changed = true
+      }
+    }
     let screen = String(session.screenSharingUserId || '')
     if (screen && !kept.includes(screen)) {
       screen = ''
@@ -946,7 +967,17 @@ const cleanupCallSessions = (store, at = now()) => {
       changed = true
     }
     if (changed) {
-      upsertGlobalCallSession(store, { ...session, participantIds: kept, participantLastSync: stamps, screenSharingUserId: screen, active: stillActive, updatedAt: at })
+      upsertGlobalCallSession(store, {
+        ...session,
+        participantIds: kept,
+        participantLastSync: stamps,
+        invitedAt,
+        invitedBy,
+        declinedAt,
+        screenSharingUserId: screen,
+        active: stillActive,
+        updatedAt: at,
+      })
     }
   }
 }
@@ -4731,9 +4762,13 @@ const actions = {
       if (serverId && serverId !== 'dm') {
         if (!isServerMember(store, meSelf, serverId)) deny('Apenas membros (403)')
       } else if (serverId === 'dm') {
-        const exSess = getAllCallSessions(store).find((s) => s && s.id === incomingId && (s.participantIds || []).includes(meSelf))
-        if (!exSess) {
-          const othersDm = (incoming.participantIds || []).filter((x) => x && x !== meSelf)
+        const exSess = getAllCallSessions(store).find((s) => s && s.id === incomingId)
+        const isExistingParticipant = Boolean(exSess && (exSess.participantIds || []).includes(meSelf))
+        const isInvited = Boolean(exSess && (exSess.invitedAt || {})[meSelf])
+        if (!isExistingParticipant && !isInvited) {
+          const invitedIds = Array.isArray(body.invitedIds) ? body.invitedIds.map((v) => String(v)) : []
+          const othersDm = [...new Set([...(incoming.participantIds || []), ...invitedIds])]
+            .filter((x) => x && x !== meSelf)
           const mineSet = new Set(memberServerIdsOf(store, meSelf))
           const okDm = othersDm.length > 0 && othersDm.every((oid) => areFriends(store, meSelf, String(oid)) || memberServerIdsOf(store, String(oid)).some((sid) => mineSet.has(sid)))
           if (!okDm) deny('Operação negada (403)')
@@ -4756,27 +4791,7 @@ const actions = {
     const prevScreenSharer = String(existing?.screenSharingUserId || '')
     const stamps = { ...(existing?.participantLastSync || {}) }
     const staleThreshold = now() - CALL_SYNC_GRACE_MS
-    // Merge dos ids do existing com os do incoming: o frontend envia o estado
-    // LOCAL completo (quem ele ve na call). ANTES, quando a sessao ja existia,
-    // o incoming era IGNORADO (so os ids do existing eram base) e um
-    // participante cujo stamp expirava (>45s sem sync) era removido mesmo
-    // estando ATIVO na call — com o presenceTimer de 5s que NAO chama
-    // syncSession, em call 24/7 os dois lados "sumiam" do participantIds e o
-    // discovery (loadCallSessions -> connectToAllExistingPeers) nao encontrava
-    // ninguem: "Nenhuma conexao criada ainda" com 2 usuarios na call.
-    // Regra: o stamp de cada participante so e renovado pelo sync DELE
-    // (stamps[selfId] = now). Quem saiu/fechou a aba para de dar sync e o
-    // stamp expira apos CALL_SYNC_GRACE_MS — e removido mesmo que outros
-    // peers ainda o listem no incoming (o frontend reenvia a lista local
-    // completa, que ainda contem o fantasma, a cada sync). Sem isso, os
-    // peers restantes "ressuscitam" o fantasma uns aos outros para sempre.
-    // Mantem: selfId + ids com stamp fresco ou sem stamp (join recente cujo
-    // primeiro sync ainda nao chegou). Remove: stamp expirado.
-    // Tumba de quem saiu: quem deu leaveUserId nao pode ser re-adicionado pelo
-    // sync dos outros (o front reenvia a lista local COMPLETA, que ainda contem
-    // o fantasma; sem a tumba o cara que saiu voltava para a sessao, a sessao
-    // continuava ativa e o poll de chamadas recebidas re-disparava o ring
-    // ("a pessoa me liga uma vez e fica aparecendo que ela ta me ligando").
+    // Tumba de quem saiu: o sync dos outros nao pode re-adicionar o fantasma.
     // A propria pessoa limpa a tumba quando volta (sync com selfId).
     const leftAt = { ...(existing?.leftAt || {}) }
     if (body.leaveUserId) leftAt[body.leaveUserId] = now()
@@ -4785,8 +4800,23 @@ const actions = {
     for (const id of Object.keys(leftAt)) {
       if (Number(leftAt[id] || 0) <= leftGrace) delete leftAt[id]
     }
-    let mergedIds = [...new Set([...(existing?.participantIds || []), ...participantIds])]
+    const invitedIds = Array.isArray(body.invitedIds) ? body.invitedIds.map((v) => String(v)) : []
+    const invitedAt = { ...(existing?.invitedAt || {}) }
+    const invitedBy = { ...(existing?.invitedBy || {}) }
+    const declinedAt = { ...(existing?.declinedAt || {}) }
+    // Merge dos ids do existing com os do incoming. Em canal de SERVIDOR so o
+    // proprio participante pode se anunciar: o front de cada um manda a lista
+    // local completa, que pode conter gente que ja saiu — e era isso que
+    // "ressuscitava" o fantasma (aparecia na call/channel depois de sair).
+    // Em DM mantemos o merge legado (o chamador 1-a-1 lista o alvo antes dele
+    // aceitar). Convites NUNCA entram em participantIds: so vao para invitedAt
+    // e o convidado vira participante quando o sync DELE chegar (ao aceitar).
+    const isDmCall = serverId === 'dm'
+    let mergedIds = isDmCall
+      ? [...new Set([...(existing?.participantIds || []), ...participantIds])]
+      : [...(existing?.participantIds || [])]
     mergedIds = mergedIds.filter((id) => id === selfId || (!hasStaleStamp(stamps, id, staleThreshold) && !(Number(leftAt[id] || 0) > leftGrace)))
+    if (invitedIds.length) mergedIds = mergedIds.filter((id) => !invitedIds.includes(id))
     if (body.leaveUserId) mergedIds = mergedIds.filter((id) => id !== body.leaveUserId)
     // (O "ultimo a sair apaga na hora" roda DEPOIS do session existir — antes
     // era feito aqui citando `session` antes do const (ReferenceError/500).)
@@ -4795,24 +4825,47 @@ const actions = {
       stamps[selfId] = now()
     }
     if (body.leaveUserId && stamps[body.leaveUserId]) delete stamps[body.leaveUserId]
-    // Convite ativo (botao "Adicionar pessoa na call"): marca quem foi
-    // convidado para o cliente DELE entrar sozinho na call (auto-join), sem
-    // precisar aceitar. O convidado tambem ganha um stamp inicial para a
-    // sessao lista-lo por ate CALL_SYNC_GRACE_MS — tempo do poll dele
-    // descobrir e entrar; sem stamp ficaria listado para sempre (buraco do
-    // "join recente") e viraria fantasma na call de quem ja esta nela.
-    const invitedIds = Array.isArray(body.invitedIds) ? body.invitedIds.map((v) => String(v)) : []
-    const invitedAt = { ...(existing?.invitedAt || {}) }
+    // Convite ativo (botao "Adicionar pessoa na call"): NAO entra na call.
+    // Fica em invitedAt/invitedBy por 30s; o app do convidado toca o convite e
+    // so chama startCall se ele aceitar. Sem stamp/participantIds ele nao vira
+    // fantasma nem aparece na lista de quem esta na call antes de aceitar.
     for (const id of invitedIds) {
-      if (id && id !== selfId) invitedAt[id] = now()
+      if (!id || id === selfId) continue
+      invitedAt[id] = now()
+      invitedBy[id] = selfId
+      delete declinedAt[id]
     }
-    if (selfId) delete invitedAt[selfId]
+    if (selfId) {
+      delete invitedAt[selfId]
+      delete invitedBy[selfId]
+    }
     const inviteGrace = now() - CALL_INVITE_TTL_MS
     for (const id of Object.keys(invitedAt)) {
-      if (Number(invitedAt[id] || 0) <= inviteGrace) delete invitedAt[id]
+      if (Number(invitedAt[id] || 0) <= inviteGrace) {
+        delete invitedAt[id]
+        delete invitedBy[id]
+      }
     }
-    for (const id of invitedIds) {
-      if (id && id !== selfId && !stamps[id]) stamps[id] = now()
+    // Quem recusou: remove o convite e guarda o "nao quis entrar" por alguns
+    // minutos para o chamador mostrar o aviso (sem encerrar a call de grupo).
+    const declineInviteIds = Array.isArray(body.declineInviteIds)
+      ? body.declineInviteIds.map((v) => String(v)).filter((id) => id && id === selfId)
+      : []
+    for (const id of declineInviteIds) {
+      delete invitedAt[id]
+      delete invitedBy[id]
+      declinedAt[id] = now()
+    }
+    const declineGrace = now() - CALL_INVITE_DECLINE_TTL_MS
+    for (const id of Object.keys(declinedAt)) {
+      if (Number(declinedAt[id] || 0) <= declineGrace) delete declinedAt[id]
+    }
+    // Quem ja esta na call nao continua "convidado" (legado/retry).
+    for (const id of mergedIds) {
+      if (invitedAt[id]) {
+        delete invitedAt[id]
+        delete invitedBy[id]
+      }
     }
     // Poda explicita: um peer viu a PC de outro morrer e avisa. Sem isso, o
     // stamp fresco do morto o mantem para todos. Nunca poda o selfId; se o
@@ -4923,6 +4976,8 @@ const actions = {
       hostUserId: String(existing?.hostUserId || incoming.hostUserId || ''),
       participantIds: [...new Set(mergedIds)],
       invitedAt,
+      invitedBy,
+      declinedAt,
       screenSharingUserId: String(incoming.screenSharingUserId || existing?.screenSharingUserId || ''),
       callMode: String(incoming.callMode || existing?.callMode || ''),
       connectionStats: incoming.connectionStats || existing?.connectionStats || {},
@@ -4985,11 +5040,15 @@ const actions = {
     // o fantasma viveria para sempre (o upsert que pruneia nunca mais roda).
     // O saveStore acontece pois loadCallSessions esta em NO_LOCK_ACTIONS.
     cleanupCallSessions(store, now())
+    const actor = String(body.__actor || '')
+    const isIn = (session, id) => Boolean(id) && (
+      (session.participantIds || []).includes(id) || Boolean((session.invitedAt || {})[id])
+    )
     return getAllCallSessions(store).filter((session) => session.active
       && (session.participantIds || []).length > 0
       && (!serverId || session.serverId === serverId)
-      && (!userId || session.participantIds.includes(userId))
-      && ((session.participantIds || []).includes(body.__actor) || isServerMember(store, body.__actor, session.serverId)))
+      && (!userId || isIn(session, userId))
+      && (isIn(session, actor) || isServerMember(store, actor, session.serverId)))
       .map((session) => ({ ...session, watch: sessionWatch(session) }))
   },
 }

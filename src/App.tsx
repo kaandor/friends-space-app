@@ -146,7 +146,7 @@ function App() {
   const { servers, currentServer, currentChannel, loadServers, createServer, joinServer, addRole, updateServer, deleteServer, leaveServer, setCurrentServer, setCurrentChannel, unread, totalUnread, loadUnread } = useServerStore()
   const { folders, loadFolders, createFolder, updateFolder, deleteFolder, shareFolder } = useFolderStore()
   const { loadFriends, sendFriendRequest, addFriendById } = useFriendStore()
-  const { loadCallSessions, incomingCall, setIncomingCall, callingUser, endCall, declineIncomingCall, callRejectedBy, callUser, dismissRejectedCall, callWaiting } = useCallStore()
+  const { loadCallSessions, incomingCall, setIncomingCall, callingUser, endCall, declineIncomingCall, callRejectedBy, callUser, dismissRejectedCall, callWaiting, pendingInvites } = useCallStore()
   const callChannelId = useCallStore(s => s.channelId)
   const activeCall = useCallStore(s => s.activeCall)
   const callServerId = useCallStore(s => s.serverId)
@@ -372,6 +372,13 @@ function App() {
   const [restoredUser, setRestoredUser] = useState<User | null>(() => getStickyUser() || readStoredUser())
   const [backendOnline, setBackendOnline] = useState(false)
   const [authReady, setAuthReady] = useState(false)
+  const [inviteNow, setInviteNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!pendingInvites.length) return
+    setInviteNow(Date.now())
+    const timer = window.setInterval(() => setInviteNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [pendingInvites.length])
   const [showSearch, setShowSearch] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
   const [showWelcome, setShowWelcome] = useState(false)
@@ -1341,6 +1348,12 @@ function App() {
   const acceptIncomingCall = async () => {
     if (!incomingCall) return
     const call = incomingCall
+    if (call.invite) {
+      // Convite para call de canal/grupo: so entra quando o usuario aceita.
+      setIncomingCall(null)
+      await useCallStore.getState().autoJoinSession(call.invite)
+      return
+    }
     try {
       const store = useCallStore.getState()
       const stream = await acquireCallMedia(call.callMode || 'audio', store.preferredQuality, undefined, store.preferredFps)
@@ -1459,10 +1472,22 @@ function App() {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-              Chamada privada · {incomingCall.callMode === 'video' ? 'vídeo' : 'voz'}
+              {incomingCall.invite
+                ? (incomingCall.inviteKind === 'dm-private' ? 'Chamada privada'
+                  : incomingCall.inviteKind === 'dm-group' ? 'Convite para o grupo'
+                    : 'Convite para a call')
+                : 'Chamada privada'} · {incomingCall.callMode === 'video' ? 'vídeo' : 'voz'}
             </div>
             <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{incomingCall.fromName}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>está te chamando agora</div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+              {incomingCall.inviteKind === 'dm-private'
+                ? <>está chamando para uma <strong>"call privada"</strong></>
+                : incomingCall.inviteKind === 'dm-group'
+                  ? <>está te convidando para o <strong>"{incomingCall.inviteLabel}"</strong></>
+                  : incomingCall.invite
+                    ? <>está te convidando para a call <strong>"{incomingCall.inviteLabel}"</strong></>
+                    : <>está chamando para uma <strong>"call privada"</strong></>}
+            </div>
           </div>
           <button onClick={() => declineIncomingCall()} title="Recusar" style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--danger)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', flexShrink: 0, boxShadow: '0 8px 26px rgba(242,63,67,0.4)' }}>
             <Fa name="phone-slash" size={16} />
@@ -1470,6 +1495,22 @@ function App() {
           <button onClick={() => void acceptIncomingCall()} title="Atender" style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', flexShrink: 0, boxShadow: '0 8px 26px color-mix(in srgb, var(--accent) 40%, transparent)' }}>
             <Fa name="phone" size={16} />
           </button>
+        </div>
+      )}
+      {pendingInvites.length > 0 && !incomingCall && !callingUser && (
+        <div className="fs-modal-in" style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 2001, width: 'min(94vw, 430px)', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'var(--bg-secondary)', border: '1px solid color-mix(in srgb, var(--warning) 55%, var(--border))', borderRadius: 16, boxShadow: '0 18px 50px rgba(0,0,0,0.55)' }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--warning)', animation: 'pulse 1s infinite', flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+              Aguardando convite
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              Esperando {pendingInvites.map(p => p.userName).join(', ')} atender ao pedido de convite...
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+              Call "{pendingInvites[0]?.callLabel || 'call'}" · {Math.max(0, Math.ceil((Math.min(...pendingInvites.map(p => p.expiresAt)) - inviteNow) / 1000))}s
+            </div>
+          </div>
         </div>
       )}
       {callingUser && !incomingCall && (

@@ -3,6 +3,7 @@ import type { CallParticipant, CallSession, CallSessionWatch, CallSignal, User }
 import { requestBackend } from '../services/backend'
 import { useUserStore, pokeHeartbeat } from './userStore'
 import { useFriendStore } from './friendStore'
+import { useServerStore } from './serverStore'
 import { clampStreamQuality, clampStreamFps, getMaxBitrateKbps, getMaxStreamFps, getAstroTier } from '../utils/astro'
 import { stopMediaStream, QUALITY_BITRATE_KBPS } from '../services/antiloud'
 import type { CallMode, CallQuality, CallFps } from '../services/antiloud'
@@ -24,6 +25,31 @@ export interface WatchPartyState { videoId: string; title: string; byUserId: str
 export interface WatchPartyState { videoId: string; title: string; byUserId: string; byName: string; playing: boolean; position: number; updatedAt: number }
 export interface WatchPartyState { videoId: string; title: string; byUserId: string; byName: string; playing: boolean; position: number; updatedAt: number }
 export interface WatchPartyState { videoId: string; title: string; byUserId: string; byName: string; playing: boolean; position: number; updatedAt: number }
+export interface PendingInvite {
+  userId: string
+  userName: string
+  userPhoto: string
+  at: number
+  expiresAt: number
+  callLabel: string
+  sessionId: string
+}
+
+export type CallInviteKind = 'channel' | 'dm-private' | 'dm-group'
+
+export interface IncomingCallInfo {
+  fromId: string
+  fromName: string
+  fromPhoto: string
+  channelId?: string
+  serverId?: string
+  callMode?: CallMode
+  sessionId?: string
+  invite?: CallSession
+  inviteKind?: CallInviteKind
+  inviteLabel?: string
+}
+
 interface CallState {
   activeCall: boolean
   channelId: string | null
@@ -57,9 +83,11 @@ interface CallState {
   recordingActive: boolean
   sharingPeers: string[]
   recordingBy: { id: string; name: string } | null
-  incomingCall: { fromId: string; fromName: string; fromPhoto: string; channelId?: string; serverId?: string; callMode?: CallMode; sessionId?: string } | null
+  incomingCall: IncomingCallInfo | null
   callingUser: { userId: string; userName: string; userPhoto: string } | null
   sessionId: string | null
+  hostUserId: string | null
+  pendingInvites: PendingInvite[]
   preferredQuality: CallQuality
   preferredFps: CallFps
   preferredBitrate: number
@@ -84,8 +112,9 @@ interface CallState {
   setLocalStream: (stream: MediaStream | null) => void
   attachLocalStream: (stream: MediaStream) => void
   switchMicDevice: (deviceId: string) => Promise<void>
-  setIncomingCall: (call: { fromId: string; fromName: string; fromPhoto: string; channelId?: string; serverId?: string; callMode?: CallMode; sessionId?: string } | null) => void
+  setIncomingCall: (call: IncomingCallInfo | null) => void
   declineIncomingCall: () => void
+  cancelPendingInvite: (userId: string) => void
   setCallingUser: (user: { userId: string; userName: string; userPhoto: string } | null) => void
   loadCallSessions: (serverId: string, userId?: string) => Promise<CallSession[]>
   setPreferredQuality: (quality: CallQuality) => Promise<void>
@@ -224,11 +253,92 @@ export let lastPresenceRttAt = 0
 // Timer de 30s do lado de quem RECEBE a chamada: se nao atender a tempo,
 // a ligacao e recusada automaticamente (mesmo comportamento do Discord).
 let incomingTimer: number | null = null
+const INVITE_WAIT_MS = 30_000
+const pendingInviteTimers = new Map<string, number>()
 
 function clearIncomingTimer() {
   if (incomingTimer !== null) {
     window.clearTimeout(incomingTimer)
     incomingTimer = null
+  }
+}
+
+function callToast(detail: string) {
+  try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail })) } catch { }
+}
+
+function callLabelOfCurrent(): string {
+  const st = useCallStore.getState()
+  if (st.serverId && st.serverId !== 'dm') {
+    const server = useServerStore.getState().servers.find(s => s.id === st.serverId)
+    const channel = server?.channels?.find(c => c.id === st.channelId)
+    return channel?.name || st.channelId || 'call'
+  }
+  const me = useUserStore.getState().currentUser
+  if (st.hostUserId && me && st.hostUserId !== me.id) {
+    const host = useUserStore.getState().users.find(u => u.id === st.hostUserId)
+    return host ? `grupo de ${host.name}` : 'grupo da call'
+  }
+  return 'call privada'
+}
+
+function clearPendingInvite(userId: string, at?: number) {
+  const timer = pendingInviteTimers.get(userId)
+  if (timer !== undefined) {
+    window.clearTimeout(timer)
+    pendingInviteTimers.delete(userId)
+  }
+  const st = useCallStore.getState()
+  const next = st.pendingInvites.filter(p => p.userId !== userId || (at !== undefined && p.at !== at))
+  if (next.length !== st.pendingInvites.length) useCallStore.setState({ pendingInvites: next })
+}
+
+function endCallIfAloneSoon() {
+  window.setTimeout(() => {
+    const cur = useCallStore.getState()
+    if (!cur.activeCall || cur.pendingInvites.length > 0) return
+    const me = useUserStore.getState().currentUser
+    if (cur.participants.filter(p => p.userId !== me?.id).length === 0) cur.endCall()
+  }, 1500)
+}
+
+function armPendingInviteTimeout(invite: PendingInvite) {
+  const prev = pendingInviteTimers.get(invite.userId)
+  if (prev !== undefined) window.clearTimeout(prev)
+  const timer = window.setTimeout(() => {
+    pendingInviteTimers.delete(invite.userId)
+    const st = useCallStore.getState()
+    const current = st.pendingInvites.find(p => p.userId === invite.userId && p.at === invite.at)
+    if (!current) return
+    const joined = st.participants.some(p => p.userId === invite.userId)
+    useCallStore.setState({
+      pendingInvites: st.pendingInvites.filter(p => !(p.userId === invite.userId && p.at === invite.at)),
+    })
+    if (joined) return
+    callToast(`${invite.userName} não quis entrar na call "${invite.callLabel}"`)
+    endCallIfAloneSoon()
+  }, Math.max(0, invite.expiresAt - Date.now()))
+  pendingInviteTimers.set(invite.userId, timer)
+}
+
+function reconcilePendingInvites(sessions: CallSession[]) {
+  const st = useCallStore.getState()
+  if (!st.pendingInvites.length) return
+  const meId = useUserStore.getState().currentUser?.id
+  for (const inv of [...st.pendingInvites]) {
+    const session = sessions.find(s => s.id === inv.sessionId)
+    const joined = st.participants.some(p => p.userId === inv.userId)
+      || Boolean(session?.participantIds?.includes(inv.userId))
+    if (joined) {
+      clearPendingInvite(inv.userId)
+      continue
+    }
+    const declinedAt = Number(session?.declinedAt?.[inv.userId] || 0)
+    if (declinedAt >= inv.at) {
+      clearPendingInvite(inv.userId)
+      callToast(`${inv.userName} não quis entrar na call "${inv.callLabel}"`)
+      if (st.participants.filter(p => p.userId !== meId).length === 0) endCallIfAloneSoon()
+    }
   }
 }
 let sessionSyncOff: (() => void) | null = null
@@ -2595,9 +2705,11 @@ export async function syncSession(state: Pick<CallState, 'sessionId' | 'activeCa
       try {
         const mine = (result?.callSessions || []).find(s => s && (s.id === useCallStore.getState().sessionId || (s.channelId === current.channelId && s.serverId === current.serverId)))
         if (mine && (mine as unknown as { watch?: unknown }).watch !== undefined) {
-          useCallStore.setState({ sessionWatch: (mine as unknown as { watch: CallSessionWatch }).watch })
+          useCallStore.setState({ sessionWatch: (mine as CallSession).watch ?? null })
         }
       } catch { }
+      reconcilePendingInvites(result?.callSessions || [])
+
       // Sou o sharer e a tela nao chega em alguem: renegocia direto com ele
       // (1x/25s por peer). Nao espera o usuario perceber.
       try {
@@ -2712,6 +2824,9 @@ async function applyCallSessions(sessions: CallSession[], _serverId?: string, us
     ? sameChannelSessions
     : (mySession ? [mySession] : [])
   const currentSession = relevantSessions[0]
+  if (currentSession?.hostUserId && currentSession.hostUserId !== state.hostUserId) {
+    useCallStore.setState({ hostUserId: currentSession.hostUserId })
+  }
 
   if (currentSession) {
     const sessionParticipantIds = [...new Set(relevantSessions.flatMap(session => session.participantIds))]
@@ -2770,6 +2885,7 @@ async function applyCallSessions(sessions: CallSession[], _serverId?: string, us
       useCallStore.setState({ participants: finalParticipants })
       refreshLocalities(finalParticipants)
     }
+    reconcilePendingInvites(sessions)
     // Call DM sem ninguem do outro lado: agenda o encerramento (ou cancela se
     // alguem voltou). Com callingUser ativo quem cuida e o give-up de 60s.
     if (state.serverId === 'dm' && state.activeCall) {
@@ -2791,20 +2907,68 @@ async function applyCallSessions(sessions: CallSession[], _serverId?: string, us
   if (userId) {
     const freshCutoff = Date.now() - 120_000
     const myId = userStore.currentUser?.id
-    // Fui convidado ("Adicionar pessoa na call" marca invitedAt na sessao):
-    // entra DIRETO, sem tocar e sem aceitar. Chamada nova 1-a-1 (callUser)
-    // nao tem invitedAt e continua tocando normal.
-    const invited = active
-      .filter(session =>
-        session.active
-        && myId
-        && (session.invitedAt || {})[myId]
-        && session.hostUserId !== myId
-        && !declinedSessions.has(session.id)
-        && (session.updatedAt || session.createdAt || 0) >= freshCutoff)
-      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0]
-    if (invited && !state.activeCall && !state.callingUser && !state.incomingCall) {
-      void useCallStore.getState().autoJoinSession(invited)
+    // Convite ("Adicionar pessoa na call" marca invitedAt na sessao): toca e
+    // espera o usuario ACEITAR. Nada de auto-join: quem foi convidado so entra
+    // na call depois de clicar em Atender.
+    const myInvite = myId
+      ? active
+        .filter(session =>
+          session.active
+          && (session.invitedAt || {})[myId]
+          && String((session.invitedBy || {})[myId] || '') !== myId
+          && !declinedSessions.has(session.id)
+          && (session.updatedAt || session.createdAt || 0) >= freshCutoff)
+        .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0]
+      : undefined
+    if (myInvite && !state.activeCall && !state.callingUser
+      && (!state.incomingCall || state.incomingCall.sessionId === myInvite.id)) {
+      if (state.incomingCall?.sessionId !== myInvite.id) {
+        const inviterId = String((myInvite.invitedBy || {})[myId!] || myInvite.hostUserId || '')
+        const inviter = userCache.get(inviterId) || userStore.users.find(u => u.id === inviterId)
+        const isDm = myInvite.serverId === 'dm'
+        const hostName = userCache.get(myInvite.hostUserId)?.name
+          || userStore.users.find(u => u.id === myInvite.hostUserId)?.name
+          || ''
+        let inviteKind: 'channel' | 'dm-private' | 'dm-group' = 'channel'
+        let inviteLabel = ''
+        if (!isDm) {
+          const server = useServerStore.getState().servers.find(s => s.id === myInvite.serverId)
+          const channel = server?.channels?.find(c => c.id === myInvite.channelId)
+          inviteLabel = channel?.name || myInvite.channelId || 'call'
+        } else if (inviterId && inviterId === myInvite.hostUserId) {
+          inviteKind = 'dm-private'
+          inviteLabel = 'call privada'
+        } else {
+          inviteKind = 'dm-group'
+          inviteLabel = hostName ? `grupo de ${hostName}` : 'grupo da call'
+        }
+        useCallStore.setState({
+          incomingCall: {
+            fromId: inviterId,
+            fromName: inviter?.name || 'Usuário',
+            fromPhoto: inviter?.photoUrl || '',
+            channelId: myInvite.channelId,
+            serverId: myInvite.serverId,
+            callMode: myInvite.callMode || 'audio',
+            sessionId: myInvite.id,
+            invite: myInvite,
+            inviteKind,
+            inviteLabel,
+          },
+        })
+        clearIncomingTimer()
+        const invitedAt = Number((myInvite.invitedAt || {})[myId!] || Date.now())
+        const remaining = Math.max(1500, invitedAt + INVITE_WAIT_MS - Date.now())
+        incomingTimer = window.setTimeout(() => {
+          incomingTimer = null
+          ringStoppedSessions.add(myInvite.id)
+          if (ringStoppedSessions.size > 100) ringStoppedSessions.clear()
+          const s = useCallStore.getState()
+          if (s.incomingCall?.sessionId === myInvite.id && !s.activeCall) {
+            useCallStore.setState({ incomingCall: null })
+          }
+        }, remaining)
+      }
       return sessions
     }
     const incoming = active
@@ -2891,6 +3055,8 @@ export const useCallStore = create<CallState>((set, get) => ({
   incomingCall: null,
   callingUser: null,
   sessionId: null,
+  hostUserId: null,
+  pendingInvites: [],
   preferredQuality: loadPref(QUALITY_KEY, '720p') as CallQuality,
   preferredFps: loadPref(FPS_KEY, 60) as CallFps,
   preferredBitrate: loadPref(BITRATE_KEY, 12000) as number,
@@ -2935,6 +3101,9 @@ export const useCallStore = create<CallState>((set, get) => ({
       screenSharing: false,
       createdAt: Date.now(),
       sessionId: resolvedSessionId,
+      hostUserId: previous.sessionId && previous.sessionId === resolvedSessionId
+        ? previous.hostUserId
+        : (useUserStore.getState().currentUser?.id || null),
       sharingPeers: [],
       recordingActive: false,
       recordingBy: null,
@@ -3120,6 +3289,8 @@ export const useCallStore = create<CallState>((set, get) => ({
     }
     clearAloneInDmTimer()
     clearIncomingTimer()
+    for (const timer of pendingInviteTimers.values()) window.clearTimeout(timer)
+    pendingInviteTimers.clear()
     stopCursorFeed()
     stopCallRecording()
     if (cursorRelayOff) {
@@ -3235,6 +3406,8 @@ export const useCallStore = create<CallState>((set, get) => ({
       recordingBy: null,
       sharingPeers: [],
       sessionId: null,
+      hostUserId: null,
+      pendingInvites: [],
       callMode: 'audio',
       callingUser: null,
       callWaiting: false,
@@ -3271,6 +3444,7 @@ export const useCallStore = create<CallState>((set, get) => ({
     void auditRecordingEvent('start', me.id, me.name)
   },
   addParticipant: (participant) => {
+    if (get().pendingInvites.some(p => p.userId === participant.userId)) clearPendingInvite(participant.userId)
     const existing = get().participants.find(p => p.userId === participant.userId)
     if (existing) {
       set({ participants: get().participants.map(p => p.userId === participant.userId ? { ...p, ...participant } : p) })
@@ -3702,6 +3876,27 @@ export const useCallStore = create<CallState>((set, get) => ({
     if (!incomingCall?.sessionId) return
     declinedSessions.add(incomingCall.sessionId)
     const currentUser = useUserStore.getState().currentUser
+    if (incomingCall.invite) {
+      // Convite para call em grupo/canal: NAO encerra a sessao (os outros
+      // continuam na call). So remove o convite e avisa quem convidou.
+      if (currentUser) {
+        void requestBackend('upsertCallSession', {
+          session: {
+            id: incomingCall.sessionId,
+            serverId: incomingCall.serverId || 'dm',
+            channelId: incomingCall.channelId || 'dm',
+            active: true,
+            participantIds: [],
+            screenSharingUserId: '',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          },
+          userId: currentUser.id,
+          declineInviteIds: [currentUser.id],
+        }).catch(() => { })
+      }
+      return
+    }
     if (currentUser && incomingCall.fromId && incomingCall.fromId !== currentUser.id) {
       void sendSignal({
         sessionId: incomingCall.sessionId,
@@ -3762,37 +3957,49 @@ export const useCallStore = create<CallState>((set, get) => ({
   inviteToCall: async (userId) => {
     const state = get()
     const currentUser = useUserStore.getState().currentUser
-    if (!currentUser || !state.activeCall || !state.sessionId) return
+    if (!currentUser || !state.activeCall || !state.sessionId || userId === currentUser.id) return
     // O alvo pode nao estar no diretorio local ainda; procurar tb na lista de
-    // amigos. O nome e so para o toast — NUNCA bloquear o convite por isso
-    // (antes um `if (!target) return` silencioso fazia o botao "nao funcionar").
+    // amigos. O nome e so para o toast — NUNCA bloquear o convite por isso.
     const target = useUserStore.getState().users.find(user => user.id === userId)
       || useFriendStore.getState().friendUsers.find(user => user.id === userId)
     const targetName = target?.name || 'Seu amigo'
-    const toast = (detail: string) => { try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail })) } catch { } }
     try {
-      // Convite = adicionar a pessoa na sessao com a marca invitedAt: o app
-      // dela descobre no poll e entra SOZINHO na call (sem aceitar, sem
-      // notificacao de aceitar na lista). Sem stamp o backend poda o id
-      // convidado em ~35s se ele nunca aparecer (sem fantasma na call).
-      const participantIds = [...new Set([...state.participants.map(p => p.userId), currentUser.id, userId])]
+      // Convite NAO adiciona a pessoa na call. Marca invitedAt/invitedBy na
+      // sessao; o app dela toca o convite e so entra quando aceitar.
       await requestBackend('upsertCallSession', {
         session: {
           id: state.sessionId,
           serverId: state.serverId || 'dm',
           channelId: state.channelId || 'dm',
           active: true,
-          participantIds,
+          participantIds: [currentUser.id],
           callMode: state.callMode,
           createdAt: state.createdAt || Date.now(),
         },
         userId: currentUser.id,
         invitedIds: [userId],
       })
-      toast(`Convite enviado para ${targetName}`)
+      const at = Date.now()
+      const invite: PendingInvite = {
+        userId,
+        userName: targetName,
+        userPhoto: target?.photoUrl || '',
+        at,
+        expiresAt: at + INVITE_WAIT_MS,
+        callLabel: callLabelOfCurrent(),
+        sessionId: state.sessionId,
+      }
+      set(st => ({
+        pendingInvites: [...st.pendingInvites.filter(p => p.userId !== userId), invite],
+      }))
+      armPendingInviteTimeout(invite)
+      callToast(`Convite enviado para ${targetName}`)
     } catch {
-      toast(`Nao foi possivel convidar ${targetName}`)
+      callToast(`Nao foi possivel convidar ${targetName}`)
     }
+  },
+  cancelPendingInvite: (userId) => {
+    clearPendingInvite(userId)
   },
   autoJoinSession: async (session) => {
     const me = useUserStore.getState().currentUser
@@ -3821,6 +4028,7 @@ export const useCallStore = create<CallState>((set, get) => ({
       for (const p of peers) get().addParticipant(p)
       playSound('call-join')
       await get().startCall(session.channelId || 'dm', session.serverId || 'dm', stream, mode, get().preferredQuality, session.id, peers)
+      if (session.hostUserId) useCallStore.setState({ hostUserId: session.hostUserId })
       try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Você entrou na call' })) } catch { }
     } catch {
       try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: 'Não foi possível entrar na call (permissão de microfone?)' })) } catch { }
