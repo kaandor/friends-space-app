@@ -191,7 +191,7 @@ export function UserContextMenu() {
     close()
   }
 
-  const menuWidth = 340
+  const menuWidth = 300
   const style: React.CSSProperties = {
     left: pos?.left ?? Math.max(8, Math.min(x, window.innerWidth - menuWidth - 8)),
     top: pos?.top ?? Math.max(8, Math.min(y, window.innerHeight - 520)),

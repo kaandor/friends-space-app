@@ -1461,6 +1461,14 @@ function App() {
   return (
     <div {...(siteAppearance ? appearanceDataAttrs(siteAppearance) : {})} style={siteAppearance ? { ...appearanceScreenStyle(siteAppearance, theme), width: '100%', height: '100%', display: 'flex', flexDirection: 'column' } : { width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <DesktopChrome />
+      {isElectron && (
+        <div className="fs-window-drag-frame" aria-hidden>
+          <span className="fs-drag-top" />
+          <span className="fs-drag-bottom" />
+          <span className="fs-drag-left" />
+          <span className="fs-drag-right" />
+        </div>
+      )}
       {(incomingCall && !useCallStore.getState().activeCall) && (
         <div className="fs-modal-in" style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 2000, width: 'min(94vw, 430px)', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 16, boxShadow: '0 18px 50px rgba(0,0,0,0.55)' }}>
           <style>{`@keyframes fsCallPing{0%{transform:scale(.9);opacity:.85}100%{transform:scale(1.28);opacity:0}}`}</style>

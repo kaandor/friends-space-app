@@ -292,8 +292,29 @@
   color: #f23f43;
 }
 
-/* Mini preview unificado: mesmo cartao do Editar Perfil */
+/* Mini preview unificado: mesmo cartao do Editar Perfil, em versao compacta */
 .ucm-profile-preview.ape-card { border-radius: 0; box-shadow: none; }
 .ucm-profile-preview .ape-card-inner { border: 0; border-bottom: 1px solid var(--border); border-radius: 0; }
-.ucm-profile-preview .ape-card-banner { height: 96px; }
-.ucm-card .ucm-activity { margin: 10px 8px 0; }
+.ucm-profile-preview .ape-card-banner { height: 64px; }
+.ucm-card .ape-card-body { padding: 8px 12px 10px; }
+.ucm-card .ape-avatar-wrap { width: 62px; height: 62px; margin: -31px 0 0 12px; }
+.ucm-card .ucm-avatar.ape-avatar { width: 62px; height: 62px; margin-top: -31px; border-width: 4px; border-color: var(--bg-tertiary); }
+.ucm-card .ape-avatar[class*='profile-frame-']::before { inset: -5px; }
+.ucm-card .ape-avatar-fallback { font-size: 24px; }
+.ucm-card .ape-display-name { font-size: 16px; padding: 1px 6px; margin-left: -6px; }
+.ucm-card .ape-badge-astro svg { width: 13px; height: 13px; }
+.ucm-card .profile-card-verified { width: 15px; height: 15px; }
+.ucm-card .profile-card-verified svg { width: 11px; height: 11px; }
+.ucm-card .ape-handle { font-size: 11.5px; padding: 0 5px; }
+.ucm-card .ucm-status-message { margin-top: 5px; font-size: 11.5px; }
+.ucm-card .profile-card-message { margin-top: 7px; padding: 5px 8px; font-size: 11px; }
+.ucm-card .ape-block-label { margin: 8px 0 3px; font-size: 9.5px; }
+.ucm-card .ape-about { min-height: 0; padding: 2px 6px; margin-left: -6px; font-size: 12px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ucm-card .ape-member-since { font-size: 11.5px; }
+.ucm-card .ucm-activity { margin: 8px 8px 0; padding: 7px 9px; }
+.ucm-card .ucm-activity-name { font-size: 11.5px; }
+.ucm-card .ucm-activity-details { font-size: 10.5px; }
+.ucm-card .ucm-volume { padding: 7px 10px 8px; }
+.ucm-card .ucm-menu { padding: 6px; }
+.ucm-card .ucm-item { padding: 5px 7px; gap: 9px; font-size: 12.5px; }
+.ucm-card .ucm-item-icon { width: 26px; height: 26px; border-radius: 8px; }

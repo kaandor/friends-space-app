@@ -4722,6 +4722,27 @@ button, input, select, textarea {
   border-radius: var(--radius-sm);
 }
 
+/* Moldura invisivel para arrastar a janela do app (Electron frameless).
+   Fica na area de respiro do shell (12px), entao nao bloqueia botoes. */
+.fs-window-drag-frame {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  pointer-events: none;
+}
+.fs-window-drag-frame > span {
+  position: absolute;
+  pointer-events: auto;
+  -webkit-app-region: drag;
+}
+.fs-drag-top { top: 0; left: 0; right: 0; height: 8px; }
+.fs-drag-bottom { bottom: 0; left: 0; right: 0; height: 8px; }
+.fs-drag-left { top: 0; bottom: 0; left: 0; width: 8px; }
+.fs-drag-right { top: 0; bottom: 0; right: 0; width: 8px; }
+@media (max-width: 768px) {
+  .fs-window-drag-frame { display: none; }
+}
+
 /* ── Estrutura em cards arredondados (desktop) ── */
 @media (min-width: 769px) {
   .fs-app-shell {
