@@ -5,9 +5,10 @@ import type { Channel } from '../../types'
 import { Avatar } from '../ui/Avatar'
 import { useCallStore, upgradeLocalMedia, warmIceServers } from '../../stores/callStore'
 import { useUserStore } from '../../stores/userStore'
+import { useFriendStore } from '../../stores/friendStore'
 import DebugWindow from '../Debug/DebugWindow'
 import { useSettingsStore } from '../../stores/settingsStore'
-import { Mic, MicOff, HeadphoneOff } from 'lucide-react'
+import { Mic, MicOff, HeadphoneOff, UserPlus } from 'lucide-react'
 import { IconMic, IconMicOff, IconHeadphone, IconHeadphonesOff, IconGear, IconEndCall, IconDisplay, IconStop, IconChat } from '../../utils/icons'
 import { RemoteControlOverlay } from './RemoteControlOverlay'
 import { isElectronDevice, isElectronFs, fullscreenTileById, useCallFullscreen } from './callFullscreen'
@@ -74,13 +75,16 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
   const {
     activeCall, participants, muted, deafened, screenSharing, localStream, screenStream, screenError,
     remoteStreams, remoteScreenStreams, speakingUsers, volumes,
-    startCall, endCall, toggleMute, toggleDeafen, toggleScreenShare, addParticipant, removeParticipant, setSpeaking, clearScreenError,
+    startCall, endCall, toggleMute, toggleDeafen, toggleScreenShare, addParticipant, removeParticipant, setSpeaking, clearScreenError, inviteToCall,
     preferredQuality, preferredFps, preferredBitrate, setVolume,
     setPreferredQuality, setPreferredFps, setPreferredBitrate, switchMicDevice,
     controlRequests, controlling, controlledBy, controlPending, controlSettings, setControlSettings,
     requestControl, acceptControlRequest, denyControlRequest, sendControlInput, stopControlling, revokeControl,
   } = useCallStore()
   const { currentUser } = useUserStore()
+  const { friendUsers } = useFriendStore()
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [inviteQuery, setInviteQuery] = useState('')
   const joinedRef = useRef(false)
   const channelRef = useRef<string>('')
   const leftRef = useRef(false)
@@ -472,6 +476,15 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
     ? [myUser, ...participants.filter(p => p.userId !== currentUser?.id)]
     : participants
 
+  const inviteCandidates = (friendUsers || [])
+    .filter(user => user.id !== currentUser?.id)
+    .filter(user => !participants.some(p => p.userId === user.id))
+    .filter(user => {
+      const q = inviteQuery.trim().toLowerCase()
+      if (!q) return true
+      return user.name.toLowerCase().includes(q) || (user.friendCode || '').toLowerCase().includes(q)
+    })
+
   return (
     <div className="vc-screen">
       <CameraOverlay />
@@ -616,6 +629,13 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
               title="Mostrar chat"
             >
               <IconChat width={22} height={22} />
+            </button>
+            <button
+              className={`vc-btn ${inviteOpen ? 'active' : ''}`}
+              onClick={() => setInviteOpen(o => !o)}
+              title="Convidar para a call"
+            >
+              <UserPlus size={22} />
             </button>
           </div>
         </div>
@@ -802,6 +822,40 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{device.label}</span>
               </button>
             ))}
+          </div>
+        </>
+      )}
+
+      {inviteOpen && !controlling && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 218 }} onClick={() => setInviteOpen(false)} />
+          <div style={{ position: 'fixed', bottom: 96, left: '50%', transform: 'translateX(-50%)', zIndex: 219, width: 320, maxWidth: 'calc(100vw - 24px)', background: 'rgba(16,18,24,0.98)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 14, padding: 10, boxShadow: '0 18px 50px rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', margin: '2px 4px 8px' }}>Convidar para a call</div>
+            <input
+              value={inviteQuery}
+              onChange={e => setInviteQuery(e.target.value)}
+              placeholder="Buscar amigo..."
+              style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', borderRadius: 7, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)', color: '#fff', fontSize: 13, outline: 'none', marginBottom: 6 }}
+            />
+            <div style={{ maxHeight: 270, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {inviteCandidates.length === 0 && (
+                <div style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.45)', fontSize: 12 }}>{inviteQuery ? 'Nenhum amigo encontrado.' : 'Nenhum amigo disponível para convidar.'}</div>
+              )}
+              {inviteCandidates.map(user => (
+                <button
+                  key={user.id}
+                  onClick={() => { void inviteToCall(user.id) }}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', borderRadius: 8, background: 'transparent', border: 'none', textAlign: 'left', fontSize: 13, color: '#fff', cursor: 'pointer' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  title={`Convidar ${user.name} para a call`}
+                >
+                  <Avatar src={user.photoUrl} name={user.name} size={30} />
+                  <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</span>
+                  <UserPlus size={14} style={{ color: 'rgba(255,255,255,0.7)', flexShrink: 0 }} />
+                </button>
+              ))}
+            </div>
           </div>
         </>
       )}
