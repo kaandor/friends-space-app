@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Server, Channel, Role, Message, Report, ServerSettings } from '../types'
+import type { Server, Channel, Role, Message, Report, ReportAttachment, ServerSettings } from '../types'
 import { defaultServerSettings } from '../types'
 
 function toastAndThrow(message: string): never {
@@ -116,7 +116,7 @@ interface ServerState {
   addReaction: (messageId: string, emoji: string) => Promise<void>
   removeReaction: (messageId: string, emoji: string) => Promise<void>
   forwardMessage: (message: Message, targetChannelId: string) => Promise<void>
-  createReport: (input: { reporterId: string; type: 'media' | 'message' | 'user' | 'server' | 'help'; target: { id: string; name?: string; channelId?: string; serverId?: string; messageId?: string; preview?: string }; questionnaire: string[]; description: string; proofUrl?: string }) => Promise<{ report?: Report; error?: string }>
+  createReport: (input: { reporterId: string; type: 'media' | 'message' | 'user' | 'server' | 'help'; subject?: string; target: { id: string; name?: string; channelId?: string; serverId?: string; messageId?: string; preview?: string }; questionnaire: string[]; description: string; proofUrl?: string; evidence?: ReportAttachment[] }) => Promise<{ report?: Report; error?: string }>
   getMyReports: () => Promise<Report[]>
   reportUnanswered: (reportId: string, message: string) => Promise<{ report?: Report; error?: string }>
   getServerByInvite: (inviteCode: string) => Promise<Server | undefined>

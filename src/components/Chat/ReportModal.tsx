@@ -5,6 +5,7 @@ import { useServerStore } from '../../stores/serverStore'
 import { useUserStore } from '../../stores/userStore'
 import { uploadToDrive, isDriveConnected } from '../../services/driveService'
 import { DriveRequiredModal } from './DriveRequiredModal'
+import { TicketChat } from '../Support/TicketChat'
 
 const GREEN = '#4ade80'
 const CARD = 'var(--bg-tertiary)'
@@ -67,6 +68,7 @@ export function ReportModal({ open, type, target, onClose }: ReportModalProps) {
   const [myReports, setMyReports] = useState<Report[]>([])
   const [complaintFor, setComplaintFor] = useState<Report | null>(null)
   const [complaintMessage, setComplaintMessage] = useState('')
+  const [chatReport, setChatReport] = useState<Report | null>(null)
 
   useEffect(() => {
     if (open) {
@@ -101,6 +103,10 @@ export function ReportModal({ open, type, target, onClose }: ReportModalProps) {
       setError('Descreva o que aconteceu.')
       return
     }
+    if ((type === 'user' || type === 'server') && !proofFile) {
+      setError('Anexe uma prova (imagem, vídeo, áudio ou arquivo) para denunciar um usuário ou servidor.')
+      return
+    }
     setError('')
     setUploading(true)
     try {
@@ -131,7 +137,7 @@ export function ReportModal({ open, type, target, onClose }: ReportModalProps) {
     }
   }
 
-  const fileInputLabel = proofFile ? proofFile.name : 'Anexar prova (opcional)'
+  const fileInputLabel = proofFile ? proofFile.name : (type === 'user' || type === 'server') ? 'Anexar prova (obrigatória)' : 'Anexar prova (opcional)'
 
   return (
     <div
@@ -330,6 +336,12 @@ export function ReportModal({ open, type, target, onClose }: ReportModalProps) {
                         <b style={{ color: GREEN }}>Resposta do FS:</b> {report.response}
                       </div>
                     )}
+                    <button
+                      onClick={() => setChatReport(report)}
+                      style={{ marginTop: 8, marginRight: 6, padding: '7px 12px', borderRadius: 8, background: '#12283d', border: '1px solid #2563eb55', color: '#93c5fd', fontSize: 12, cursor: 'pointer', fontWeight: 700 }}
+                    >
+                      Abrir chat do ticket
+                    </button>
                     {report.status === 'pending' && !report.complained && (
                       <button
                         onClick={() => setComplaintFor(report)}
@@ -360,6 +372,18 @@ export function ReportModal({ open, type, target, onClose }: ReportModalProps) {
           )}
         </div>
       </div>
+
+      {chatReport && (
+        <TicketChat
+          report={chatReport}
+          mode="user"
+          onClose={() => setChatReport(null)}
+          onUpdated={updated => {
+            setChatReport(updated)
+            setMyReports(prev => prev.map(item => item.id === updated.id ? updated : item))
+          }}
+        />
+      )}
 
       <DriveRequiredModal
         open={driveModal}

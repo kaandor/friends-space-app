@@ -16,6 +16,7 @@ import { Flag, CircleAlert, ShieldCheck, UserCog, Server as ServerIcon, Phone, R
 import { Avatar } from '../ui/Avatar'
 import { requestBackend } from '../../services/backend'
 import { ASTRO_PLANS, getAstroTier } from '../../utils/astro'
+import { TicketChat } from '../Support/TicketChat'
 
 const GREEN = '#4ade80'
 const RED = '#f23f43'
@@ -76,20 +77,22 @@ function Toast({ msg }: { msg: string | null }) {
   )
 }
 
-function ReportCard({ report, onRespond, onBan }: {
+function ReportCard({ report, onRespond, onBan, onChanged }: {
   report: AdminReport
   onRespond: (id: string, text: string) => void
   onBan: (id: string) => void
+  onChanged?: () => void
 }) {
   const [response, setResponse] = useState(report.response || '')
   const [open, setOpen] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
   const qs = report.questionnaire?.join(', ') || ''
   return (
     <div style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 10, padding: 12, marginBottom: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 10.5, fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: 'var(--bg-secondary)', color: 'var(--text-primary)', textTransform: 'uppercase' }}>{TYPE_LABEL[report.type] || report.type}</span>
-        <span style={{ fontSize: 11, color: report.status === 'pending' ? AMBER : GREEN, fontWeight: 700 }}>
-          {report.status === 'pending' ? 'Pendente' : 'Respondida'}
+        <span style={{ fontSize: 11, color: report.status === 'pending' ? AMBER : report.status === 'resolved' ? GREEN : '#60a5fa', fontWeight: 700 }}>
+          {report.status === 'pending' ? 'Pendente' : report.status === 'resolved' ? 'Resolvido' : report.status === 'defense' ? 'Em defesa' : report.status === 'awaiting_user' ? 'Aguardando usuário' : 'Em atendimento'}
         </span>
         {report.complained && <span style={{ fontSize: 11, color: RED, fontWeight: 700 }}>Reclamou</span>}
         <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>{fmtDate(report.createdAt)}</span>
@@ -116,6 +119,9 @@ function ReportCard({ report, onRespond, onBan }: {
         <button onClick={() => onRespond(report.id, response)} style={{ padding: '7px 12px', borderRadius: 8, background: GREEN, color: '#04120a', border: 'none', fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>
           Responder
         </button>
+        <button onClick={() => setChatOpen(true)} style={{ padding: '7px 12px', borderRadius: 8, background: '#60a5fa', color: '#04120a', border: 'none', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>
+          Abrir chat
+        </button>
         <button onClick={() => setOpen(o => !o)} style={{ padding: '7px 10px', borderRadius: 8, background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border)', fontSize: 12, cursor: 'pointer' }}>
           {open ? 'Ocultar' : 'Detalhes'}
         </button>
@@ -132,6 +138,16 @@ function ReportCard({ report, onRespond, onBan }: {
           {report.proofUrl && <div>Prova: <a href={report.proofUrl} target="_blank" rel="noreferrer" style={{ color: GREEN }}>{report.proofUrl.slice(0, 60)}</a></div>}
           {report.target?.messageId && <div>Message ID: {report.target.messageId}</div>}
         </div>
+      )}
+      {chatOpen && (
+        <TicketChat
+          report={report}
+          mode="support"
+          onClose={() => setChatOpen(false)}
+          onRefresh={onChanged}
+          onUpdated={() => onChanged?.()}
+          onBan={onBan}
+        />
       )}
     </div>
   )
@@ -238,8 +254,8 @@ export function AdminPanel({ open, onClose, initialTab }: { open: boolean; onClo
   const loadReports = useCallback(async () => {
     if (!canModerate) return
     const all = await listAllReports(false)
-    setReports(all.filter(r => r.status === 'pending'))
-    setComplaints(all.filter(r => r.complained || r.complaintMessage))
+  setReports(all.filter(r => r.status !== 'resolved'))
+  setComplaints(all.filter(r => r.complained || r.complaintMessage))
   }, [canModerate])
 
   const loadServers = useCallback(async () => {
@@ -517,7 +533,7 @@ export function AdminPanel({ open, onClose, initialTab }: { open: boolean; onClo
                   <RotateCw size={13} strokeWidth={2.5} style={{ marginRight: 6, verticalAlign: -2 }} />Atualizar
                 </button>
                 {initialLoading ? <Skeleton /> : reports.length === 0 ? <Empty label="Nenhuma denuncia pendente." /> : reports.map(r => (
-                  <ReportCard key={r.id} report={r} onRespond={handleRespond} onBan={handleBan} />
+                  <ReportCard key={r.id} report={r} onRespond={handleRespond} onBan={handleBan} onChanged={() => void loadReports()} />
                 ))}
               </>
             )}
@@ -529,7 +545,7 @@ export function AdminPanel({ open, onClose, initialTab }: { open: boolean; onClo
                   <RotateCw size={13} strokeWidth={2.5} style={{ marginRight: 6, verticalAlign: -2 }} />Atualizar
                 </button>
                 {initialLoading ? <Skeleton /> : complaints.length === 0 ? <Empty label="Nenhuma reclamacao." /> : complaints.map(r => (
-                  <ReportCard key={r.id} report={r} onRespond={handleRespond} onBan={handleBan} />
+                  <ReportCard key={r.id} report={r} onRespond={handleRespond} onBan={handleBan} onChanged={() => void loadReports()} />
                 ))}
               </>
             )}
@@ -853,7 +869,10 @@ export function AdminPanel({ open, onClose, initialTab }: { open: boolean; onClo
 
             {tab === 'errors' && (
               <>
-                <ModalHeader icon={Bug} title="Erros / Bugs" subtitle="Falhas automáticas e reports enviados pelo botão 🐞 (últimas 24h)." onClose={onClose} />
+                <ModalHeader icon={Bug} title="Erros / Bugs" subtitle="Tickets de erro com chat e falhas automáticas (últimas 24h)." onClose={onClose} />
+                {reports.filter(r => r.questionnaire?.some(q => q.toLowerCase().includes('erro') || q.toLowerCase().includes('bug'))).map(r => (
+                  <ReportCard key={r.id} report={r} onRespond={handleRespond} onBan={handleBan} onChanged={() => void loadReports()} />
+                ))}
                 <button onClick={() => void loadErrors()} style={{ padding: '8px 14px', borderRadius: 8, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', marginBottom: 12 }}>
                   <RotateCw size={13} strokeWidth={2.5} style={{ marginRight: 6, verticalAlign: -2 }} />Atualizar
                 </button>
@@ -986,6 +1005,7 @@ function SupportTab({ onToast, onClose }: { adminId: string; onToast: (msg: stri
               report={report}
               onRespond={(id, text) => void respond(id, text)}
               onBan={() => { onToast('Para banir um usuario, use a aba de denuncias.') }}
+              onChanged={() => void load()}
             />
           ))
         )}

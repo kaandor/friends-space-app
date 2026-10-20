@@ -3024,10 +3024,16 @@ const actions = {
       throw new Error('Denuncia invalida')
     }
     const questionnaire = Array.isArray(body.questionnaire) ? body.questionnaire.map((item) => String(item)) : []
+    const evidence = Array.isArray(body.evidence) ? body.evidence.slice(0, 8).map((item) => ({
+      url: String(item?.url || '').slice(0, 2000),
+      name: String(item?.name || 'Prova').slice(0, 180),
+      type: String(item?.type || 'file').slice(0, 120),
+    })).filter((item) => item.url) : []
     const report = {
       id: id(),
       reporterId,
       type,
+      subject: String(body.subject || '').slice(0, 160),
       target: {
         id: String(target.id),
         name: target.name == null ? '' : String(target.name),
@@ -3039,6 +3045,9 @@ const actions = {
       questionnaire,
       description: String(body.description || ''),
       proofUrl: String(body.proofUrl || ''),
+      evidence,
+      messages: [],
+      defenseOpen: false,
       status: 'pending',
       response: '',
       complained: false,
@@ -3085,12 +3094,189 @@ const actions = {
     if (!isSupport(admin)) throw new Error('Sem permissao de suporte')
     const report = getAllReports(store).find((r) => r.id === String(body.reportId || ''))
     if (!report) throw new Error('Denuncia nao encontrada')
-    report.status = 'responded'
+    if (!Array.isArray(report.messages)) report.messages = []
+    const message = {
+      id: id(),
+      authorId: admin.id,
+      authorName: admin.name || 'Suporte',
+      authorRole: 'support',
+      content: String(body.response || ''),
+      attachments: [],
+      createdAt: now(),
+    }
+    if (message.content) report.messages.push(message)
+    report.status = 'awaiting_user'
     report.response = String(body.response || '')
     report.respondedAt = now()
     report.respondedBy = admin.name
+    report.assignedTo = admin.id
+    report.assignedToName = admin.name || 'Suporte'
+    upsertGlobalItem(store, 'reports', report)
+    if (message.content) {
+      addNotification(store, {
+        toUserId: report.reporterId,
+        fromUserId: 'system',
+        fromName: 'Friends Space',
+        type: 'ticket',
+        title: 'Seu ticket foi respondido',
+        body: message.content.slice(0, 160),
+        data: { reportId: report.id },
+      })
+    }
+    return { report }
+  },
+
+  sendReportMessage: async (store, data, body) => {
+    const actor = actorOf(store, body)
+    const actorUser = findGlobalUser(store, actor)
+    if (!actorUser) deny('Usuario nao encontrado')
+    const report = getAllReports(store).find((r) => r.id === String(body.reportId || ''))
+    if (!report) throw new Error('Ticket nao encontrado')
+    const staff = isSupport(actorUser)
+    const reporter = report.reporterId === actor
+    const target = report.target && report.target.id === actor && report.defenseOpen === true
+    if (!staff && !reporter && !target) deny('Sem acesso a este ticket (403)')
+    const content = String(body.content || '').slice(0, 4000)
+    const attachments = Array.isArray(body.attachments) ? body.attachments.slice(0, 8).map((item) => ({
+      url: String(item?.url || '').slice(0, 2000),
+      name: String(item?.name || 'Prova').slice(0, 180),
+      type: String(item?.type || 'file').slice(0, 120),
+    })).filter((item) => item.url) : []
+    if (!content.trim() && attachments.length === 0) throw new Error('Escreva uma mensagem ou anexe uma prova')
+    if (!Array.isArray(report.messages)) report.messages = []
+    const message = {
+      id: id(),
+      authorId: actor,
+      authorName: actorUser.name || 'Usuario',
+      authorRole: staff ? 'support' : reporter ? 'reporter' : 'target',
+      content,
+      attachments,
+      createdAt: now(),
+    }
+    report.messages.push(message)
+    if (staff) {
+      report.status = report.status === 'resolved' ? 'resolved' : 'awaiting_user'
+      report.assignedTo = actor
+      report.assignedToName = actorUser.name || 'Suporte'
+    } else if (report.status !== 'resolved') {
+      report.status = 'awaiting_support'
+    }
+    upsertGlobalItem(store, 'reports', report)
+    if (staff && report.reporterId !== actor) {
+      addNotification(store, {
+        toUserId: report.reporterId,
+        fromUserId: 'system',
+        fromName: 'Friends Space',
+        type: 'ticket',
+        title: 'Nova resposta no seu ticket',
+        body: content ? content.slice(0, 160) : 'A equipe anexou uma prova.',
+        data: { reportId: report.id },
+      })
+    }
+    if (staff && reporter === false && report.target && report.defenseOpen) {
+      addNotification(store, {
+        toUserId: report.target.id,
+        fromUserId: 'system',
+        fromName: 'Friends Space',
+        type: 'ticket',
+        title: 'Atualizacao na sua defesa',
+        body: content ? content.slice(0, 160) : 'A equipe anexou uma prova.',
+        data: { reportId: report.id, defense: true },
+      })
+    }
+    return { report }
+  },
+
+  setReportStatus: async (store, data, body) => {
+    const admin = requireFlags(store, body, 'support')
+    if (!isSupport(admin)) throw new Error('Sem permissao de suporte')
+    const report = getAllReports(store).find((r) => r.id === String(body.reportId || ''))
+    if (!report) throw new Error('Ticket nao encontrado')
+    const allowed = ['pending', 'open', 'awaiting_user', 'awaiting_support', 'defense', 'resolved']
+    const status = String(body.status || '')
+    if (status && !allowed.includes(status)) throw new Error('Status invalido')
+    if (!Array.isArray(report.messages)) report.messages = []
+    if (body.defenseOpen === true && report.defenseOpen !== true) {
+      report.defenseOpen = true
+      report.status = 'defense'
+      report.messages.push({
+        id: id(),
+        authorId: admin.id,
+        authorName: admin.name || 'Suporte',
+        authorRole: 'system',
+        content: 'O usuario denunciado foi chamado para apresentar a defesa dele.',
+        attachments: [],
+        createdAt: now(),
+      })
+      addNotification(store, {
+        toUserId: report.target && report.target.id,
+        fromUserId: 'system',
+        fromName: 'Friends Space',
+        type: 'ticket',
+        title: 'Voce foi chamado a se defender',
+        body: 'Abra Ajuda > Meus tickets para ver o caso e enviar sua defesa com provas.',
+        data: { reportId: report.id, defense: true },
+      })
+    }
+    if (status === 'resolved') {
+      report.status = 'resolved'
+      report.resolvedAt = now()
+      report.resolvedBy = admin.name || 'Suporte'
+      report.verdict = String(body.verdict || report.verdict || '').slice(0, 2000)
+      report.punishment = String(body.punishment || report.punishment || '').slice(0, 300)
+      report.messages.push({
+        id: id(),
+        authorId: admin.id,
+        authorName: admin.name || 'Suporte',
+        authorRole: 'system',
+        content: 'Ticket encerrado.' + (report.verdict ? ' Veredito: ' + report.verdict : '') + (report.punishment ? ' Consequencia: ' + report.punishment : ''),
+        attachments: [],
+        createdAt: now(),
+      })
+      addNotification(store, {
+        toUserId: report.reporterId,
+        fromUserId: 'system',
+        fromName: 'Friends Space',
+        type: 'ticket',
+        title: 'Seu ticket foi encerrado',
+        body: (report.verdict || 'Veja o veredito no seu ticket.').slice(0, 160),
+        data: { reportId: report.id },
+      })
+      if (report.target && report.target.id) {
+        addNotification(store, {
+          toUserId: report.target.id,
+          fromUserId: 'system',
+          fromName: 'Friends Space',
+          type: 'ticket',
+          title: 'Resultado do caso',
+          body: (report.verdict || 'Veja o resultado no seu ticket.').slice(0, 160),
+          data: { reportId: report.id, defense: true },
+        })
+      }
+    } else if (status) {
+      report.status = status
+    }
+    if (body.assign === true) {
+      report.assignedTo = admin.id
+      report.assignedToName = admin.name || 'Suporte'
+    }
     upsertGlobalItem(store, 'reports', report)
     return { report }
+  },
+
+  getMyDefenses: async (store, data, body) => {
+    const actor = actorOf(store, body)
+    return getAllReports(store)
+      .filter((report) => report && report.defenseOpen === true && report.target && report.target.id === actor)
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .map((report) => ({
+        ...report,
+        reporterId: '',
+        reporterName: 'Equipe Friends Space',
+        messages: Array.isArray(report.messages)
+          ? report.messages.filter((message) => message.authorRole !== 'reporter')
+          : [],
+      }))
   },
 
   banUser: async (store, data, body) => {
@@ -5256,6 +5442,7 @@ export default async function handler(req, res) {
       'loadActivityHistory',
       'getUnread',
       'getMyReports',
+      'getMyDefenses',
       'getStories',
       'getFeed',
       'getTrending',

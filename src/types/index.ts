@@ -310,10 +310,28 @@ export interface Message {
   forwardedFrom?: { id: string; userName: string }
 }
 
+export interface ReportAttachment {
+  url: string
+  name: string
+  type: string
+}
+
+export interface ReportMessage {
+  id: string
+  authorId: string
+  authorName: string
+  authorRole: 'reporter' | 'support' | 'target' | 'system'
+  content: string
+  attachments?: ReportAttachment[]
+  createdAt: number
+}
+
 export interface Report {
   id: string
   reporterId: string
+  reporterName?: string
   type: 'media' | 'message' | 'user' | 'server' | 'help'
+  subject?: string
   target: {
     id: string
     name?: string
@@ -325,13 +343,22 @@ export interface Report {
   questionnaire: string[]
   description: string
   proofUrl?: string
-  status: 'pending' | 'responded'
+  evidence?: ReportAttachment[]
+  messages?: ReportMessage[]
+  status: 'pending' | 'responded' | 'open' | 'awaiting_user' | 'awaiting_support' | 'defense' | 'resolved'
   response?: string
+  verdict?: string
+  punishment?: string
+  defenseOpen?: boolean
+  assignedTo?: string
+  assignedToName?: string
   complained?: boolean
   complaintMessage?: string
   complainedAt?: number
   createdAt: number
   respondedAt?: number
+  resolvedAt?: number
+  resolvedBy?: string
 }
 
 export interface Friend {
