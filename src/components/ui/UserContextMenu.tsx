@@ -58,6 +58,7 @@ export function UserContextMenu() {
   const { t } = useLangStore()
   const activeCall = useCallStore(s => s.activeCall)
   const participants = useCallStore(s => s.participants)
+  const inviteToCall = useCallStore(s => s.inviteToCall)
   const remoteScreenStreams = useCallStore(s => s.remoteScreenStreams)
   const volumes = useCallStore(s => s.volumes)
   const setVolume = useCallStore(s => s.setVolume)
@@ -236,6 +237,9 @@ export function UserContextMenu() {
       <div className="ucm-menu">
         {!isMe && (
           <Item icon={<IconSend width={15} height={15} />} label={t('menu.conversar')} onClick={sendMessage} />
+        )}
+        {!isMe && activeCall && !participants.some(p => p.userId === user.id) && (
+          <Item icon={<Fa name="user-plus" size={12} />} label="Convidar para a call" onClick={() => { void inviteToCall(user.id); close() }} />
         )}
         <Item icon={<Fa name="user" size={12} />} label={t('menu.viewProfile')} onClick={() => openProfile(user)} />
         {!isMe && isIncoming && (
