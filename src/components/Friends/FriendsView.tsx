@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Search, SlidersHorizontal, Plus, Smile, Send, FileText, BadgeCheck, Rocket, ShieldCheck, Gamepad2, Gift, Phone, Video } from 'lucide-react'
 import { uiEnabled } from '../Profile/InterfaceTab'
+import { Fa } from '../../utils/fa'
 import { Avatar } from '../ui/Avatar'
 import { UserProfileModal } from '../Profile/UserProfileModal'
 import { useUserStore, isUserOnline } from '../../stores/userStore'
@@ -16,6 +17,8 @@ import { MediaAttachment } from '../Chat/MediaAttachment'
 import { LinkEmbed } from '../Chat/LinkEmbed'
 import { DriveRequiredModal } from '../Chat/DriveRequiredModal'
 import { EmojiPicker } from '../Chat/EmojiPicker'
+import { MessageContextMenu, type MessageMenuState } from '../Chat/MessageContextMenu'
+import { ReportModal } from '../Chat/ReportModal'
 import { collectAllServerEmojis, renderContentWithEmojis } from '../../services/serverEmojis'
 import { AstroPromo } from '../Home/AstroPromo'
 import { AstroPlansModal } from '../Home/AstroPlansModal'
@@ -27,10 +30,29 @@ import { CallView } from '../Call/CallView'
 import { UserDock } from '../Layout/UserDock'
 import { useUserMenuStore } from '../../stores/userMenuStore'
 import { useCallStore } from '../../stores/callStore'
-import type { User } from '../../types'
+import type { DirectMessage, Message, User } from '../../types'
 
 function normalizeSearchValue(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[\s_-]/g, '')
+}
+
+async function copyDmText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    try {
+      const el = document.createElement('textarea')
+      el.value = text
+      document.body.appendChild(el)
+      el.select()
+      const ok = document.execCommand('copy')
+      document.body.removeChild(el)
+      return ok
+    } catch {
+      return false
+    }
+  }
 }
 
   type FriendsTab = 'todas' | 'naonline'
@@ -39,7 +61,7 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
   const { currentUser } = useUserStore()
   const { friendUsers, friends, directMessages, currentDMUser,
     loadFriends, addFriendById,
-    sendDirectMessage, loadDirectMessages, setCurrentDMUser } = useFriendStore()
+    sendDirectMessage, deleteDirectMessage, loadDirectMessages, setCurrentDMUser } = useFriendStore()
   const { servers } = useServerStore()
   const { open: openUserMenu, openProfile } = useUserMenuStore()
   const [addInput, setAddInput] = useState('')
@@ -56,6 +78,9 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
   const [driveModal, setDriveModal] = useState(false)
   const [dmSending, setDmSending] = useState(false)
   const [showDmEmoji, setShowDmEmoji] = useState(false)
+  const [dmCtxMenu, setDmCtxMenu] = useState<MessageMenuState | null>(null)
+  const [dmReplyTo, setDmReplyTo] = useState<DirectMessage | null>(null)
+  const [dmReport, setDmReport] = useState<{ type: 'media' | 'message'; target: { id: string; name?: string; preview?: string } } | null>(null)
   const [showAstro, setShowAstro] = useState(false)
   const [showAstroPlans, setShowAstroPlans] = useState(false)
   const dmFileInputRef = useRef<HTMLInputElement>(null)
@@ -127,22 +152,11 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
     let cancelled = false
     const run = async () => {
       try {
-        const [theirFriends, theirServers] = await Promise.all([
-          requestBackend<{ friends: { userId: string; friendId: string; status: string }[] }>('loadFriends', { userId: currentDMUser.id }),
-          requestBackend<{ id: string }[]>('loadUserServers', { userId: currentDMUser.id }),
-        ])
+        const result = await requestBackend<{ friends: unknown[]; servers: unknown[] }>('loadMutuals', { userId: currentDMUser.id })
         if (cancelled) return
-        const meId = currentUser.id
-        const theirIds = (theirFriends?.friends || [])
-          .filter(f => f.status === 'accepted')
-          .map(f => f.userId === currentDMUser.id ? f.friendId : f.userId)
-        const myIds = (friends || [])
-          .filter(f => f.status === 'accepted')
-          .map(f => f.userId === meId ? f.friendId : f.userId)
-        const myServerIds = new Set((servers || []).filter(s => Array.isArray((s as { members?: unknown }).members) && ((s as { members: string[] }).members.includes(meId))).map(s => s.id))
         setMutualCounts({
-          friends: theirIds.filter(id => myIds.includes(id)).length,
-          servers: Array.isArray(theirServers) ? theirServers.filter(s => myServerIds.has(s.id)).length : 0,
+          friends: Array.isArray(result?.friends) ? result.friends.length : 0,
+          servers: Array.isArray(result?.servers) ? result.servers.length : 0,
         })
       } catch { if (!cancelled) setMutualCounts({ friends: 0, servers: 0 }) }
     }
@@ -209,11 +223,88 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
     if (!dmInput.trim() || !currentUser || !currentDMUser || dmSending) return
     setDmSending(true)
     try {
-      await sendDirectMessage(currentUser.id, currentDMUser.id, dmInput)
+      await sendDirectMessage(
+        currentUser.id,
+        currentDMUser.id,
+        dmInput,
+        'text',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        dmReplyTo
+          ? {
+              id: dmReplyTo.id,
+              userName: dmReplyTo.fromId === currentUser.id ? (currentUser.name || 'Você') : (currentDMUser.name || ''),
+              content: dmReplyTo.content,
+            }
+          : undefined,
+      )
       setDmInput('')
+      setDmReplyTo(null)
     } finally {
       setDmSending(false)
     }
+  }
+
+  const dmMenuMessage = (msg: DirectMessage): Message => ({
+    id: msg.id,
+    channelId: `dm:${currentDMUser?.id || ''}`,
+    userId: msg.fromId,
+    userName: msg.fromId === currentUser?.id ? (currentUser?.name || '') : (currentDMUser?.name || ''),
+    userPhoto: msg.fromId === currentUser?.id ? (currentUser?.photoUrl || '') : (currentDMUser?.photoUrl || ''),
+    content: msg.content,
+    type: msg.type,
+    audioUrl: msg.audioUrl,
+    attachmentUrl: msg.attachmentUrl,
+    attachmentName: msg.attachmentName,
+    attachmentType: msg.attachmentType,
+    createdAt: msg.createdAt,
+    replyTo: msg.replyTo,
+  })
+
+  const isMediaDm = (msg: DirectMessage) => Boolean(msg.attachmentUrl) || Boolean(extractMediaUrl(msg.content))
+
+  const openDmContext = (e: React.MouseEvent, msg: DirectMessage) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDmCtxMenu({ x: e.clientX, y: e.clientY, message: dmMenuMessage(msg), isMedia: isMediaDm(msg) })
+  }
+
+  const handleDmCopyText = async (msg: Message) => {
+    const ok = await copyDmText(msg.content)
+    setAddMessage({ type: ok ? 'ok' : 'err', text: ok ? 'Texto copiado' : 'Nao foi possivel copiar' })
+    window.setTimeout(() => setAddMessage(null), 1800)
+  }
+
+  const handleDmCopyLink = async (msg: Message) => {
+    const link = `${window.location.origin}${window.location.pathname}#/dm/${currentDMUser?.id || ''}/${msg.id}`
+    const ok = await copyDmText(link)
+    setAddMessage({ type: ok ? 'ok' : 'err', text: ok ? 'Link da mensagem copiado' : 'Nao foi possivel copiar' })
+    window.setTimeout(() => setAddMessage(null), 1800)
+  }
+
+  const handleDmCopyId = async (msg: Message) => {
+    const ok = await copyDmText(msg.id)
+    setAddMessage({ type: ok ? 'ok' : 'err', text: ok ? 'ID da mensagem copiado' : 'Nao foi possivel copiar' })
+    window.setTimeout(() => setAddMessage(null), 1800)
+  }
+
+  const handleDmSpeak = (msg: Message) => {
+    try {
+      const utterance = new SpeechSynthesisUtterance(msg.content)
+      utterance.lang = 'pt-BR'
+      window.speechSynthesis.cancel()
+      window.speechSynthesis.speak(utterance)
+    } catch {
+      setAddMessage({ type: 'err', text: 'Nao foi possivel falar a mensagem' })
+      window.setTimeout(() => setAddMessage(null), 1800)
+    }
+  }
+
+  const handleDmDelete = async (msg: Message) => {
+    if (!window.confirm('Excluir esta mensagem?')) return
+    await deleteDirectMessage(msg.id)
   }
 
   const handlePickMediaDm = async (url: string, name: string, kind: 'gif' | 'sticker') => {
@@ -548,7 +639,7 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
                     {showDay && (
                       <div style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', margin: '8px 0 4px' }}>{formatDay(msg.createdAt)}</div>
                     )}
-                    <div style={{ display: 'flex', gap: 10, padding: '4px 0' }}>
+                    <div style={{ display: 'flex', gap: 10, padding: '4px 0' }} onContextMenu={(e) => openDmContext(e, msg)}>
                       <Avatar src={sender?.photoUrl || ''} name={sender?.name || ''} size={36} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
@@ -556,6 +647,12 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
                           <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatTime(msg.createdAt)}</span>
                         </div>
                     <div style={{ marginTop: 2, maxWidth: '100%' }}>
+                      {msg.replyTo && (
+                        <div style={{ borderLeft: '2px solid var(--accent)', paddingLeft: 8, marginBottom: 5, fontSize: 11.5, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>{msg.replyTo.userName}: </span>
+                          {msg.replyTo.content}
+                        </div>
+                      )}
                       {msg.attachmentUrl ? (
                         <MediaAttachment url={msg.attachmentUrl} name={msg.attachmentName} msgId={msg.id} type={msg.attachmentType} />
                       ) : msg.type === 'text' ? (
@@ -602,6 +699,16 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
               )}
               <div ref={dmEndRef} />
             </div>
+
+            {dmReplyTo && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)' }}>
+                <Fa name="reply" size={14} style={{ color: 'var(--text-primary)' }} />
+                <div style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  Respondendo a <b style={{ color: 'var(--text-primary)' }}>{dmReplyTo.fromId === currentUser?.id ? 'você' : currentDMUser?.name}</b>: {dmReplyTo.content.slice(0, 120)}
+                </div>
+                <button onClick={() => setDmReplyTo(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><Fa name="xmark" size={14} /></button>
+              </div>
+            )}
 
             <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -797,6 +904,42 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
       )}
 
       {showAstroPlans && <AstroPlansModal onClose={() => setShowAstroPlans(false)} />}
+
+      <MessageContextMenu
+        menu={dmCtxMenu}
+        onClose={() => setDmCtxMenu(null)}
+        onReply={(msg) => {
+          const original = directMessages.find(m => m.id === msg.id) || null
+          if (original) setDmReplyTo(original)
+        }}
+        onReact={() => { }}
+        onForward={() => { }}
+        onEdit={() => { }}
+        onDelete={(msg) => void handleDmDelete(msg)}
+        onReport={(msg, isMedia) => {
+          setDmReport({
+            type: isMedia ? 'media' : 'message',
+            target: { id: msg.id, name: currentDMUser?.name, preview: msg.content.slice(0, 120) },
+          })
+        }}
+        onCopyText={(msg) => void handleDmCopyText(msg)}
+        onCopyLink={(msg) => void handleDmCopyLink(msg)}
+        onSpeak={(msg) => handleDmSpeak(msg)}
+        onMarkUnread={() => { }}
+        onCopyId={(msg) => void handleDmCopyId(msg)}
+        canEdit={() => false}
+        canDelete={(msg) => msg.userId === currentUser?.id}
+        features={{ react: false, forward: false, markUnread: false, edit: false }}
+      />
+
+      {dmReport && (
+        <ReportModal
+          open
+          type={dmReport.type}
+          target={dmReport.target}
+          onClose={() => setDmReport(null)}
+        />
+      )}
     </div>
   )
 }

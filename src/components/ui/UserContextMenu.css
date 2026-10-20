@@ -295,12 +295,12 @@
 /* Mini preview unificado: mesmo cartao do Editar Perfil, em versao compacta */
 .ucm-profile-preview.ape-card { border-radius: 0; box-shadow: none; }
 .ucm-profile-preview .ape-card-inner { border: 0; border-bottom: 1px solid var(--border); border-radius: 0; }
-.ucm-profile-preview .ape-card-banner { height: 64px; }
-.ucm-card .ape-card-body { padding: 8px 12px 10px; }
-.ucm-card .ape-avatar-wrap { width: 62px; height: 62px; margin: -31px 0 0 12px; }
-.ucm-card .ucm-avatar.ape-avatar { width: 62px; height: 62px; margin-top: -31px; border-width: 4px; border-color: var(--bg-tertiary); }
+.ucm-profile-preview .ape-card-banner { height: 92px; }
+.ucm-card .ape-card-body { padding: 10px 12px 10px; }
+.ucm-card .ape-avatar-wrap { width: 54px; height: 54px; margin: -58px 0 0 14px; }
+.ucm-card .ape-avatar { width: 54px; height: 54px; border-width: 4px; border-color: var(--bg-tertiary); }
 .ucm-card .ape-avatar[class*='profile-frame-']::before { inset: -5px; }
-.ucm-card .ape-avatar-fallback { font-size: 24px; }
+.ucm-card .ape-avatar-fallback { font-size: 20px; }
 .ucm-card .ape-display-name { font-size: 16px; padding: 1px 6px; margin-left: -6px; }
 .ucm-card .ape-badge-astro svg { width: 13px; height: 13px; }
 .ucm-card .profile-card-verified { width: 15px; height: 15px; }

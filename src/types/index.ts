@@ -363,6 +363,7 @@ export interface DirectMessage {
   attachmentName?: string
   attachmentType?: string
   createdAt: number
+  replyTo?: { id: string; userName: string; content: string }
 }
 
 export interface CallSession {

@@ -3435,6 +3435,38 @@ const actions = {
       )
       .sort((x, y) => x.createdAt - y.createdAt)
   },
+  deleteDirectMessage: async (store, data, body) => {
+    const message = getAllDirectMessages(store).find((item) => item.id === body.messageId)
+    if (!message) throw new Error('Mensagem nao encontrada')
+    const actorId = String(body.__actor || body.userId || '')
+    if (String(message.fromId || '') !== actorId) throw new Error('Sem permissao para excluir')
+    for (const profile of Object.values(store.profiles || {})) {
+      profile.directMessages = Array.isArray(profile.directMessages) ? profile.directMessages.filter((item) => item.id !== message.id) : []
+    }
+    if (store.directory?.directMessages) {
+      store.directory.directMessages = store.directory.directMessages.filter((item) => item.id !== message.id)
+    }
+    return { messageId: message.id }
+  },
+  loadMutuals: async (store, data, body) => {
+    const actor = actorOf(store, body)
+    const targetId = String(body.userId || '')
+    if (!actor || !targetId || actor === targetId) return { friends: [], servers: [] }
+    const users = getAllUsers(store)
+    const target = users.find((item) => item?.id === targetId)
+    if (!target) return { friends: [], servers: [] }
+    const myFriendIds = new Set(acceptedFriendIds(store, actor))
+    const mutualIds = acceptedFriendIds(store, targetId).filter((id) => id !== actor && myFriendIds.has(id))
+    const friendById = new Map(users.map((item) => [item.id, item]))
+    const friends = [...new Set(mutualIds)].map((id) => {
+      const user = friendById.get(id)
+      return user ? { id, name: user.name || 'Usuário', username: user.friendCode || '', photoUrl: user.photoUrl || '' } : null
+    }).filter(Boolean)
+    const servers = getAllServers(store)
+      .filter((server) => Array.isArray(server.members) && server.members.includes(actor) && server.members.includes(targetId))
+      .map((server) => ({ id: server.id, name: server.name || 'Servidor', photoUrl: server.photoUrl || '', members: server.members.length }))
+    return { friends, servers }
+  },
   loadNotifications: async (store, data, body) => {
     const userId = String(body.userId || '')
     const list = Array.isArray(store.directory?.notifications) ? store.directory.notifications : []
@@ -5217,6 +5249,7 @@ export default async function handler(req, res) {
       'loadCallSignals',
       'loadFriends',
       'loadDirectMessages',
+      'loadMutuals',
       'loadCallSessions',
       'loadNotifications',
       'loadActivityHistory',

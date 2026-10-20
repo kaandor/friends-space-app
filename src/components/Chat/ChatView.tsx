@@ -540,7 +540,9 @@ export function ChatView({ channel }: ChatViewProps) {
                     background: sent ? 'var(--accent)' : 'var(--bg-secondary)',
                     color: sent ? '#000' : 'var(--text-primary)',
                     maxWidth: '80%', minWidth: 0,
-                  }}>
+                  }}
+                    onContextMenu={(e) => openContext(e, msg)}
+                  >
                     {msg.replyTo && (
                       <div style={{ borderLeft: `2px solid ${sent ? 'rgba(0,0,0,0.4)' : 'var(--accent)'}`, paddingLeft: 8, marginBottom: 6, fontSize: 11.5, color: sent ? '#000' : 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', opacity: sent ? 0.7 : 1 }}>
                         <span style={{ fontWeight: 700 }}>{msg.replyTo.userName}: </span>

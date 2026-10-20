@@ -9,6 +9,15 @@ export interface MessageMenuState {
   isMedia: boolean
 }
 
+export interface MessageMenuFeatures {
+  react?: boolean
+  reply?: boolean
+  forward?: boolean
+  edit?: boolean
+  markUnread?: boolean
+  mediaReport?: boolean
+}
+
 interface MessageContextMenuProps {
   menu: MessageMenuState | null
   onClose: () => void
@@ -25,6 +34,7 @@ interface MessageContextMenuProps {
   onCopyId: (msg: Message) => void
   canEdit: (msg: Message) => boolean
   canDelete: (msg: Message) => boolean
+  features?: MessageMenuFeatures
 }
 
 function MenuItem({ icon, label, onClick, danger }: {
@@ -51,7 +61,8 @@ function MenuItem({ icon, label, onClick, danger }: {
   )
 }
 
-export function MessageContextMenu({ menu, onClose, onReply, onReact, onForward, onEdit, onDelete, onReport, onCopyText, onCopyLink, onSpeak, onMarkUnread, onCopyId, canEdit, canDelete }: MessageContextMenuProps) {
+export function MessageContextMenu({ menu, onClose, onReply, onReact, onForward, onEdit, onDelete, onReport, onCopyText, onCopyLink, onSpeak, onMarkUnread, onCopyId, canEdit, canDelete, features }: MessageContextMenuProps) {
+  const enabled = { react: true, reply: true, forward: true, edit: true, markUnread: true, mediaReport: true, ...features }
   const menuRef = useRef<HTMLDivElement | null>(null)
   useLayoutEffect(() => {
     const el = menuRef.current
@@ -105,7 +116,7 @@ export function MessageContextMenu({ menu, onClose, onReply, onReact, onForward,
 
   return (
     <div id="message-context-menu" ref={menuRef} style={style}>
-      {isMedia && (
+      {isMedia && enabled.mediaReport && (
         <MenuItem
           icon={<Fa name="flag" size={12} style={{  color: '#f23f43' }} />}
           label="Denunciar midia"
@@ -113,22 +124,28 @@ export function MessageContextMenu({ menu, onClose, onReply, onReact, onForward,
           onClick={() => { onClose(); onReport(message, true) }}
         />
       )}
-      <MenuItem
-        icon={<Fa name="face-smile" size={13} />}
-        label="Adicionar reacao"
-        onClick={() => { onClose(); onReact(message) }}
-      />
-      <MenuItem
-        icon={<Fa name="reply" size={13} />}
-        label="Responder"
-        onClick={() => { onClose(); onReply(message) }}
-      />
-      <MenuItem
-        icon={<Fa name="share" size={13} />}
-        label="Encaminhar"
-        onClick={() => { onClose(); onForward(message) }}
-      />
-      {editable && (
+      {enabled.react && (
+        <MenuItem
+          icon={<Fa name="face-smile" size={13} />}
+          label="Adicionar reacao"
+          onClick={() => { onClose(); onReact(message) }}
+        />
+      )}
+      {enabled.reply && (
+        <MenuItem
+          icon={<Fa name="reply" size={13} />}
+          label="Responder"
+          onClick={() => { onClose(); onReply(message) }}
+        />
+      )}
+      {enabled.forward && (
+        <MenuItem
+          icon={<Fa name="share" size={13} />}
+          label="Encaminhar"
+          onClick={() => { onClose(); onForward(message) }}
+        />
+      )}
+      {editable && enabled.edit && (
         <MenuItem
           icon={<Fa name="pen" size={13} />}
           label="Editar mensagem"
@@ -140,11 +157,13 @@ export function MessageContextMenu({ menu, onClose, onReply, onReact, onForward,
         label="Copiar texto"
         onClick={() => { onClose(); onCopyText(message) }}
       />
-      <MenuItem
-        icon={<Fa name="envelope-open-text" size={13} />}
-        label="Marcar como nao lido"
-        onClick={() => { onClose(); onMarkUnread() }}
-      />
+      {enabled.markUnread && (
+        <MenuItem
+          icon={<Fa name="envelope-open-text" size={13} />}
+          label="Marcar como nao lido"
+          onClick={() => { onClose(); onMarkUnread() }}
+        />
+      )}
       <MenuItem
         icon={<Fa name="link" size={13} />}
         label="Copiar link da mensagem"

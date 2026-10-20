@@ -18,7 +18,8 @@ interface FriendState {
   declineFriend: (friendId: string) => Promise<void>
   respondFriend: (friendId: string, accept: boolean) => Promise<void>
   removeFriend: (friendId: string) => Promise<void>
-  sendDirectMessage: (fromId: string, toId: string, content: string, type?: 'text' | 'audio', audioUrl?: string, attachmentUrl?: string, attachmentName?: string, attachmentType?: string) => Promise<void>
+  sendDirectMessage: (fromId: string, toId: string, content: string, type?: 'text' | 'audio', audioUrl?: string, attachmentUrl?: string, attachmentName?: string, attachmentType?: string, replyTo?: DirectMessage['replyTo']) => Promise<void>
+  deleteDirectMessage: (messageId: string) => Promise<void>
   loadDirectMessages: (userId1: string, userId2: string) => Promise<void>
   setCurrentDMUser: (user: User | null) => void
   addDirectMessage: (msg: DirectMessage) => void
@@ -106,17 +107,18 @@ export const useFriendStore = create<FriendState>((set, get) => ({
     set({ friends: get().friends.filter(f => f.id !== friendId) })
     if (currentUser) get().loadFriends(currentUser.id)
   },
-  sendDirectMessage: async (fromId, toId, content, type = 'text', audioUrl, attachmentUrl, attachmentName, attachmentType) => {
-    const message = {
-      fromId,
-      toId,
-      content,
-      type,
-      audioUrl,
-      attachmentUrl,
-      attachmentName,
-      attachmentType,
-    }
+  sendDirectMessage: async (fromId, toId, content, type = 'text', audioUrl, attachmentUrl, attachmentName, attachmentType, replyTo) => {
+const message = {
+fromId,
+toId,
+content,
+type,
+audioUrl,
+attachmentUrl,
+attachmentName,
+attachmentType,
+replyTo,
+}
     try {
       const result = await requestBackend<{ message: DirectMessage }>('sendDirectMessage', { message })
       set({ directMessages: [...get().directMessages, result.message] })
@@ -125,6 +127,14 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       return
     }
   },
+  deleteDirectMessage: async (messageId) => {
+const currentUserId = useUserStore.getState().currentUser?.id || localStorage.getItem('friends-space:current-user-id') || ''
+try {
+await requestBackend<{ messageId: string }>('deleteDirectMessage', { messageId, userId: currentUserId })
+set({ directMessages: get().directMessages.filter(m => m.id !== messageId) })
+} catch {
+}
+},
   loadDirectMessages: async (userId1, userId2) => {
     try {
       const directMessages = await requestBackend<DirectMessage[]>('loadDirectMessages', { userId1, userId2 })

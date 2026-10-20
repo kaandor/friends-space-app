@@ -320,16 +320,19 @@
 }
 
 .ud-banner {
-  height: 52px;
+  height: 92px;
   border-radius: 6px;
   background: linear-gradient(135deg, var(--accent), #1e3a8a);
-  margin-bottom: -24px;
+  background-size: cover;
+  background-position: center 30%;
+  margin-bottom: 0;
 }
 
 .ud-profile-avatar {
   display: inline-flex;
   position: relative;
-  margin-left: 4px;
+  z-index: 2;
+  margin: -58px 0 0 8px;
 }
 
 .ud-profile-avatar .ud-dot {

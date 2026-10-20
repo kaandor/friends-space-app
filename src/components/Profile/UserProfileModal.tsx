@@ -24,9 +24,6 @@ const TIER_TO_PLAN: Record<AstroTier | 'none', Plan> = {
 
 const MURAL_IDS: MuralFieldId[] = ['games', 'completedGames', 'recentGames', 'series', 'movies', 'music', 'albums', 'artists', 'actors']
 
-type FriendRow = { userId: string; friendId: string; status: string }
-type ServerRow = { id: string; name: string; photoUrl?: string; members?: string[] }
-
 export function UserProfileModal({ user, isSelf, onAction, onClose }: {
   user: User
   isSelf?: boolean
@@ -41,8 +38,20 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
   const [mutualFriends, setMutualFriends] = useState<MutualProfileUser[] | undefined>(undefined)
   const [mutualServers, setMutualServers] = useState<MutualProfileServer[] | undefined>(undefined)
   const [mutualLoading, setMutualLoading] = useState(false)
-  const settings = (user?.settings || {}) as Record<string, unknown>
-  const tier = getAstroTier(user)
+  const [freshUser, setFreshUser] = useState<User | null>(null)
+  const viewUser = freshUser && freshUser.id === user?.id ? { ...user, ...freshUser } : user
+  const settings = (viewUser?.settings || {}) as Record<string, unknown>
+  const profileUserId = user?.id || ''
+
+  useEffect(() => {
+    if (!profileUserId) return
+    let cancelled = false
+    void requestBackend<User | undefined>('getUser', { id: profileUserId }).then(found => {
+      if (!cancelled && found?.id === profileUserId) setFreshUser(found)
+    }).catch(() => { })
+    return () => { cancelled = true }
+  }, [profileUserId])
+  const tier = getAstroTier(viewUser)
   const plan: Plan = TIER_TO_PLAN[tier]
 
   const socialStatus = statusFromSettings(settings)
@@ -85,77 +94,63 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
     (f.friendId === user.id && f.userId === me?.id)
   )
   const isFriend = !isSelf && rel?.status === 'accepted'
-  const verified = Boolean(user.googleId || user.authProvider === 'google') && settings.showBadges !== false
-  const joinedAt = Number(user.createdAt || 0)
+  const verified = Boolean(viewUser?.googleId || viewUser?.authProvider === 'google') && settings.showBadges !== false
+  const joinedAt = Number(viewUser?.createdAt || 0)
   const pronoun = typeof settings.pronoun === 'string' ? settings.pronoun : ''
   const myId = me?.id || ''
 
-  const activityAllowed = user.activityEnabled !== false
-    && user.activityPrivacy !== 'private'
-    && (isSelf || isUserOnline(user))
-    && (user.activityPrivacy !== 'friends' || isFriend || Boolean(isSelf))
-  const publicActivity = showActivity && activityAllowed && user.activityName
-    ? { name: user.activityName, details: user.activityDetails, startedAt: user.activityStartedAt }
+  const activityAllowed = viewUser?.activityEnabled !== false
+    && viewUser?.activityPrivacy !== 'private'
+    && (isSelf || isUserOnline(viewUser))
+    && (viewUser?.activityPrivacy !== 'friends' || isFriend || Boolean(isSelf))
+  const publicActivity = showActivity && activityAllowed && viewUser?.activityName
+    ? { name: viewUser.activityName, details: viewUser.activityDetails, startedAt: viewUser.activityStartedAt }
     : undefined
 
   useEffect(() => {
-    if (isSelf || !myId || (!showMutualFriends && !showServers)) {
+    if (isSelf || !myId || !profileUserId || (!showMutualFriends && !showServers)) {
       setMutualFriends(undefined)
       setMutualServers(undefined)
+      setMutualLoading(false)
       return
     }
 
     let cancelled = false
     setMutualLoading(true)
-    const jobs: Array<Promise<void>> = []
-
-    if (showMutualFriends) {
-      jobs.push((async () => {
-        try {
-          const result = await requestBackend<{ friends: FriendRow[]; friendUsers: User[] }>('loadFriends', { userId: user.id })
-          if (cancelled) return
-          const mine = new Set(friends.filter(f => f.status === 'accepted').map(f => f.userId === myId ? f.friendId : f.userId))
-          const theirIds = (result?.friends || [])
-            .filter(f => f.status === 'accepted')
-            .map(f => f.userId === user.id ? f.friendId : f.userId)
-            .filter(id => id !== myId)
-          const usersById = new Map((result?.friendUsers || []).map(friend => [friend.id, friend]))
-          setMutualFriends([...new Set(theirIds)].filter(id => mine.has(id)).map(id => {
-            const friend = usersById.get(id)
-            return {
-              id,
-              name: friend?.name || 'Usuário',
-              username: friend?.friendCode || '',
-              photoUrl: friend?.photoUrl ? toImageUrl(friend.photoUrl, 128) : undefined,
-            }
+    void (async () => {
+      try {
+        const result = await requestBackend<{
+          friends: Array<{ id: string; name: string; username?: string; photoUrl?: string }>
+          servers: Array<{ id: string; name: string; photoUrl?: string; members?: number }>
+        }>('loadMutuals', { userId: profileUserId })
+        if (cancelled) return
+        setMutualFriends(showMutualFriends
+          ? (result?.friends || []).map(friend => ({
+            id: friend.id,
+            name: friend.name || 'Usuário',
+            username: friend.username || '',
+            photoUrl: friend.photoUrl ? toImageUrl(friend.photoUrl, 128) : undefined,
           }))
-        } catch {
-          if (!cancelled) setMutualFriends([])
+          : undefined)
+        setMutualServers(showServers
+          ? (result?.servers || []).map(server => ({
+            id: server.id,
+            name: server.name || 'Servidor',
+            photoUrl: server.photoUrl ? toImageUrl(server.photoUrl, 128) : undefined,
+            members: server.members,
+          }))
+          : undefined)
+      } catch {
+        if (!cancelled) {
+          setMutualFriends(showMutualFriends ? [] : undefined)
+          setMutualServers(showServers ? [] : undefined)
         }
-      })())
-    } else {
-      setMutualFriends(undefined)
-    }
-
-    if (showServers) {
-      jobs.push((async () => {
-        try {
-          const serverList = await requestBackend<ServerRow[]>('loadUserServers', { userId: user.id })
-          if (cancelled) return
-          setMutualServers((serverList || [])
-            .filter(s => Array.isArray(s.members) && s.members.includes(user.id) && s.members.includes(myId))
-            .map(s => ({ id: s.id, name: s.name, photoUrl: s.photoUrl ? toImageUrl(s.photoUrl, 128) : undefined, members: s.members?.length })))
-        } catch {
-          if (!cancelled) setMutualServers([])
-        }
-      })())
-    } else {
-      setMutualServers(undefined)
-    }
-
-    void Promise.all(jobs).finally(() => { if (!cancelled) setMutualLoading(false) })
+      } finally {
+        if (!cancelled) setMutualLoading(false)
+      }
+    })()
     return () => { cancelled = true }
-  }, [isSelf, myId, user.id, showMutualFriends, showServers, friends])
+  }, [isSelf, myId, profileUserId, showMutualFriends, showServers])
 
   const handleFollow = async () => {
     if (!me || busy) return
@@ -179,9 +174,9 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
     <div className="fs-profile-editor" style={{ position: 'relative' }}>
       <PublicProfileModal
         plan={plan}
-        displayName={user?.name || ''}
-        username={user?.friendCode || ''}
-        about={user?.bio || ''}
+        displayName={viewUser?.name || ''}
+        username={viewUser?.friendCode || ''}
+        about={viewUser?.bio || ''}
         socialStatus={socialStatus}
         statusMessage={statusMessage}
         showActivity={showActivity}
@@ -190,8 +185,8 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
         mural={mural}
         selectedMuralFields={selectedMuralFields}
         selectedFrame={selectedFrame}
-        photoUrl={user?.photoUrl ? toImageUrl(user.photoUrl, 512) : undefined}
-        bannerUrl={user?.bannerUrl ? toImageUrl(user.bannerUrl, 1200) : undefined}
+        photoUrl={viewUser?.photoUrl ? toImageUrl(viewUser.photoUrl, 512) : undefined}
+        bannerUrl={viewUser?.bannerUrl ? toImageUrl(viewUser.bannerUrl, 1200) : undefined}
         nameplateId={nameplateId}
         profileFrameId={profileFrameId}
         profileEffectId={profileEffectId}
@@ -207,7 +202,7 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
         mutualFriends={mutualFriends}
         mutualServers={mutualServers}
         mutualLoading={mutualLoading}
-        targetUserId={user.id}
+        targetUserId={profileUserId}
         following={following}
         blocked={blocked}
         busy={busy !== null}
