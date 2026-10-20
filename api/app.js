@@ -3455,14 +3455,15 @@ const actions = {
     const users = getAllUsers(store)
     const target = users.find((item) => item?.id === targetId)
     if (!target) return { friends: [], servers: [] }
+    const targetSettings = target.settings && typeof target.settings === 'object' ? target.settings : {}
     const myFriendIds = new Set(acceptedFriendIds(store, actor))
     const mutualIds = acceptedFriendIds(store, targetId).filter((id) => id !== actor && myFriendIds.has(id))
     const friendById = new Map(users.map((item) => [item.id, item]))
-    const friends = [...new Set(mutualIds)].map((id) => {
+    const friends = targetSettings.showFriends === false ? [] : [...new Set(mutualIds)].map((id) => {
       const user = friendById.get(id)
       return user ? { id, name: user.name || 'Usuário', username: user.friendCode || '', photoUrl: user.photoUrl || '' } : null
     }).filter(Boolean)
-    const servers = getAllServers(store)
+    const servers = targetSettings.showServers === false ? [] : getAllServers(store)
       .filter((server) => Array.isArray(server.members) && server.members.includes(actor) && server.members.includes(targetId))
       .map((server) => ({ id: server.id, name: server.name || 'Servidor', photoUrl: server.photoUrl || '', members: server.members.length }))
     return { friends, servers }
