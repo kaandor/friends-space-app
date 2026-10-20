@@ -651,7 +651,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
       {screenMenu && (
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 210 }} onClick={() => setScreenMenu(null)} />
-          <div style={{ position: 'fixed', top: Math.min(screenMenu.y, (typeof window !== 'undefined' ? window.innerHeight : 600) - 340), left: Math.min(screenMenu.x, (typeof window !== 'undefined' ? window.innerWidth : 800) - 220), zIndex: 211, minWidth: 210, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 8, padding: 6, boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }}>
+          <div style={{ position: 'fixed', top: Math.max(8, Math.min(screenMenu.y, (typeof window !== 'undefined' ? window.innerHeight : 600) - 340)), left: Math.max(8, Math.min(screenMenu.x, (typeof window !== 'undefined' ? window.innerWidth : 800) - 220)), zIndex: 211, minWidth: 210, maxWidth: 'calc(100vw - 16px)', maxHeight: 'calc(100vh - 16px)', overflowY: 'auto', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 8, padding: 6, boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }}>
             {!menuIsSelfScreen && (
               <>
                 <div style={{ padding: '7px 10px 3px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -784,7 +784,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
       {micMenu && (
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 119 }} onClick={() => setMicMenu(null)} />
-          <div style={{ position: 'fixed', top: Math.min(micMenu.y, (typeof window !== 'undefined' ? window.innerHeight : 600) - 220), left: Math.max(8, micMenu.x - 220), zIndex: 120, minWidth: 220, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 8, padding: 6, boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }}>
+          <div style={{ position: 'fixed', top: 'auto', bottom: Math.max(8, (typeof window !== 'undefined' ? window.innerHeight : 600) - micMenu.y + 4), left: Math.max(8, Math.min(micMenu.x - 220, (typeof window !== 'undefined' ? window.innerWidth : 800) - 228)), zIndex: 120, minWidth: 220, maxWidth: 'calc(100vw - 16px)', maxHeight: Math.max(140, micMenu.y - 12), overflowY: 'auto', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 8, padding: 6, boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }}>
             <div style={{ padding: '7px 10px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>Microfone</div>
             {micDevices.length === 0 && <div style={{ padding: '7px 10px', color: 'var(--text-muted)', fontSize: 12 }}>Nenhum dispositivo encontrado</div>}
             {micDevices.map(device => (
@@ -804,7 +804,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
       {outMenu && (
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 119 }} onClick={() => setOutMenu(null)} />
-          <div style={{ position: 'fixed', top: Math.min(outMenu.y, (typeof window !== 'undefined' ? window.innerHeight : 600) - 220), left: Math.max(8, outMenu.x - 220), zIndex: 120, minWidth: 220, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 8, padding: 6, boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }}>
+          <div style={{ position: 'fixed', top: 'auto', bottom: Math.max(8, (typeof window !== 'undefined' ? window.innerHeight : 600) - outMenu.y + 4), left: Math.max(8, Math.min(outMenu.x - 220, (typeof window !== 'undefined' ? window.innerWidth : 800) - 228)), zIndex: 120, minWidth: 220, maxWidth: 'calc(100vw - 16px)', maxHeight: Math.max(140, outMenu.y - 12), overflowY: 'auto', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 8, padding: 6, boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }}>
             <div style={{ padding: '7px 10px', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}>Fone de ouvido / saida de audio</div>
             {outDevices.length === 0 && <div style={{ padding: '7px 10px', color: 'var(--text-muted)', fontSize: 12 }}>Nenhum dispositivo encontrado</div>}
             {outDevices.map(device => (

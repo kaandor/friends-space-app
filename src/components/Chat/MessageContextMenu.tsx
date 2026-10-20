@@ -1,5 +1,5 @@
 import { Fa } from '../../utils/fa'
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import type { Message } from '../../types'
 
 export interface MessageMenuState {
@@ -52,6 +52,21 @@ function MenuItem({ icon, label, onClick, danger }: {
 }
 
 export function MessageContextMenu({ menu, onClose, onReply, onReact, onForward, onEdit, onDelete, onReport, onCopyText, onCopyLink, onSpeak, onMarkUnread, onCopyId, canEdit, canDelete }: MessageContextMenuProps) {
+  const menuRef = useRef<HTMLDivElement | null>(null)
+  useLayoutEffect(() => {
+    const el = menuRef.current
+    if (!el || !menu) return
+    const place = () => {
+      const width = el.offsetWidth
+      const height = el.offsetHeight
+      el.style.left = `${Math.max(8, Math.min(menu.x, window.innerWidth - width - 8))}px`
+      el.style.top = `${Math.max(8, Math.min(menu.y, window.innerHeight - height - 8))}px`
+    }
+    place()
+    window.addEventListener('resize', place)
+    return () => window.removeEventListener('resize', place)
+  }, [menu])
+
   useEffect(() => {
     if (!menu) return
     const onDown = (e: MouseEvent) => {
@@ -73,11 +88,14 @@ export function MessageContextMenu({ menu, onClose, onReply, onReact, onForward,
   const menuWidth = 230
   const style: React.CSSProperties = {
     position: 'fixed',
-    left: Math.min(x, window.innerWidth - menuWidth - 8),
-    top: Math.min(y, window.innerHeight - 320),
+    left: Math.max(8, Math.min(x, window.innerWidth - menuWidth - 8)),
+    top: Math.max(8, Math.min(y, window.innerHeight - 320)),
     zIndex: 12000,
     minWidth: menuWidth,
+    width: 'max-content',
     maxWidth: 'calc(100vw - 16px)',
+    maxHeight: 'calc(100vh - 16px)',
+    overflowY: 'auto',
     background: 'var(--bg-secondary)',
     border: '1px solid var(--border)',
     borderRadius: 10,
@@ -86,7 +104,7 @@ export function MessageContextMenu({ menu, onClose, onReply, onReact, onForward,
   }
 
   return (
-    <div id="message-context-menu" style={style}>
+    <div id="message-context-menu" ref={menuRef} style={style}>
       {isMedia && (
         <MenuItem
           icon={<Fa name="flag" size={12} style={{  color: '#f23f43' }} />}

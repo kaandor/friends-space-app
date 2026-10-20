@@ -1,5 +1,5 @@
 import { Fa } from '../../utils/fa'
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { UserProfileModal } from '../Profile/UserProfileModal'
 import { IconSend, IconAdd, IconCheck, IconClose } from '../../utils/icons'
 import { useFriendStore } from '../../stores/friendStore'
@@ -63,6 +63,25 @@ export function UserContextMenu() {
   const volumes = useCallStore(s => s.volumes)
   const setVolume = useCallStore(s => s.setVolume)
   const [reportUser, setReportUser] = useState<typeof menu>(null)
+  const cardRef = useRef<HTMLDivElement | null>(null)
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
+
+  useLayoutEffect(() => {
+    if (!menu || reportUser) { setPos(null); return }
+    const place = () => {
+      const el = cardRef.current
+      if (!el) return
+      const width = Math.min(el.offsetWidth || 340, window.innerWidth - 16)
+      const height = el.offsetHeight
+      setPos({
+        left: Math.max(8, Math.min(x, window.innerWidth - width - 8)),
+        top: Math.max(8, Math.min(y, window.innerHeight - height - 8)),
+      })
+    }
+    place()
+    window.addEventListener('resize', place)
+    return () => window.removeEventListener('resize', place)
+  }, [menu, x, y, reportUser, activeCall, remoteScreenStreams])
 
   useEffect(() => {
     if (!menu) return
@@ -174,15 +193,17 @@ export function UserContextMenu() {
 
   const menuWidth = 340
   const style: React.CSSProperties = {
-    left: Math.min(x, window.innerWidth - menuWidth - 8),
-    top: Math.max(8, Math.min(y, window.innerHeight - 520)),
+    left: pos?.left ?? Math.max(8, Math.min(x, window.innerWidth - menuWidth - 8)),
+    top: pos?.top ?? Math.max(8, Math.min(y, window.innerHeight - 520)),
     width: menuWidth,
     maxWidth: 'calc(100vw - 16px)',
+    maxHeight: 'calc(100vh - 16px)',
+    overflowY: 'auto',
   }
 
   return (
     <>
-    <div id="user-context-menu" className="ucm-card fs-menu-in" style={style}>
+    <div id="user-context-menu" ref={cardRef} className="ucm-card fs-menu-in" style={style}>
       <ProfileCardView
         displayName={user.name || ''}
         username={user.friendCode || ''}

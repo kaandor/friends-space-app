@@ -12,7 +12,6 @@ import DebugWindow from '../Debug/DebugWindow'
 import { getLocalVideoStats, type LocalVideoStats } from '../../stores/callStore'
 import { getAudioInputDevices } from '../../services/antiloud'
 import { applyRemoteGain } from '../../services/antiloud'
-import { UserContextMenu } from '../ui/UserContextMenu'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { useServerStore } from '../../stores/serverStore'
 import {
@@ -1236,8 +1235,6 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
       {participants.filter(p => p.userId !== currentUser?.id).map(p => (
         <video key={p.userId} id={`call-video-${p.userId}`} autoPlay muted playsInline style={{ position: 'absolute', width: 1, height: 1, left: -9999 }} />
       ))}
-      <UserContextMenu />
-
       {screenError && (
         <div style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#ed4245', color: 'var(--text-primary)', padding: '10px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', gap: 10 }}>
           <span>{screenError}</span>
