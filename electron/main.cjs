@@ -215,8 +215,8 @@ $title = if ($p.MainWindowTitle) { $p.MainWindowTitle } else { "" }
     const raw = await runPowerShell(script, 8000)
     if (!raw || raw === 'none') return null
     const parsed = JSON.parse(raw)
-    if (parsed.name && parsed.name.toLowerCase() === 'friends space') return null
-    if (Number(parsed.pid) === process.pid) return null
+    if (parsed.name && parsed.name.toLowerCase() === 'friends space') return { name: '__friends_space__', title: '' }
+    if (Number(parsed.pid) === process.pid) return { name: '__friends_space__', title: '' }
     return { name: parsed.name, title: parsed.title || '' }
   } catch {
     return null

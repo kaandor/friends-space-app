@@ -210,6 +210,7 @@ async function pollOnce() {  const api = getApi()
   const settings = (me.settings || {}) as Record<string, unknown>
   if (settings.autoStatus === false) return true
   const app = await api.getActiveApp!()
+  if (app && app.name === '__friends_space__') return true
   if (!app || !app.name) {
     // Sem app em foco: SEMPRE limpa atividade/status antigos (antes isso só
     // rodava se lastApp tivesse sido setado NESTA sessão — fechar o app com o

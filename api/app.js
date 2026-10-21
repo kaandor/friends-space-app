@@ -3840,8 +3840,17 @@ const actions = {
       return user ? { id, name: user.name || 'Usuário', username: user.friendCode || '', photoUrl: user.photoUrl || '' } : null
     }).filter(Boolean)
     const servers = targetSettings.showServers === false ? [] : getAllServers(store)
-      .filter((server) => Array.isArray(server.members) && server.members.includes(actor) && server.members.includes(targetId))
-      .map((server) => ({ id: server.id, name: server.name || 'Servidor', photoUrl: server.photoUrl || '', members: server.members.length }))
+      .filter((server) => {
+        const members = Array.isArray(server.members) ? server.members : []
+        const actorIn = server.ownerId === actor || members.includes(actor)
+        const targetIn = server.ownerId === targetId || members.includes(targetId)
+        return actorIn && targetIn
+      })
+      .map((server) => {
+        const members = Array.isArray(server.members) ? server.members : []
+        const total = new Set([...members, server.ownerId].filter(Boolean)).size
+        return { id: server.id, name: server.name || 'Servidor', photoUrl: server.photoUrl || '', members: total }
+      })
     return { friends, servers }
   },
   loadNotifications: async (store, data, body) => {

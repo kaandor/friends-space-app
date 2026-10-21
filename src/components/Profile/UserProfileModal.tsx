@@ -46,10 +46,14 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
   useEffect(() => {
     if (!profileUserId) return
     let cancelled = false
-    void requestBackend<User | undefined>('getUser', { id: profileUserId }).then(found => {
-      if (!cancelled && found?.id === profileUserId) setFreshUser(found)
-    }).catch(() => { })
-    return () => { cancelled = true }
+    const loadFreshUser = () => {
+      void requestBackend<User | undefined>('getUser', { id: profileUserId }).then(found => {
+        if (!cancelled && found?.id === profileUserId) setFreshUser(found)
+      }).catch(() => { })
+    }
+    loadFreshUser()
+    const timer = window.setInterval(loadFreshUser, 15000)
+    return () => { cancelled = true; window.clearInterval(timer) }
   }, [profileUserId])
   const tier = getAstroTier(viewUser)
   const plan: Plan = TIER_TO_PLAN[tier]
@@ -101,10 +105,9 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
 
   const activityAllowed = viewUser?.activityEnabled !== false
     && viewUser?.activityPrivacy !== 'private'
-    && (isSelf || isUserOnline(viewUser))
     && (viewUser?.activityPrivacy !== 'friends' || isFriend || Boolean(isSelf))
   const publicActivity = showActivity && activityAllowed && viewUser?.activityName
-    ? { name: viewUser.activityName, details: viewUser.activityDetails, startedAt: viewUser.activityStartedAt }
+    ? { name: viewUser.activityName, details: viewUser.activityDetails, startedAt: viewUser.activityStartedAt, online: isSelf || isUserOnline(viewUser) }
     : undefined
 
   useEffect(() => {

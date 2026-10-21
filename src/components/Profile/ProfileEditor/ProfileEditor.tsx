@@ -55,7 +55,7 @@ import { USER_STATUS, StatusIcon, statusFromSettings, statusCssVars, type UserSt
 export type Plan = "free" | "astro" | "astroPlus" | "astroPlusGold";
 export type SocialStatus = UserStatusId;
 export type ProfileActionId = "request" | "message" | "report";
-export type ProfileActivityInfo = { name: string; details?: string; startedAt?: number };
+export type ProfileActivityInfo = { name: string; details?: string; startedAt?: number; online?: boolean };
 export type MutualProfileUser = { id: string; name: string; username?: string; photoUrl?: string };
 export type MutualProfileServer = { id: string; name: string; photoUrl?: string; members?: number };
 type ProfileTabId = "mural" | "activity" | "friends" | "servers";
@@ -657,7 +657,7 @@ export function PublicProfileModal({ plan, displayName, username, about, socialS
                         <div className="pfm-activity-info">
                           <strong>{activity.name}</strong>
                           {activity.details && <p>{activity.details}</p>}
-                          <small>{activity.startedAt ? `Iniciada às ${new Date(activity.startedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : "Agora"}</small>
+                          <small>{activity.startedAt ? `${activity.online === false ? "Última atividade" : "Iniciada"} às ${new Date(activity.startedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : "Agora"}</small>
                         </div>
                       </article>
                     )}
