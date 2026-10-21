@@ -125,7 +125,7 @@ export function UserProfileModal({ user, isSelf, onAction, onClose }: {
         const result = await requestBackend<{
           friends: Array<{ id: string; name: string; username?: string; photoUrl?: string }>
           servers: Array<{ id: string; name: string; photoUrl?: string; members?: number }>
-        }>('loadMutuals', { userId: profileUserId })
+        }>('loadMutuals', { targetId: profileUserId })
         if (cancelled) return
         setMutualFriends(showMutualFriends
           ? (result?.friends || []).map(friend => ({

@@ -3826,7 +3826,7 @@ const actions = {
   },
   loadMutuals: async (store, data, body) => {
     const actor = actorOf(store, body)
-    const targetId = String(body.userId || '')
+    const targetId = String(body.targetId || body.userId || '')
     if (!actor || !targetId || actor === targetId) return { friends: [], servers: [] }
     const users = getAllUsers(store)
     const target = users.find((item) => item?.id === targetId)
