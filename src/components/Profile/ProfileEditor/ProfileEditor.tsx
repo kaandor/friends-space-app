@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { APPEARANCE_FONTS, APPEARANCE_THEMES, APPEARANCE_TEXT_COLORS, APPEARANCE_BACKGROUNDS, APPEARANCE_THEME_LABELS, APPEARANCE_BG_LABELS, ALL_APPEARANCE_THEMES, ALL_APPEARANCE_BACKGROUNDS, PLAN_LABELS, requiredPlanForTheme, requiredPlanForBackground, clampAppearanceToPlan, parseAppearance, serializeAppearance, PLAN_THEMES, PLAN_BACKGROUNDS, type AppearanceBgId, type AppearanceFontId, type AppearanceTextColorId, type AppearanceThemeId } from "./appearance";
 import { useUserStore } from "../../../stores/userStore";
+import { activityKindOf } from "../../../services/activityService";
 import { getAstroTier } from "../../../utils/astro";
 import { NAME_COLORS, type NameEffect } from "../../../utils/nameStyle";
 import { ImageCropper } from "../../ui/ImageCropper";
@@ -28,8 +29,10 @@ import {
   Check,
   ChevronDown,
   ChevronsRight,
+  AppWindow,
   Eye,
   Gamepad2,
+  Globe2,
   Info,
   LockKeyhole,
   MessageCircle,
@@ -650,7 +653,7 @@ export function PublicProfileModal({ plan, displayName, username, about, socialS
                   <>
                     {activity && (
                       <article className="pfm-activity-card">
-                        <span className="pfm-activity-icon"><Gamepad2 size={22} /></span>
+                        <span className="pfm-activity-icon">{activityKindOf(activity.name) === 'browser' ? <Globe2 size={22} /> : activityKindOf(activity.name) === 'game' ? <Gamepad2 size={22} /> : <AppWindow size={22} />}</span>
                         <div className="pfm-activity-info">
                           <strong>{activity.name}</strong>
                           {activity.details && <p>{activity.details}</p>}
@@ -817,7 +820,7 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
   const [tab, setTab] = useState<"mural" | "activity" | "wishlist">("mural");
   const [picker, setPicker] = useState<CatalogKind | "nameStyle" | null>(null);
   const [previewing, setPreviewing] = useState(false);
-  const [activity, setActivity] = useState<Array<{ app: string; seconds: number }> | null>(null);
+  const [activity, setActivity] = useState<Array<{ app: string; seconds: number; kind: 'game' | 'browser' | 'program' }> | null>(null);
   const [infoBoxOpen, setInfoBoxOpen] = useState(true);
 
   const [selectedTheme, setSelectedTheme] = useState<string>(savedAppearance.theme);
@@ -1160,6 +1163,7 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
   const wishItems = wishlist.map((entry) => ({ entry, item: catalogItem(entry.kind, entry.id) }));
   const wishCandidates = ALL_SHOP_ITEMS.filter((item) => !wishlist.some((entry) => entry.kind === item.kind && entry.id === item.id));
   const activityMax = Math.max(...(activity || []).map((entry) => entry.seconds), 1);
+  const activityTotal = (activity || []).reduce((sum, entry) => sum + entry.seconds, 0);
 
   return (
     <div className="fs-profile-editor">
@@ -1397,22 +1401,27 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
 
               {tab === "activity" && (
                 <>
-                  <div className="ape-wish-head"><span className="ape-wish-count">Atividade recente</span></div>
-                  <p className="ape-activity-lead">Você verá sua atividade dos últimos 30 dias aqui. <b>Saiba mais</b></p>
+                  <div className="ape-wish-head"><span className="ape-wish-count">Atividade recente · 7 dias</span><span className="ape-spacer" /><span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{activityTotal > 0 ? `${formatSeconds(activityTotal)} no total` : ""}</span></div>
+                  <p className="ape-activity-lead">Jogos, navegadores e programas detectados no app desktop. <b>Saiba mais</b></p>
                   {activity === null ? null : activity.length === 0 ? (
                     <p className="ape-wish-empty">Sem atividade registrada nos últimos 7 dias (só no app desktop).</p>
                   ) : (
                     <div className="ape-activity-list">
-                      {activity.map((entry, index) => (
-                        <div className="ape-activity-row" key={`${entry.app}-${index}`}>
-                          <span className="ape-activity-icon">{entry.app.slice(0, 1).toUpperCase()}</span>
-                          <div className="ape-activity-info">
-                            <b>{entry.app}</b>
-                            <span>{formatSeconds(entry.seconds)}</span>
-                            <div className="ape-activity-bar"><i style={{ width: `${Math.max(6, Math.round((entry.seconds / activityMax) * 100))}%` }} /></div>
+                      {activity.map((entry, index) => {
+                        const kindLabel = entry.kind === 'game' ? 'Jogo' : entry.kind === 'browser' ? 'Navegador' : 'Programa'
+                        return (
+                          <div className="ape-activity-row" key={`${entry.app}-${index}`}>
+                            <span className="ape-activity-icon">
+                              {entry.kind === 'game' ? <Gamepad2 size={15} /> : entry.kind === 'browser' ? <Globe2 size={15} /> : <AppWindow size={15} />}
+                            </span>
+                            <div className="ape-activity-info">
+                              <b>{entry.app}</b>
+                              <span>{kindLabel} · {formatSeconds(entry.seconds)}</span>
+                              <div className="ape-activity-bar"><i style={{ width: `${Math.max(6, Math.round((entry.seconds / activityMax) * 100))}%` }} /></div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
                 </>

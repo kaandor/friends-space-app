@@ -94,16 +94,56 @@ const KNOWN_APPS: Record<string, string> = {
   'slack': 'Slack',
 }
 
+export type ActivityKind = 'game' | 'browser' | 'program'
+
+const BROWSER_NAMES = new Set(['chrome', 'msedge', 'edge', 'firefox', 'opera', 'brave', 'vivaldi', 'safari'])
+const GAME_NAMES = new Set([
+  'minecraft', 'roblox', 'fortnite', 'call of duty', 'valorant', 'league of legends',
+  'counter-strike 2', 'gta v', 'elden ring', 'starfield', 'cyberpunk 2077', 'dota 2',
+  'fall guys', 'rocket league', 'rainbow six siege', 'pubg', 'among us', 'tetr.io', 'osu!',
+])
+
+export function activityKindOf(appName: string): ActivityKind {
+  const name = String(appName || '').toLowerCase()
+  if (BROWSER_NAMES.has(name)) return 'browser'
+  if (GAME_NAMES.has(name)) return 'game'
+  return 'program'
+}
+
+export function activityKindLabel(kind: ActivityKind): string {
+  return kind === 'game' ? 'Jogo' : kind === 'browser' ? 'Navegador' : 'Programa'
+}
+
 function friendlyName(app: ActiveApp): { name: string; detail: string } {
   const raw = (app.name || '').toLowerCase()
   const known = KNOWN_APPS[raw] || KNOWN_APPS[app.name]
   const name = known || app.name || 'Um aplicativo'
-  const title = (app.title || '').trim()
+  let title = (app.title || '').trim()
+  if (title) {
+    const lower = title.toLowerCase()
+    const suffixes = [name.toLowerCase(), 'google chrome', 'microsoft edge', 'mozilla firefox', 'opera', 'brave']
+    for (const suffix of suffixes) {
+      if (lower.endsWith(` - ${suffix}`) || lower.endsWith(` — ${suffix}`)) {
+        title = title.slice(0, title.length - suffix.length - 3).trim()
+        break
+      }
+    }
+  }
   let detail = ''
   if (title && !title.toLowerCase().includes(name.toLowerCase()) && title.length < 60) {
     detail = title
   }
   return { name, detail }
+}
+
+export function activityStatusMessage(name: string, detail: string): string {
+  const kind = activityKindOf(name)
+  const lower = name.toLowerCase()
+  if (kind === 'game') return `Jogando ${name}${detail ? ` — ${detail}` : ''}`
+  if (kind === 'browser') return `Navegando no ${name}${detail ? ` — ${detail}` : ''}`
+  if (lower === 'spotify' || lower === 'deezer' || lower === 'soundcloud') return `Ouvindo ${name}${detail ? ` — ${detail}` : ''}`
+  if (lower === 'netflix' || lower === 'youtube' || lower === 'vlc') return `Assistindo ${name}${detail ? ` — ${detail}` : ''}`
+  return `Usando ${name}${detail ? ` — ${detail}` : ''}`
 }
 
 let lastApp: string | null = null
@@ -123,14 +163,28 @@ async function logUsage(app: string, seconds: number) {
   } catch { }
 }
 
-export async function getTopApps(limit = 5): Promise<Array<{ app: string; seconds: number }>> {
+export async function getTopApps(limit = 5): Promise<Array<{ app: string; seconds: number; kind: ActivityKind }>> {
   try {
     const db = getDb(getActiveProfileId())
     const cutoff = dayKey(new Date(Date.now() - 7 * 86400 * 1000))
     const rows = await db.appUsage.where('day').aboveOrEqual(cutoff).toArray()
     const map = new Map<string, number>()
     for (const r of rows) map.set(r.app, (map.get(r.app) || 0) + (r.seconds || 0))
-    return [...map.entries()].map(([app, seconds]) => ({ app, seconds })).sort((a, b) => b.seconds - a.seconds).slice(0, Math.max(1, limit))
+    return [...map.entries()]
+      .map(([app, seconds]) => ({ app, seconds, kind: activityKindOf(app) }))
+      .sort((a, b) => b.seconds - a.seconds)
+      .slice(0, Math.max(1, limit))
+  } catch { return [] }
+}
+
+export async function getActivityByDay(): Promise<Array<{ day: string; seconds: number }>> {
+  try {
+    const db = getDb(getActiveProfileId())
+    const cutoff = dayKey(new Date(Date.now() - 7 * 86400 * 1000))
+    const rows = await db.appUsage.where('day').aboveOrEqual(cutoff).toArray()
+    const map = new Map<string, number>()
+    for (const row of rows) map.set(row.day, (map.get(row.day) || 0) + (row.seconds || 0))
+    return [...map.entries()].map(([day, seconds]) => ({ day, seconds })).sort((a, b) => a.day.localeCompare(b.day))
   } catch { return [] }
 }
 
@@ -171,7 +225,7 @@ async function pollOnce() {  const api = getApi()
   const key = `${name}|${detail}`
   if (key === lastApp) return true
   lastApp = key
-  const statusMessage = `Jogando ${name}${detail ? ` — ${detail}` : ''}`
+  const statusMessage = activityStatusMessage(name, detail)
   const prev = useUserStore.getState().currentUser
   if (!prev) return true
   const nextSettings = { ...(prev.settings || {}), statusMessage }
