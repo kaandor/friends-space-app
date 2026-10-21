@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Camera, Mic, MicOff, MonitorUp, Music, PhoneOff } from 'lucide-react'
-import { Fa } from '../../utils/fa'
+import { Camera, Gamepad2, Mic, MicOff, MonitorUp, Music, PhoneOff } from 'lucide-react'
 import { useCallStore, requestCallViewOpen } from '../../stores/callStore'
 import { useServerStore } from '../../stores/serverStore'
-import { WatchPartyModal } from './WatchPartyModal'
+import { ActivityModal } from './ActivityModal'
 
 const SOUNDS: Array<{ name: string; label: string }> = [
   { name: 'notification', label: 'Aviso' },
@@ -30,7 +29,7 @@ function fmtElapsed(ms: number): string {
 }
 
 // Painel de voz inspirado no Discord na sidebar: status + nome da call
-// (clicavel para voltar), camera, tela, YouTube junto, sons e sair.
+// (clicavel para voltar), camera, tela, atividades, sons e sair.
 export function VoicePanel({ onReturnToCall }: { onReturnToCall?: () => void }) {
   const activeCall = useCallStore(s => s.activeCall)
   const channelId = useCallStore(s => s.channelId)
@@ -52,7 +51,7 @@ export function VoicePanel({ onReturnToCall }: { onReturnToCall?: () => void }) 
   const [now, setNow] = useState(() => Date.now())
   const [camOpen, setCamOpen] = useState(false)
   const [soundsOpen, setSoundsOpen] = useState(false)
-  const [ytOpen, setYtOpen] = useState(false)
+  const [activitiesOpen, setActivitiesOpen] = useState(false)
 
   useEffect(() => {
     if (!activeCall) return
@@ -132,8 +131,8 @@ export function VoicePanel({ onReturnToCall }: { onReturnToCall?: () => void }) 
         </button>
       </div>
       <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-        <button className="vp-btn" onClick={() => setYtOpen(true)} title="Assistir junto (YouTube)">
-          <Fa name="play" size={12} /> YouTube
+        <button className="vp-btn" onClick={() => setActivitiesOpen(true)} title="Atividades da call">
+          <Gamepad2 size={15} /> Atividades
         </button>
         <div style={{ position: 'relative', flex: 1, display: 'flex', minWidth: 0 }}>
           <button className="vp-btn" onClick={() => setSoundsOpen(v => !v)} title="Efeitos sonoros">
@@ -160,7 +159,7 @@ export function VoicePanel({ onReturnToCall }: { onReturnToCall?: () => void }) 
           <PhoneOff size={15} />
         </button>
       </div>
-      {ytOpen && <WatchPartyModal onClose={() => setYtOpen(false)} />}
+      {activitiesOpen && <ActivityModal onClose={() => setActivitiesOpen(false)} />}
     </div>
   )
 }

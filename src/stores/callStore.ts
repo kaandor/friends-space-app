@@ -186,6 +186,14 @@ const ringStoppedSessions = new Set<string>()
 // a sessao varias vezes enquanto a midia e capturada — sem isso disparava
 // startCall duplicado.
 let autoJoiningSessionId: string | null = null
+// Anti-spam de chamadas: clique repetido em "Ligar"/"Convidar" nao pode
+// encerrar a call atual nem disparar varios rings/notificacoes para a mesma
+// pessoa. O cooldown e por alvo e cobre a janela em que a UI ainda mostra
+// "Ligando..." ou o convite acabou de ser enviado.
+const CALL_RETRY_COOLDOWN_MS = 8_000
+const lastCallAttemptAt = new Map<string, number>()
+const invitesInFlight = new Set<string>()
+let callInFlight = false
 const reconnectRetries = new Map<string, number>()
 const reconnectTimers = new Map<string, number>()
 const disconnectTimers = new Map<string, number>()
@@ -1953,6 +1961,7 @@ async function applySignal(signal: CallSignal) {
     if (calling && signal.fromUserId === calling.userId) {
       clearRingState()
       const mode = state.callMode
+      lastCallAttemptAt.delete(calling.userId)
       useCallStore.setState({ callRejectedBy: { userId: calling.userId, userName: calling.userName, userPhoto: calling.userPhoto, mode } })
       useCallStore.getState().endCall()
       return
@@ -2916,6 +2925,7 @@ async function applyCallSessions(sessions: CallSession[], _serverId?: string, us
           session.active
           && (session.invitedAt || {})[myId]
           && String((session.invitedBy || {})[myId] || '') !== myId
+          && Number((session.invitedAt || {})[myId] || 0) >= Date.now() - INVITE_WAIT_MS - 10_000
           && !declinedSessions.has(session.id)
           && (session.updatedAt || session.createdAt || 0) >= freshCutoff)
         .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0]
@@ -2978,6 +2988,10 @@ async function applyCallSessions(sessions: CallSession[], _serverId?: string, us
         && session.hostUserId !== userStore.currentUser?.id
         && !declinedSessions.has(session.id)
         && !ringStoppedSessions.has(session.id)
+        // So toca chamadas NOVAS. Sessoes DM antigas continuam "active" no
+        // backend enquanto o chamador espera; sem o corte por createdAt o poll
+        // re-disparava o mesmo toque depois de reload/troca de aba.
+        && (session.createdAt || 0) >= Date.now() - 90_000
         && (session.updatedAt || session.createdAt || 0) >= freshCutoff)
       .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0]
 
@@ -3926,12 +3940,30 @@ export const useCallStore = create<CallState>((set, get) => ({
   },
   callUser: async (userId, mode = 'audio') => {
     const current = get()
-    if (current.callingUser) return
-    if (current.activeCall) get().endCall()
+    if (!userId) return
+    if (callInFlight || current.callingUser) {
+      callToast('Já existe uma chamada em andamento. Aguarde ela conectar.')
+      return
+    }
+    if (current.activeCall) {
+      callToast('Você já está em uma call. Saia dela antes de ligar para outra pessoa.')
+      return
+    }
+    const lastAttempt = lastCallAttemptAt.get(userId) || 0
+    if (Date.now() - lastAttempt < CALL_RETRY_COOLDOWN_MS) {
+      callToast('Chamada já enviada. Aguarde alguns segundos.')
+      return
+    }
     set({ callRejectedBy: null, incomingCall: null })
     const userStore = useUserStore.getState()
     const target = userStore.users.find(user => user.id === userId)
-    if (!target) return
+      || useFriendStore.getState().friendUsers.find(user => user.id === userId)
+    if (!target) {
+      callToast('Amigo não encontrado para ligar.')
+      return
+    }
+    callInFlight = true
+    lastCallAttemptAt.set(userId, Date.now())
     try {
       set({ callingUser: { userId: target.id, userName: target.name, userPhoto: target.photoUrl } })
       const { acquireCallMedia } = await import('../services/antiloud')
@@ -3951,18 +3983,36 @@ export const useCallStore = create<CallState>((set, get) => ({
       }
     } catch {
       set({ callingUser: null })
+      callToast('Não foi possível iniciar a chamada (permissão de microfone?).')
+    } finally {
+      callInFlight = false
     }
   },
-  dismissRejectedCall: () => set({ callRejectedBy: null }),
+  dismissRejectedCall: () => {
+    const rejected = get().callRejectedBy
+    if (rejected?.userId) lastCallAttemptAt.delete(rejected.userId)
+    set({ callRejectedBy: null })
+  },
   inviteToCall: async (userId) => {
     const state = get()
     const currentUser = useUserStore.getState().currentUser
     if (!currentUser || !state.activeCall || !state.sessionId || userId === currentUser.id) return
+    if (state.participants.some(p => p.userId === userId)) {
+      callToast('Essa pessoa já está na call.')
+      return
+    }
+    if (invitesInFlight.has(userId)) return
+    const existingInvite = state.pendingInvites.find(p => p.userId === userId)
+    if (existingInvite && existingInvite.expiresAt > Date.now() && existingInvite.sessionId === state.sessionId) {
+      callToast('Convite já enviado. Aguarde a resposta.')
+      return
+    }
     // O alvo pode nao estar no diretorio local ainda; procurar tb na lista de
     // amigos. O nome e so para o toast — NUNCA bloquear o convite por isso.
     const target = useUserStore.getState().users.find(user => user.id === userId)
       || useFriendStore.getState().friendUsers.find(user => user.id === userId)
     const targetName = target?.name || 'Seu amigo'
+    invitesInFlight.add(userId)
     try {
       // Convite NAO adiciona a pessoa na call. Marca invitedAt/invitedBy na
       // sessao; o app dela toca o convite e so entra quando aceitar.
@@ -3996,6 +4046,8 @@ export const useCallStore = create<CallState>((set, get) => ({
       callToast(`Convite enviado para ${targetName}`)
     } catch {
       callToast(`Nao foi possivel convidar ${targetName}`)
+    } finally {
+      invitesInFlight.delete(userId)
     }
   },
   cancelPendingInvite: (userId) => {

@@ -142,6 +142,10 @@ export function SettingsModal() {
     useCallStore.getState().switchMicDevice(deviceId).catch(() => { })
   }
 
+  const callOverlayMode = settings.callOverlayMode === 'all' || settings.callOverlayMode === 'off'
+    ? settings.callOverlayMode
+    : 'games'
+
   const notifOn = (key: string) => {
     const v = settings[key]
     if (v === true || v === 'on') return true
@@ -356,6 +360,17 @@ export function SettingsModal() {
                 <Toggle checked={echo} onChange={v => { setEcho(v); savePref('friends-space:echo', v ? '1' : '0') }} label={t('settings.echo')} />
                 <Toggle checked={noise} onChange={v => { setNoise(v); savePref('friends-space:noise', v ? '1' : '0') }} label={t('settings.noise')} />
                 <Toggle checked={agc} onChange={v => { setAgc(v); savePref('friends-space:agc', v ? '1' : '0') }} label={t('settings.agc')} />
+              </Row>
+              <Row label="Call board (dentro do jogo)" hint="Janela flutuante com todos os membros da call, quem está falando, mutado ou ensurdecido. Funciona sobre jogos em janela/borderless; o Friends Space nunca mostra o board por cima dele. No app desktop.">
+                <select
+                  value={callOverlayMode}
+                  onChange={e => { void updateUser({ settings: { ...settings, callOverlayMode: e.target.value } }) }}
+                  style={select}
+                >
+                  <option value="games">Somente em jogos</option>
+                  <option value="all">Em todos os apps e janelas</option>
+                  <option value="off">Desativado</option>
+                </select>
               </Row>
               <Row label="Qualidade de transmissão (vídeo)" hint="De acordo com o seu plano. Qualidades acima aparecem com cadeado — assine ASTRO, ASTRO+ ou Plus para liberar as superiores. Aplicado na próxima entrada em call e trocado ao vivo durante a chamada.">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>

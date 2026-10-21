@@ -27,11 +27,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   traySetCall: (inCall) => ipcRenderer.invoke('tray-set-call', inCall),
   googleAuth: (authUrl, clientSecret, refreshToken) => ipcRenderer.invoke('google-auth', authUrl, clientSecret, refreshToken),
   getActiveApp: () => ipcRenderer.invoke('get-active-app'),
-  setOverlay: (users) => ipcRenderer.send('overlay-update', users),
+  setOverlay: (data) => ipcRenderer.send('overlay-update', data),
   onOverlayRender: (cb) => {
-    const listener = (_event, users) => cb(users)
+    const listener = (_event, data) => cb(data)
     ipcRenderer.on('overlay-render', listener)
     return () => ipcRenderer.removeListener('overlay-render', listener)
+  },
+  onOverlayRefresh: (cb) => {
+    const listener = () => cb()
+    ipcRenderer.on('overlay-refresh', listener)
+    return () => ipcRenderer.removeListener('overlay-refresh', listener)
   },
   appVersion: () => ipcRenderer.invoke('app:version'),
   loadRnnoiseAssets: () => ipcRenderer.invoke('rnnoise:load'),

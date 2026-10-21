@@ -2,85 +2,303 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data:; img-src https: data:; style-src 'unsafe-inline' https:; script-src 'self'">
-<title>Friends Space Overlay</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data:; img-src https: data:; style-src 'unsafe-inline' https:; script-src 'self' 'unsafe-inline'">
+<title>Friends Space Call Board</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
   body {
-    display: flex;
-    align-items: flex-start;
-    justify-content: flex-start;
-    padding: 10px;
     font-family: 'Segoe UI', system-ui, sans-serif;
+    padding: 8px;
+    color: #f2f3f5;
+    user-select: none;
   }
-  #list {
+  #board {
     display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-  .item {
-    display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 6px;
-    background: rgba(0, 0, 0, 0.45);
-    border-radius: 999px;
-    padding: 4px 10px 4px 5px;
-    backdrop-filter: blur(4px);
-    animation: fadeIn 0.18s ease-out;
+    padding: 10px;
+    border-radius: 13px;
+    background: rgba(18, 19, 23, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(9px);
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.16s ease, transform 0.16s ease;
   }
-  .item img {
-    width: 26px;
-    height: 26px;
+  #board.visible { opacity: 1; transform: translateY(0); }
+  .head {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 1px 2px 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-    object-fit: cover;
-    background: #333;
+    background: #23a55a;
+    box-shadow: 0 0 8px rgba(35, 165, 90, 0.75);
+    flex: 0 0 auto;
   }
-  .item .name {
-    color: rgba(255, 255, 255, 0.95);
-    font-size: 11.5px;
-    font-weight: 600;
-    max-width: 130px;
+  .head-copy { min-width: 0; flex: 1; }
+  .title {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #b9f5cd;
+    line-height: 1.2;
+  }
+  .subtitle {
+    margin-top: 2px;
+    font-size: 10.5px;
+    color: rgba(255, 255, 255, 0.55);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
+  #list { display: flex; flex-direction: column; gap: 3px; }
+  .member {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 31px;
+    padding: 3px 5px;
+    border-radius: 8px;
+    background: transparent;
+    transition: background 0.12s ease;
+  }
+  .member.speaking { background: rgba(35, 165, 90, 0.12); }
+  .member.is-self .name { color: #c8f7d7; }
+  .avatar {
+    position: relative;
+    width: 25px;
+    height: 25px;
+    flex: 0 0 25px;
+    border-radius: 50%;
+    background: #2b2d31;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: #d6d9dd;
+    overflow: visible;
+  }
+  .avatar img {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+  }
+  .avatar .fallback { display: none; }
+  .avatar img.broken { display: none; }
+  .avatar img.broken + .fallback { display: flex; }
+  .avatar .ring {
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    transition: border-color 0.08s linear, box-shadow 0.08s linear;
+  }
+  .member.speaking .avatar .ring {
+    border-color: #23a55a;
+    box-shadow: 0 0 7px rgba(35, 165, 90, 0.65);
+  }
+  .name {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.94);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .badges { display: flex; align-items: center; gap: 3px; flex: 0 0 auto; }
+  .badge {
+    display: none;
+    width: 17px;
+    height: 17px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    color: #ffb4b4;
+    background: rgba(237, 66, 69, 0.18);
+  }
+  .badge svg { width: 11px; height: 11px; display: block; fill: currentColor; }
+  .badge.on { display: flex; }
+  .join-badge {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: #23a55a;
+    color: #04120a;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    animation: joinBadge 2.6s ease forwards;
+    pointer-events: none;
+  }
+  .member.new .avatar { animation: joinPop 0.32s ease; }
+  @keyframes joinPop {
+    0% { transform: scale(0.6); opacity: 0.2; }
+    65% { transform: scale(1.08); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes joinBadge {
+    0% { opacity: 0; transform: translateY(-50%) translateX(5px); }
+    12% { opacity: 1; transform: translateY(-50%) translateX(0); }
+    78% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-50%) translateX(4px); }
   }
 </style>
 </head>
 <body>
-  <div id="list"></div>
+  <div id="board">
+    <div class="head">
+      <span class="dot"></span>
+      <div class="head-copy">
+        <div class="title" id="title">Voz conectada</div>
+        <div class="subtitle" id="subtitle"></div>
+      </div>
+    </div>
+    <div id="list"></div>
+  </div>
   <script>
+    const board = document.getElementById('board')
     const list = document.getElementById('list')
-    const electronAPI = window.electronAPI
-    if (!electronAPI || typeof electronAPI.onOverlayRender !== 'function') {
-      list.textContent = ''
-    } else {
-      electronAPI.onOverlayRender((users) => {
-        list.innerHTML = ''
-        const arr = Array.isArray(users) ? users : []
-        for (const u of arr) {
-          if (!u || !u.photoUrl) continue
-          const item = document.createElement('div')
-          item.className = 'item'
-          const img = document.createElement('img')
-          img.src = u.photoUrl
-          img.alt = ''
-          img.draggable = false
-          item.appendChild(img)
-          if (u.userName) {
-            const name = document.createElement('span')
-            name.className = 'name'
-            name.textContent = u.userName
-            item.appendChild(name)
-          }
-          list.appendChild(item)
+    const titleEl = document.getElementById('title')
+    const subtitleEl = document.getElementById('subtitle')
+    const rows = new Map()
+    const knownIds = new Set()
+    let lastSessionId = ''
+    let firstPaint = true
+
+    const MIC_OFF = '<svg viewBox="0 0 640 512" aria-hidden="true"><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L355.4 244.8 368 232.6V160 96c0-35.3-28.7-64-64-64-32.6 0-59.8 24.3-63.5 55.9L38.8 5.1zM160 96v64c0 1.4 0 2.8 0 4.2L76.4 100C74.8 118.9 80.4 138 94.1 153.3c20 22.4 48.7 35.3 79.2 35.3 6.1 0 12.1-.5 17.9-1.4L160 159.7V96zm160 288c8.8 0 16-7.2 16-16v-8.7l89.7 70.3C395.2 466.6 351.7 496 296 496c-83.9 0-152-68.1-152-152v-48c0-13.3-10.7-24-24-24s-24 10.7-24 24v48c0 107 83.4 194.3 188.9 199.5L281 568c-2.9 12.9 5.2 25.7 18.1 28.6s25.7-5.2 28.6-18.1l12.3-54.7c37.5-5.8 70.7-22.3 96.9-46.1L320 384zm160-64V208c0-13.3-10.7-24-24-24s-24 10.7-24 24v112c0 37.6-19.2 59.9-28.7 72.4l37.3 29.3C486.8 375.2 480 345.2 480 320z"/></svg>'
+    const DEAFENED = '<svg viewBox="0 0 512 512" aria-hidden="true"><path d="M256 48C141.1 48 48 141.1 48 256v40c0 13.3-10.7 24-24 24s-24-10.7-24-24v-40C0 114.6 114.6 0 256 0S512 114.6 512 256v40c0 13.3-10.7 24-24 24s-24-10.7-24-24v-40C464 141.1 370.9 48 256 48zM32.5 248.6C49.7 249.9 63.2 264.4 63.2 282v28c0 44.2 35.8 80 80 80h8c17.7 0 32 14.3 32 32v3.9c0 44.2-35.8 80-80 80H94c-13.3 0-24-10.7-24-24v-6.5C30.3 457.9 0 419.4 0 374v-92c0-19.2 14.9-35.7 32.5-33.4zM441.8 455.5v6.5c0 13.3-10.7 24-24 24h-9.2c-44.2 0-80-35.8-80-80V402c0-17.7 14.3-32 32-32h8c44.2 0 80-35.8 80-80v-28c0-17.6 13.5-32.1 30.7-33.4 17.6-1.3 33.3 12.4 33.3 30.4v92c0 45.4-30.3 83.9-70.8 96.1z"/><path d="M9.4 9.4C21.9-3.1 42.1-3.1 54.6 9.4l448 448c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0l-448-448C-3.1 42.1-3.1 21.9 9.4 9.4z"/></svg>'
+
+    function el(tag, className, text) {
+      const node = document.createElement(tag)
+      if (className) node.className = className
+      if (text !== undefined) node.textContent = text
+      return node
+    }
+
+    function buildRow(member) {
+      const row = el('div', 'member')
+      row.dataset.id = member.userId
+      const avatar = el('div', 'avatar')
+      const fallback = el('span', 'fallback', String(member.userName || '?').trim().charAt(0).toUpperCase() || '?')
+      const img = document.createElement('img')
+      img.alt = ''
+      img.draggable = false
+      img.referrerPolicy = 'no-referrer'
+      if (member.photoUrl) {
+        img.src = member.photoUrl
+        img.addEventListener('error', () => img.classList.add('broken'))
+      } else {
+        img.classList.add('broken')
+      }
+      const ring = el('span', 'ring')
+      avatar.appendChild(fallback)
+      avatar.appendChild(img)
+      avatar.appendChild(ring)
+      const name = el('div', 'name')
+      const badges = el('div', 'badges')
+      const muted = el('span', 'badge badge-muted')
+      muted.innerHTML = MIC_OFF
+      muted.title = 'Mutado'
+      const deafened = el('span', 'badge badge-deafened')
+      deafened.innerHTML = DEAFENED
+      deafened.title = 'Ensurdecido'
+      badges.appendChild(muted)
+      badges.appendChild(deafened)
+      row.appendChild(avatar)
+      row.appendChild(name)
+      row.appendChild(badges)
+      return { row, img, name, muted, deafened }
+    }
+
+    function updateRow(refs, member, isNew) {
+      const displayName = member.userName + (member.isSelf ? ' (você)' : '')
+      if (refs.name.textContent !== displayName) refs.name.textContent = displayName
+      if (member.photoUrl && refs.img.getAttribute('src') !== member.photoUrl) {
+        refs.img.classList.remove('broken')
+        refs.img.src = member.photoUrl
+      }
+      refs.row.classList.toggle('speaking', Boolean(member.speaking))
+      refs.row.classList.toggle('is-self', Boolean(member.isSelf))
+      refs.muted.classList.toggle('on', Boolean(member.muted))
+      refs.deafened.classList.toggle('on', Boolean(member.deafened))
+      if (isNew) {
+        refs.row.classList.add('new')
+        const badge = el('span', 'join-badge', 'entrou')
+        refs.row.appendChild(badge)
+        window.setTimeout(() => {
+          badge.remove()
+          refs.row.classList.remove('new')
+        }, 2700)
+      }
+    }
+
+    function render(payload) {
+      const data = payload && typeof payload === 'object' ? payload : {}
+      const sessionId = String(data.sessionId || '')
+      if (sessionId && sessionId !== lastSessionId) {
+        lastSessionId = sessionId
+        knownIds.clear()
+        rows.clear()
+        list.textContent = ''
+        firstPaint = true
+      }
+      const members = Array.isArray(data.members) ? data.members : []
+      if (!data.visible || members.length === 0) {
+        board.classList.remove('visible')
+        list.textContent = ''
+        rows.clear()
+        return
+      }
+      titleEl.textContent = data.title || 'Voz conectada'
+      subtitleEl.textContent = data.subtitle || ''
+      const visibleIds = new Set()
+      for (const member of members) {
+        if (!member || !member.userId) continue
+        const id = String(member.userId)
+        visibleIds.add(id)
+        let refs = rows.get(id)
+        const isNew = !knownIds.has(id)
+        if (!refs) {
+          refs = buildRow(member)
+          rows.set(id, refs)
+          list.appendChild(refs.row)
+          if (isNew) knownIds.add(id)
+          updateRow(refs, member, isNew && !firstPaint)
+        } else {
+          updateRow(refs, member, false)
         }
-      })
+      }
+      for (const [id, refs] of rows) {
+        if (visibleIds.has(id)) continue
+        refs.row.remove()
+        rows.delete(id)
+        knownIds.delete(id)
+      }
+      firstPaint = false
+      board.classList.add('visible')
+    }
+
+    const electronAPI = window.electronAPI
+    if (electronAPI && typeof electronAPI.onOverlayRender === 'function') {
+      electronAPI.onOverlayRender(render)
     }
   </script>
 </body>

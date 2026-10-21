@@ -42,8 +42,6 @@ let tray = null
 let cursorFeedTimer = null
 let isQuitting = false
 let overlayWindow = null
-let overlayHideTimer = null
-let overlayData = null
 let sharePickerWindow = null
 let sharePickerResolve = null
 
@@ -736,6 +734,19 @@ function createWindow() {
   })
   mainWindow.on('maximize', () => { if (mainWindow) mainWindow.webContents.send('window-state', 'maximized') })
   mainWindow.on('unmaximize', () => { if (mainWindow) mainWindow.webContents.send('window-state', 'normal') })
+  // O call board nunca aparece sobre o proprio Friends Space: ao focar a
+  // janela principal escondemos na hora; ao sair, o renderer reavalia o app
+  // em foco sem esperar o proximo poll.
+  mainWindow.on('focus', () => {
+    if (overlayWindow && !overlayWindow.isDestroyed() && overlayWindow.isVisible()) overlayWindow.hide()
+  })
+  mainWindow.on('blur', () => {
+    if (mainWindow && !mainWindow.webContents.isDestroyed()) {
+      setTimeout(() => {
+        try { if (!mainWindow.webContents.isDestroyed()) mainWindow.webContents.send('overlay-refresh') } catch { }
+      }, 120)
+    }
+  })
   mainWindow.on('close', (event) => {
     if (!isQuitting && tray) {
       event.preventDefault()
@@ -777,16 +788,17 @@ function createWindow() {
   }
 }
 
-// Overlay in-game (estilo Discord): janela transparente, sempre no topo, que
-// passa cliques direto para o jogo e mostra os avatares de quem esta falando.
-// Sobe apenas quando ha alguem falando e some ~2,5s apos o silencio.
+// Call board in-game (estilo Discord): janela transparente, sempre no topo, que
+// passa cliques direto para o jogo e mostra todos os membros da call, quem esta
+// falando, mutado, ensurdecido e quem acabou de entrar. O renderer decide quando
+// mostrar (somente jogos, todos os apps ou desativado).
 const OVERLAY_HTML = path.join(__dirname, 'overlay.html')
 
 function createOverlay() {
   if (overlayWindow && !overlayWindow.isDestroyed()) return overlayWindow
   overlayWindow = new BrowserWindow({
-    width: 360,
-    height: 96,
+    width: 300,
+    height: 180,
     frame: false,
     transparent: true,
     resizable: false,
@@ -816,22 +828,27 @@ function createOverlay() {
   return overlayWindow
 }
 
-ipcMain.on('overlay-update', (_event, users) => {
-  overlayData = Array.isArray(users) ? users : null
-  if (overlayHideTimer !== null) { clearTimeout(overlayHideTimer); overlayHideTimer = null }
+ipcMain.on('overlay-update', (_event, data) => {
+  const payload = data && typeof data === 'object' && !Array.isArray(data)
+    ? data
+    : { visible: false, members: [], title: '', subtitle: '' }
   const win = overlayWindow || createOverlay()
   if (!win || win.webContents.isDestroyed()) return
-  if (!overlayData || overlayData.length === 0) {
-    overlayHideTimer = setTimeout(() => {
-      if (overlayWindow && !overlayWindow.isDestroyed()) overlayWindow.hide()
-    }, 2500)
-    try { win.webContents.send('overlay-render', []) } catch { }
+  const members = Array.isArray(payload.members) ? payload.members.slice(0, 14) : []
+  const mainFocused = Boolean(mainWindow && !mainWindow.isDestroyed() && mainWindow.isFocused())
+  if (!payload.visible || members.length === 0 || mainFocused) {
+    try { win.webContents.send('overlay-render', { visible: false, members: [], title: '', subtitle: '' }) } catch { }
+    if (win.isVisible()) win.hide()
     return
   }
-  try {
-    win.webContents.send('overlay-render', overlayData)
-  } catch { }
-  if (!win.isVisible()) win.show()
+  const height = Math.min(76 + members.length * 36, 620)
+  try { win.setBounds({ x: 14, y: 14, width: 300, height }, false) } catch { }
+  const send = () => {
+    try { win.webContents.send('overlay-render', { ...payload, members }) } catch { }
+  }
+  if (win.webContents.isLoadingMainFrame()) win.webContents.once('did-finish-load', send)
+  else send()
+  if (!win.isVisible()) win.showInactive()
 })
 
 app.on('before-quit', () => {

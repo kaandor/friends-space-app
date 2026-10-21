@@ -20,8 +20,10 @@ const POLL_INTERVAL_MS = 15000
 const KNOWN_APPS: Record<string, string> = {
   minecraft: 'Minecraft',
   java: 'Minecraft',
+  javaw: 'Minecraft',
   'javaw.exe': 'Minecraft',
   minecraftbedrock: 'Minecraft',
+  'minecraft.windows': 'Minecraft',
   roblox: 'Roblox',
   robloxplayerbeta: 'Roblox',
   fortnite: 'Fortnite',
@@ -108,6 +110,11 @@ export function activityKindOf(appName: string): ActivityKind {
   if (BROWSER_NAMES.has(name)) return 'browser'
   if (GAME_NAMES.has(name)) return 'game'
   return 'program'
+}
+
+export function activityKindForApp(appName: string): ActivityKind {
+  const known = KNOWN_APPS[appName] || KNOWN_APPS[String(appName || '').toLowerCase()] || appName
+  return activityKindOf(known)
 }
 
 export function activityKindLabel(kind: ActivityKind): string {
