@@ -830,6 +830,24 @@
 .ape-activity-lead { margin: 6px 0 0; font-size: 12.5px; color: var(--text-muted); }
 .ape-activity-lead b { color: var(--text-secondary); }
 
+.ape-activity-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--bg-secondary);
+}
+
+.ape-activity-day { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.ape-activity-day-value { font-size: 9.5px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+.ape-activity-day-track { width: 100%; max-width: 30px; height: 88px; display: flex; align-items: flex-end; border-radius: 7px; background: var(--bg-primary); overflow: hidden; }
+.ape-activity-day-track i { display: block; width: 100%; border-radius: 7px 7px 0 0; background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 72%, #fff), var(--accent)); transition: height .2s ease; }
+.ape-activity-day-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: capitalize; }
+.ape-activity-day-label.today { color: var(--accent); }
+
 .ape-activity-row {
   display: flex;
   align-items: center;
@@ -852,6 +870,8 @@
   color: #04121d;
   background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #0b1020));
 }
+
+.ape-activity-logo { width: 24px; height: 24px; object-fit: contain; display: block; }
 
 .ape-activity-info { flex: 1; min-width: 0; }
 .ape-activity-info b { display: block; font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

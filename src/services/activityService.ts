@@ -178,14 +178,16 @@ export async function getTopApps(limit = 5): Promise<Array<{ app: string; second
 }
 
 export async function getActivityByDay(): Promise<Array<{ day: string; seconds: number }>> {
+  const days = Array.from({ length: 7 }, (_, index) => dayKey(new Date(Date.now() - (6 - index) * 86400 * 1000)))
   try {
     const db = getDb(getActiveProfileId())
-    const cutoff = dayKey(new Date(Date.now() - 7 * 86400 * 1000))
-    const rows = await db.appUsage.where('day').aboveOrEqual(cutoff).toArray()
+    const rows = await db.appUsage.where('day').aboveOrEqual(days[0]).toArray()
     const map = new Map<string, number>()
     for (const row of rows) map.set(row.day, (map.get(row.day) || 0) + (row.seconds || 0))
-    return [...map.entries()].map(([day, seconds]) => ({ day, seconds })).sort((a, b) => a.day.localeCompare(b.day))
-  } catch { return [] }
+    return days.map((day) => ({ day, seconds: map.get(day) || 0 }))
+  } catch {
+    return days.map((day) => ({ day, seconds: 0 }))
+  }
 }
 
 export function formatUsage(seconds: number): string {

@@ -653,7 +653,7 @@ export function PublicProfileModal({ plan, displayName, username, about, socialS
                   <>
                     {activity && (
                       <article className="pfm-activity-card">
-                        <span className="pfm-activity-icon">{activityKindOf(activity.name) === 'browser' ? <Globe2 size={22} /> : activityKindOf(activity.name) === 'game' ? <Gamepad2 size={22} /> : <AppWindow size={22} />}</span>
+                        <span className="pfm-activity-icon"><AppLogo name={activity.name} kind={activityKindOf(activity.name)} size={22} /></span>
                         <div className="pfm-activity-info">
                           <strong>{activity.name}</strong>
                           {activity.details && <p>{activity.details}</p>}
@@ -821,6 +821,7 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
   const [picker, setPicker] = useState<CatalogKind | "nameStyle" | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [activity, setActivity] = useState<Array<{ app: string; seconds: number; kind: 'game' | 'browser' | 'program' }> | null>(null);
+  const [activityDays, setActivityDays] = useState<Array<{ day: string; seconds: number }> | null>(null);
   const [infoBoxOpen, setInfoBoxOpen] = useState(true);
 
   const [selectedTheme, setSelectedTheme] = useState<string>(savedAppearance.theme);
@@ -861,11 +862,11 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
     let alive = true;
     void (async () => {
       try {
-        const { getTopApps } = await import("../../../services/activityService");
-        const top = await getTopApps(8);
-        if (alive) setActivity(top);
+        const { getTopApps, getActivityByDay } = await import("../../../services/activityService");
+        const [top, days] = await Promise.all([getTopApps(8), getActivityByDay()]);
+        if (alive) { setActivity(top); setActivityDays(days); }
       } catch {
-        if (alive) setActivity([]);
+        if (alive) { setActivity([]); setActivityDays([]); }
       }
     })();
     return () => { alive = false; };
@@ -1164,6 +1165,7 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
   const wishCandidates = ALL_SHOP_ITEMS.filter((item) => !wishlist.some((entry) => entry.kind === item.kind && entry.id === item.id));
   const activityMax = Math.max(...(activity || []).map((entry) => entry.seconds), 1);
   const activityTotal = (activity || []).reduce((sum, entry) => sum + entry.seconds, 0);
+  const activityWeekMax = Math.max(...(activityDays || []).map((entry) => entry.seconds), 1);
 
   return (
     <div className="fs-profile-editor">
@@ -1403,6 +1405,19 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
                 <>
                   <div className="ape-wish-head"><span className="ape-wish-count">Atividade recente · 7 dias</span><span className="ape-spacer" /><span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{activityTotal > 0 ? `${formatSeconds(activityTotal)} no total` : ""}</span></div>
                   <p className="ape-activity-lead">Jogos, navegadores e programas detectados no app desktop. <b>Saiba mais</b></p>
+                  {activityDays && activityDays.some((entry) => entry.seconds > 0) && (
+                    <div className="ape-activity-week">
+                      {activityDays.map((entry, index) => (
+                        <div className="ape-activity-day" key={entry.day}>
+                          <span className="ape-activity-day-value">{entry.seconds > 0 ? formatSeconds(entry.seconds) : "—"}</span>
+                          <div className="ape-activity-day-track">
+                            <i style={{ height: `${Math.max(entry.seconds > 0 ? 8 : 2, Math.round((entry.seconds / activityWeekMax) * 100))}%` }} title={`${formatSeconds(entry.seconds)} em ${new Date(`${entry.day}T12:00:00`).toLocaleDateString("pt-BR")}`} />
+                          </div>
+                          <span className={cn("ape-activity-day-label", index === activityDays.length - 1 && "today")}>{weekdayShort(entry.day)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {activity === null ? null : activity.length === 0 ? (
                     <p className="ape-wish-empty">Sem atividade registrada nos últimos 7 dias (só no app desktop).</p>
                   ) : (
@@ -1411,9 +1426,7 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
                         const kindLabel = entry.kind === 'game' ? 'Jogo' : entry.kind === 'browser' ? 'Navegador' : 'Programa'
                         return (
                           <div className="ape-activity-row" key={`${entry.app}-${index}`}>
-                            <span className="ape-activity-icon">
-                              {entry.kind === 'game' ? <Gamepad2 size={15} /> : entry.kind === 'browser' ? <Globe2 size={15} /> : <AppWindow size={15} />}
-                            </span>
+                            <span className="ape-activity-icon"><AppLogo name={entry.app} kind={entry.kind} size={22} /></span>
                             <div className="ape-activity-info">
                               <b>{entry.app}</b>
                               <span>{kindLabel} · {formatSeconds(entry.seconds)}</span>
@@ -1649,6 +1662,61 @@ export default function ProfileEditor({ onClose }: { onClose?: () => void }) {
       </div>
     </div>
   );
+}
+
+const APP_LOGO_SLUGS: Record<string, string> = {
+  "minecraft": "minecraft",
+  "roblox": "roblox",
+  "fortnite": "fortnite",
+  "valorant": "valorant",
+  "league of legends": "leagueoflegends",
+  "counter-strike 2": "counterstrike",
+  "dota 2": "dota2",
+  "osu!": "osu",
+  "spotify": "spotify",
+  "discord": "discord",
+  "whatsapp": "whatsapp",
+  "telegram": "telegram",
+  "chrome": "googlechrome",
+  "edge": "microsoftedge",
+  "firefox": "firefox",
+  "opera": "opera",
+  "brave": "brave",
+  "vs code": "visualstudiocode",
+  "photoshop": "adobephotoshop",
+  "premiere": "adobepremierepro",
+  "after effects": "adobeaftereffects",
+  "illustrator": "adobeillustrator",
+  "blender": "blender",
+  "unity": "unity",
+  "unreal engine": "unrealengine",
+  "godot": "godotengine",
+  "obs studio": "obsstudio",
+  "steam": "steam",
+  "epic games": "epicgames",
+  "netflix": "netflix",
+  "youtube": "youtube",
+  "figma": "figma",
+  "notion": "notion",
+  "slack": "slack",
+  "teams": "microsoftteams",
+  "gimp": "gimp",
+}
+
+function AppLogo({ name, kind, size = 20 }: { name: string; kind: "game" | "browser" | "program"; size?: number }) {
+  const [failed, setFailed] = useState(false);
+  const slug = APP_LOGO_SLUGS[name.trim().toLowerCase()];
+  if (slug && !failed) {
+    return <img className="ape-activity-logo" src={`https://cdn.simpleicons.org/${slug}/04121d`} alt="" loading="lazy" onError={() => setFailed(true)} />;
+  }
+  if (kind === "game") return <Gamepad2 size={size} />;
+  if (kind === "browser") return <Globe2 size={size} />;
+  return <AppWindow size={size} />;
+}
+
+function weekdayShort(day: string): string {
+  const label = new Date(`${day}T12:00:00`).toLocaleDateString("pt-BR", { weekday: "short" });
+  return label.replace(".", "").slice(0, 3);
 }
 
 function formatSeconds(seconds: number): string {
