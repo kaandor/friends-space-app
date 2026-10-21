@@ -5392,4 +5392,4 @@ button, input, select, textarea {
 
 /* Linha responsiva das janelas: acompanha a proporcao da tela. */
 :root { --fs-window-line: clamp(1px, 0.09vw, 2px); }
-.ape-window, .ssw-window, .csw-window, .pfm-modal, .fs-privacy-modal-window, .ucm-menu, .fs-dropdown, .fs-topbar-menu, .fs-server-dropdown, .fs-emoji-picker, .fs-dl-modal, .appearance-modal, .vc-switch-modal, .ssw-modal, .fs-admin-window { border-width: var(--fs-window-line) !important; }
+.ape-window, .ssw-window, .csw-window, .csx-window, .fs-csrv-modal, .fs-folder-modal, .pfm-modal, .fs-privacy-modal-window, .ucm-menu, .fs-dropdown, .fs-topbar-menu, .fs-server-dropdown, .fs-emoji-picker, .fs-dl-modal, .appearance-modal, .vc-switch-modal, .ssw-modal, .fs-admin-window { border-width: var(--fs-window-line) !important; }
