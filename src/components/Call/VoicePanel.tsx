@@ -3,21 +3,7 @@ import { Camera, Gamepad2, Mic, MicOff, MonitorUp, Music, PhoneOff } from 'lucid
 import { useCallStore, requestCallViewOpen } from '../../stores/callStore'
 import { useServerStore } from '../../stores/serverStore'
 import { ActivityModal } from './ActivityModal'
-
-const SOUNDS: Array<{ name: string; label: string }> = [
-  { name: 'notification', label: 'Aviso' },
-  { name: 'astro', label: 'Astro' },
-  { name: 'call-join', label: 'Entrada' },
-  { name: 'call-leave', label: 'Saída' },
-  { name: 'screen-start', label: 'Tela' },
-  { name: 'participant-add', label: 'Novo' },
-  { name: 'friend-request', label: 'Amigo' },
-  { name: 'mute', label: 'Mudo' },
-  { name: 'unmute', label: 'Voz' },
-  { name: 'dm', label: 'DM' },
-  { name: 'server', label: 'Server' },
-  { name: 'call-invite', label: 'Chamada' },
-]
+import { SoundboardModal } from './SoundboardModal'
 
 function fmtElapsed(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000))
@@ -45,7 +31,6 @@ export function VoicePanel({ onReturnToCall }: { onReturnToCall?: () => void }) 
   const cameraDevices = useCallStore(s => s.cameraDevices)
   const selectedCamera = useCallStore(s => s.selectedCamera)
   const refreshCameraDevices = useCallStore(s => s.refreshCameraDevices)
-  const playSoundboard = useCallStore(s => s.playSoundboard)
   const endCall = useCallStore(s => s.endCall)
   const servers = useServerStore(s => s.servers)
   const [now, setNow] = useState(() => Date.now())
@@ -134,32 +119,15 @@ export function VoicePanel({ onReturnToCall }: { onReturnToCall?: () => void }) 
         <button className="vp-btn" onClick={() => setActivitiesOpen(true)} title="Atividades da call">
           <Gamepad2 size={15} /> Atividades
         </button>
-        <div style={{ position: 'relative', flex: 1, display: 'flex', minWidth: 0 }}>
-          <button className="vp-btn" onClick={() => setSoundsOpen(v => !v)} title="Efeitos sonoros">
-            <Music size={15} /> Sons
-          </button>
-          {soundsOpen && (
-            <>
-              <div style={{ position: 'fixed', inset: 0, zIndex: 998 }} onClick={() => setSoundsOpen(false)} />
-              <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 999, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: 6, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, maxHeight: 220, overflowY: 'auto' }}>
-                {SOUNDS.map(snd => (
-                  <button
-                    key={snd.name}
-                    onClick={() => { try { playSoundboard(snd.name) } catch { } }}
-                    style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 6, padding: '7px 4px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
-                  >
-                    {snd.label}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+        <button className="vp-btn" onClick={() => setSoundsOpen(true)} title="Soundboard com sons do MyInstants">
+          <Music size={15} /> Sons
+        </button>
         <button className="vp-btn vp-danger" onClick={() => { try { endCall() } catch { } }} title="Sair da call">
           <PhoneOff size={15} />
         </button>
       </div>
       {activitiesOpen && <ActivityModal onClose={() => setActivitiesOpen(false)} />}
+      {soundsOpen && <SoundboardModal onClose={() => setSoundsOpen(false)} />}
     </div>
   )
 }

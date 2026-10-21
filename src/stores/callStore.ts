@@ -9,6 +9,7 @@ import { stopMediaStream, QUALITY_BITRATE_KBPS } from '../services/antiloud'
 import type { CallMode, CallQuality, CallFps } from '../services/antiloud'
 import { startCallRecording, refreshCallRecording, stopCallRecording } from '../services/callRecording'
 import { playSound } from '../services/sounds'
+import { isMyInstantsAudioUrl, playInstantAudio } from '../services/instantSounds'
 import { diag } from '../utils/diagCodes'
 
 export interface ControlSettings {
@@ -145,6 +146,7 @@ interface CallState {
   stopWatchParty: () => void
   syncWatchParty: (patch: Partial<WatchPartyState>) => void
   playSoundboard: (name: string) => void
+  playInstant: (url: string, title?: string) => Promise<boolean>
   stopControlling: () => void
   revokeControl: () => void
   setAnydeskMode: (enabled: boolean) => void
@@ -1358,12 +1360,16 @@ function handleControlMessage(peerId: string, raw: string) {
     }
     case 'soundboard': {
       try {
+        const st = useCallStore.getState()
+        if (st.deafened) break
+        const instant = message as unknown as { url?: unknown }
+        if (typeof instant.url === 'string' && isMyInstantsAudioUrl(instant.url)) {
+          void playInstantAudio(instant.url)
+          break
+        }
         const n = (message as unknown as { name?: unknown }).name
         if (typeof n === 'string' && n.length > 0 && n.length < 32) {
-          const st = useCallStore.getState()
-          if (!st.deafened) {
-            try { playSound(n as import('../services/sounds').SoundName) } catch { }
-          }
+          try { playSound(n as import('../services/sounds').SoundName) } catch { }
         }
       } catch { }
       break
@@ -4499,6 +4505,18 @@ export const useCallStore = create<CallState>((set, get) => ({
     // Toca aqui e para todos da call (estilo Discord).
     try { playSound(name as import('../services/sounds').SoundName) } catch { }
     try { broadcastCallData({ t: 'soundboard', name }) } catch { }
+  },
+  playInstant: async (url, title) => {
+    if (!isMyInstantsAudioUrl(url)) return false
+    const payload = { t: 'soundboard', url, title: String(title || '').slice(0, 90) }
+    try { broadcastCallData(payload) } catch { }
+    if (dataChannels.size === 0 && get().livekitActive) {
+      try {
+        const lk = await import('../services/livekitCall')
+        void lk.sendLivekitData(payload).catch(() => { })
+      } catch { }
+    }
+    return playInstantAudio(url)
   },
   stopControlling: () => {
     const wasControlling = get().controlling

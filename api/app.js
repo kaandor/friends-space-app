@@ -1843,7 +1843,91 @@ const savePostEverywhere = (store, data, post) => {
   }
 }
 
+const MYINSTANTS_CACHE = new Map()
+const MYINSTANTS_TTL = 10 * 60 * 1000
+function myInstantsText(value) {
+  return String(value || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, num) => String.fromCodePoint(Number(num)))
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+function parseMyInstants(html) {
+  const sounds = []
+  const seen = new Set()
+  const parts = String(html || '').split('<div class="instant">').slice(1)
+  for (const part of parts) {
+    if (sounds.length >= 24) break
+    const play = part.match(/onclick="play\('([^']+?\.mp3)'\s*,\s*'[^']*'\s*,\s*'([^']*)'\)"/i)
+    if (!play) continue
+    const audioPath = play[1].replace(/\\\//g, '/')
+    if (!/^\/media\/sounds\/[^"'<>\\]+\.mp3$/i.test(audioPath)) continue
+    const link = part.match(/<a[^>]+href="([^"]*\/instant\/[^"]+)"[^>]*class="instant-link[^"]*"[^>]*>([\s\S]*?)<\/a>/i)
+      || part.match(/<a[^>]+class="instant-link[^"]*"[^>]+href="([^"]*\/instant\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/i)
+    if (!link) continue
+    const name = myInstantsText(link[2]).slice(0, 90)
+    if (!name) continue
+    const audioUrl = new URL(audioPath, 'https://www.myinstants.com').href
+    if (seen.has(audioUrl)) continue
+    seen.add(audioUrl)
+    let pageUrl = ''
+    try { pageUrl = new URL(link[1], 'https://www.myinstants.com').href } catch { }
+    sounds.push({
+      id: play[2] || audioUrl.split('/').pop().replace(/\.mp3$/i, ''),
+      name,
+      audioUrl,
+      pageUrl,
+    })
+  }
+  return sounds
+}
 const actions = {
+  searchMyInstants: async (store, data, body) => {
+    void store
+    void data
+    const rateKey = body.__actor ? 'myinstants:u:' + String(body.__actor) : 'myinstants:ip:' + String(body.__ip || 'x')
+    if (!(await rateCheck(rateKey, 40, 60000))) throw rateLimitError()
+    const query = String(body.query || '').replace(/\s+/g, ' ').trim().slice(0, 64)
+    const cacheKey = query.toLowerCase()
+    const cached = MYINSTANTS_CACHE.get(cacheKey)
+    if (cached && Date.now() - cached.at < MYINSTANTS_TTL) {
+      return { ok: true, sounds: cached.sounds, cached: true }
+    }
+    const url = query
+      ? `https://www.myinstants.com/pt/search/?name=${encodeURIComponent(query)}`
+      : 'https://www.myinstants.com/pt/index/br/'
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131 Safari/537.36',
+          accept: 'text/html,application/xhtml+xml',
+          'accept-language': 'pt-BR,pt;q=0.9,en;q=0.8',
+        },
+        redirect: 'follow',
+        signal: AbortSignal.timeout(7000),
+      })
+      if (!response.ok) throw new Error('MyInstants indisponivel')
+      const html = (await response.text()).slice(0, 900000)
+      const sounds = parseMyInstants(html)
+      if (sounds.length) {
+        if (MYINSTANTS_CACHE.size >= 120) {
+          const oldestKey = MYINSTANTS_CACHE.keys().next().value
+          if (oldestKey !== undefined) MYINSTANTS_CACHE.delete(oldestKey)
+        }
+        MYINSTANTS_CACHE.set(cacheKey, { at: Date.now(), sounds })
+      }
+      return { ok: true, sounds, cached: false }
+    } catch (error) {
+      if (cached) return { ok: true, sounds: cached.sounds, cached: true, stale: true }
+      throw error instanceof Error ? error : new Error('Nao foi possivel buscar os sons')
+    }
+  },
   state: async (store, data, body) => {
     const actor = actorOf(store, body)
     const ids = (data.users || []).map((u) => u && u.id)
@@ -5641,6 +5725,7 @@ export default async function handler(req, res) {
       'getUser',
       'findUserByFriendCode',
       'searchDirectory',
+      'searchMyInstants',
       'canJoinCall',
       'loadCallSignals',
       'loadFriends',
@@ -5690,7 +5775,7 @@ export default async function handler(req, res) {
       const day = String(body.cv).slice(0, 10)
       if (day < '2026-09-08') { json(res, 403, { ok: false, error: 'Atualize o app (Ctrl+F5). Versão antiga.' }); return }
     }
-    const PUBLIC_ACTIONS = new Set(['ping', 'checkUpdate', 'signInWithName', 'signInWithGoogle', 'dbInfo'])
+    const PUBLIC_ACTIONS = new Set(['ping', 'checkUpdate', 'signInWithName', 'signInWithGoogle', 'dbInfo', 'searchMyInstants'])
     let __actor = null
     if (!PUBLIC_ACTIONS.has(body.action)) {
       __actor = await verifySession(body.sessionToken)
