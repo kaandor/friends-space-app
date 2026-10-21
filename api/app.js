@@ -5760,7 +5760,17 @@ export default async function handler(req, res) {
       if (body.__actor) {
         const gateUser = getAllUsers(store).find((x) => x && x.id === body.__actor)
         if (!gateUser || gateUser.authProvider === 'guest') { json(res, 403, { ok: false, error: 'EXPULSO: conta inválida.' }); return }
-      
+        const gateFlags = userFlags(gateUser)
+        if (!gateFlags.dev && !gateFlags.support) {
+          if (gateUser.flags?.banned === true) {
+            json(res, 403, { ok: false, error: `Conta banida: ${gateUser.banReason || 'violação das regras'}` }); return
+          }
+          const globalUntil = Number(gateUser.moderation?.globalUntil || 0)
+          if (globalUntil > Date.now()) {
+            const untilLabel = new Date(globalUntil).toLocaleString('pt-BR')
+            json(res, 403, { ok: false, error: `Conta suspensa até ${untilLabel}.` }); return
+          }
+        }
       }
       // Manutencao automatica (a cada ~6h): contas inativas, servidores sem
       // dono e calls vazias — roda em qualquer POST, silenciosamente.

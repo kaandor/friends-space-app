@@ -127,8 +127,8 @@ export function ReportModal({ open, type, target, serverId, onClose }: ReportMod
         questionnaire: picked,
         description: description.trim(),
         proofUrl,
-        scope: serverId ? 'server' : 'global',
-        serverId: serverId || '',
+        scope: serverId && type !== 'server' ? 'server' : 'global',
+        serverId: serverId && type !== 'server' ? serverId : '',
       })
       if (result.error || !result.report) {
         setError(result.error || 'Erro ao enviar denuncia')
