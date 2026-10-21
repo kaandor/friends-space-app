@@ -92,7 +92,7 @@ function ReportCard({ report, onRespond, onBan, onChanged }: {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 10.5, fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: 'var(--bg-secondary)', color: 'var(--text-primary)', textTransform: 'uppercase' }}>{TYPE_LABEL[report.type] || report.type}</span>
         <span style={{ fontSize: 11, color: report.status === 'pending' ? AMBER : report.status === 'resolved' ? GREEN : '#60a5fa', fontWeight: 700 }}>
-          {report.status === 'pending' ? 'Pendente' : report.status === 'resolved' ? 'Resolvido' : report.status === 'defense' ? 'Em defesa' : report.status === 'awaiting_user' ? 'Aguardando usuário' : 'Em atendimento'}
+          {report.status === 'pending' ? 'Pendente' : report.status === 'resolved' ? 'Resolvido' : report.status === 'defense' ? 'Em defesa' : report.status === 'council' ? 'No conselho' : report.status === 'awaiting_user' ? 'Aguardando usuário' : 'Em atendimento'}
         </span>
         {report.complained && <span style={{ fontSize: 11, color: RED, fontWeight: 700 }}>Reclamou</span>}
         <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>{fmtDate(report.createdAt)}</span>

@@ -1,6 +1,8 @@
 import { Fa } from '../../utils/fa'
 import { useState, useMemo, useEffect, useRef } from 'react'
-import type { Server, Role } from '../../types'
+import type { Report, Server, Role } from '../../types'
+import { TicketChat } from '../Support/TicketChat'
+import { escalateReport, listServerReports } from '../../services/serverReports'
 
 /* ══ PARTE 2 (UI): helpers defensivos p/ contrato Server.settings/auditLog ══ */
 export function localDefaultSettings() {
@@ -320,6 +322,8 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
   const [frequency, setFrequency] = useState(initialSettings.frequency)
   const [minAge, setMinAge] = useState(initialSettings.minAge)
   const [moderation, setModeration] = useState(initialSettings.moderation)
+  const [serverReports, setServerReports] = useState<Report[]>([])
+  const [openServerReport, setOpenServerReport] = useState<Report | null>(null)
   const [toggles, setToggles] = useState(initialSettings.toggles)
 
   /* Políticas (regras) editáveis — vivem na descrição (editDesc + onSave) */
@@ -400,6 +404,11 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
     setIntegrations(s.integrations); setCommunityValues(s.community)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [server?.id])
+
+  useEffect(() => {
+    if (effectiveActive !== 'moderacao' || !server) return
+    void listServerReports(server.id).then(setServerReports)
+  }, [effectiveActive, server])
 
   /* Hidrata uma vez quando os dados reais chegam (prop vazia + store carrega depois) */
   const hydratedRef = useRef('')
@@ -1389,6 +1398,43 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
       }
       return (
         <div className="ssw-stack">
+          <section className="ssw-card">
+            <SectionTitle eyebrow="DENÚNCIAS DO SERVIDOR" title="Casos da comunidade" desc="Resolva aqui conforme as regras do servidor. Casos graves podem ser escalados ao Friends Space." action={<button className="ssw-mini-action" onClick={() => void listServerReports(server.id).then(setServerReports)}><Fa name="rotate" size={13} /> Atualizar</button>} />
+            {serverReports.length === 0 ? (
+              <p className="ssw-empty" style={{ fontSize: 12.5 }}>Nenhuma denúncia interna pendente.</p>
+            ) : (
+              <div className="ssw-list">
+                {serverReports.map(report => (
+                  <button key={report.id} className="ssw-list-row" style={{ textAlign: 'left', cursor: 'pointer' }} onClick={() => setOpenServerReport(report)}>
+                    <Fa name="flag" size={14} />
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <strong style={{ display: 'block', fontSize: 12.5 }}>{report.subject || report.target?.name || 'Denúncia'}</strong>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{report.reporterName || 'Membro'} · {report.messages?.length || 0} mensagem(ns)</span>
+                    </span>
+                    <span style={{ fontSize: 10.5, fontWeight: 800, color: report.status === 'resolved' ? '#4ade80' : '#f0b232' }}>{report.status === 'resolved' ? 'Resolvido' : 'Aberto'}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+          {openServerReport && (
+            <TicketChat
+              report={openServerReport}
+              mode="support"
+              onClose={() => { setOpenServerReport(null); void listServerReports(server.id).then(setServerReports) }}
+              onUpdated={updated => setOpenServerReport(updated)}
+              onEscalate={() => {
+                void (async () => {
+                  const result = await escalateReport(openServerReport.id)
+                  if (result.report) {
+                    setOpenServerReport(result.report)
+                    notify('Denúncia escalada ao Friends Space')
+                    setServerReports(await listServerReports(server.id))
+                  } else notify(result.error || 'Erro ao escalar')
+                })()
+              }}
+            />
+          )}
           <section className="ssw-card">
             <SectionTitle eyebrow="PROTEÇÃO" title="Nível de moderação" desc="Defina a intensidade dos filtros automáticos." />
             <div className="ssw-moderation-select" style={{ maxWidth: 220 }}>

@@ -52,6 +52,25 @@ function isSupport(user) {
   return isDev(user) || Boolean(user && user.flags && user.flags.support === true)
 }
 
+// Punições por escopo: -1 = permanente, timestamp = até quando, 0/ausente = livre.
+function punishmentUntil(user, scope) {
+  const moderation = user && typeof user.moderation === 'object' ? user.moderation : null
+  const value = moderation ? Number(moderation[scope] || 0) : 0
+  return Number.isFinite(value) ? value : 0
+}
+
+function isPunished(user, scope) {
+  const until = punishmentUntil(user, scope)
+  return until === -1 || until > Date.now()
+}
+
+function punishmentActiveLabel(user, scope) {
+  const until = punishmentUntil(user, scope)
+  if (until === -1) return 'permanente'
+  if (until > Date.now()) return new Date(until).toLocaleString('pt-BR')
+  return ''
+}
+
 // Encontra um usuario no diretorio global pelo id.
 function findGlobalUser(store, userId) {
   return getAllUsers(store).find((u) => u.id === userId) || null
@@ -2515,6 +2534,10 @@ const actions = {
     if (!server) return { success: false, error: byId ? 'Servidor privado: peça o código de convite' : 'Servidor nao encontrado com este codigo' }
     const joinerId = String(body.__actor || body.userId || '')
     if (!joinerId) return { success: false, error: 'Sessão inválida' }
+    const joiner = findGlobalUser(store, joinerId)
+    if (isPunished(joiner, 'servers')) {
+      return { success: false, error: 'Você está suspenso de entrar em servidores até ' + punishmentActiveLabel(joiner, 'servers') }
+    }
     if (!Array.isArray(server.members)) server.members = []
     const banned = server.settings && Array.isArray(server.settings.banned) ? server.settings.banned : []
     if (banned.includes(joinerId)) return { success: false, error: 'Você foi banido deste servidor' }
@@ -2630,6 +2653,10 @@ const actions = {
     const server = getAllServers(store).find((item) => item.id === body.serverId)
     if (!server) return { allowed: false, reason: 'Servidor nao encontrado' }
     const userId = String(body.userId || '')
+    const callUser = findGlobalUser(store, userId)
+    if (isPunished(callUser, 'calls')) {
+      return { allowed: false, reason: 'Você está suspenso de calls até ' + punishmentActiveLabel(callUser, 'calls') }
+    }
     if (!server.members?.includes(userId)) return { allowed: false, reason: 'Apenas membros do servidor podem entrar' }
     const staff = userId === server.ownerId || server.staffMemberIds?.includes(userId)
     if (server.callAccess === 'staff' && !staff) return { allowed: false, reason: 'Esta call e exclusiva para a staff' }
@@ -2641,6 +2668,12 @@ const actions = {
   sendCallSignal: async (store, data, body) => {
     const signal = body.signal || {}
     if (String(signal.fromUserId || '') !== String(body.__actor || '')) deny('Operação negada (403)')
+    {
+      const signalUser = findGlobalUser(store, body.__actor)
+      if (isPunished(signalUser, 'calls') || isPunished(signalUser, 'dmCalls')) {
+        deny('Você está suspenso de calls. Fale com o suporte.')
+      }
+    }
     {
       const sigFrom = String(signal.fromUserId)
       const sigTo = String(signal.toUserId)
@@ -2855,6 +2888,8 @@ const actions = {
   sendMessage: async (store, data, body) => {
     const message = { id: id(), createdAt: now(), type: 'text', ...body.message }
     if (String(message.userId || '') !== String(body.__actor || '') || (message.fromId && String(message.fromId) !== String(body.__actor || ''))) deny('Operação negada (403)')
+    const sender = findGlobalUser(store, body.__actor)
+    if (isPunished(sender, 'chats')) throw new Error('Você está suspenso dos chats até ' + punishmentActiveLabel(sender, 'chats'))
     {
       const srvMsg = serverOfChannel(store, message.channelId)
       if (!srvMsg || (srvMsg.ownerId !== body.__actor && !(srvMsg.members || []).includes(body.__actor))) deny('Apenas membros (403)')
@@ -3024,6 +3059,13 @@ const actions = {
       throw new Error('Denuncia invalida')
     }
     const questionnaire = Array.isArray(body.questionnaire) ? body.questionnaire.map((item) => String(item)) : []
+    const reportScope = body.scope === 'server' ? 'server' : 'global'
+    const reportServerId = String(body.serverId || target.serverId || '')
+    if (reportScope === 'server') {
+      const server = getAllServers(store).find((item) => item && item.id === reportServerId)
+      if (!server) throw new Error('Servidor invalido')
+      if (server.ownerId !== reporterId && !(server.members || []).includes(reporterId)) deny('Apenas membros do servidor (403)')
+    }
     const evidence = Array.isArray(body.evidence) ? body.evidence.slice(0, 8).map((item) => ({
       url: String(item?.url || '').slice(0, 2000),
       name: String(item?.name || 'Prova').slice(0, 180),
@@ -3034,6 +3076,9 @@ const actions = {
       reporterId,
       type,
       subject: String(body.subject || '').slice(0, 160),
+      scope: reportScope,
+      serverId: reportScope === 'server' ? reportServerId : '',
+      escalated: false,
       target: {
         id: String(target.id),
         name: target.name == null ? '' : String(target.name),
@@ -3077,7 +3122,7 @@ const actions = {
     if (!isSupport(admin)) throw new Error('Sem permissao de suporte')
     const onlyPending = body.onlyPending === true
     const reports = getAllReports(store)
-      .filter((r) => !onlyPending || r.status === 'pending')
+      .filter((r) => (r.scope !== 'server' || r.escalated === true) && (!onlyPending || r.status === 'pending'))
       .sort((a, b) => b.createdAt - a.createdAt)
       .map((r) => {
         const reporter = findGlobalUser(store, r.reporterId)
@@ -3087,6 +3132,41 @@ const actions = {
         }
       })
     return { reports }
+  },
+
+  listServerReports: async (store, data, body) => {
+    const actor = actorOf(store, body)
+    const server = getAllServers(store).find((item) => item && item.id === String(body.serverId || ''))
+    if (!server) throw new Error('Servidor nao encontrado')
+    if (!actorIsStaffOf(store, actor, server)) deny('Apenas staff do servidor (403)')
+    const reports = getAllReports(store)
+      .filter((r) => r && r.scope === 'server' && r.serverId === server.id && r.escalated !== true)
+      .sort((a, b) => b.createdAt - a.createdAt)
+    return { reports }
+  },
+
+  escalateReport: async (store, data, body) => {
+    const actor = actorOf(store, body)
+    const report = getAllReports(store).find((r) => r.id === String(body.reportId || ''))
+    if (!report) throw new Error('Ticket nao encontrado')
+    if (report.scope !== 'server') throw new Error('Este ticket ja e do Friends Space')
+    const server = getAllServers(store).find((item) => item && item.id === report.serverId)
+    if (!server || !actorIsStaffOf(store, actor, server)) deny('Apenas staff do servidor (403)')
+    if (!Array.isArray(report.messages)) report.messages = []
+    report.escalated = true
+    report.scope = 'global'
+    report.status = 'open'
+    report.messages.push({
+      id: id(),
+      authorId: actor,
+      authorName: findGlobalUser(store, actor)?.name || 'Staff do servidor',
+      authorRole: 'system',
+      content: 'Denúncia encaminhada ao Friends Space para análise do conselho.',
+      attachments: [],
+      createdAt: now(),
+    })
+    upsertGlobalItem(store, 'reports', report)
+    return { report }
   },
 
   respondReport: async (store, data, body) => {
@@ -3132,7 +3212,11 @@ const actions = {
     if (!actorUser) deny('Usuario nao encontrado')
     const report = getAllReports(store).find((r) => r.id === String(body.reportId || ''))
     if (!report) throw new Error('Ticket nao encontrado')
-    const staff = isSupport(actorUser)
+    const reportServer = report.scope === 'server'
+      ? getAllServers(store).find((item) => item && item.id === report.serverId)
+      : null
+    const serverStaff = Boolean(reportServer && actorIsStaffOf(store, actor, reportServer))
+    const staff = isSupport(actorUser) || serverStaff
     const reporter = report.reporterId === actor
     const target = report.target && report.target.id === actor && report.defenseOpen === true
     if (!staff && !reporter && !target) deny('Sem acesso a este ticket (403)')
@@ -3188,14 +3272,26 @@ const actions = {
   },
 
   setReportStatus: async (store, data, body) => {
-    const admin = requireFlags(store, body, 'support')
-    if (!isSupport(admin)) throw new Error('Sem permissao de suporte')
+    const actor = actorOf(store, body)
+    const actorUser = findGlobalUser(store, actor)
+    if (!actorUser) deny('Usuario nao encontrado')
     const report = getAllReports(store).find((r) => r.id === String(body.reportId || ''))
     if (!report) throw new Error('Ticket nao encontrado')
-    const allowed = ['pending', 'open', 'awaiting_user', 'awaiting_support', 'defense', 'resolved']
+    const reportServer = report.scope === 'server'
+      ? getAllServers(store).find((item) => item && item.id === report.serverId)
+      : null
+    const serverStaff = Boolean(reportServer && actorIsStaffOf(store, actor, reportServer))
+    const globalStaff = isSupport(actorUser)
+    if (!globalStaff && !serverStaff) throw new Error('Sem permissao para este ticket')
+    if (!globalStaff && report.scope === 'server' && (String(body.status || '') === 'council' || body.punishmentScope)) {
+      throw new Error('Use "Escalar ao Friends Space" para casos graves')
+    }
+    const admin = actorUser
+    const allowed = ['pending', 'open', 'awaiting_user', 'awaiting_support', 'defense', 'council', 'resolved']
     const status = String(body.status || '')
     if (status && !allowed.includes(status)) throw new Error('Status invalido')
     if (!Array.isArray(report.messages)) report.messages = []
+    if (!Array.isArray(report.councilVotes)) report.councilVotes = []
     if (body.defenseOpen === true && report.defenseOpen !== true) {
       report.defenseOpen = true
       report.status = 'defense'
@@ -3224,6 +3320,34 @@ const actions = {
       report.resolvedBy = admin.name || 'Suporte'
       report.verdict = String(body.verdict || report.verdict || '').slice(0, 2000)
       report.punishment = String(body.punishment || report.punishment || '').slice(0, 300)
+      const punishScope = String(body.punishmentScope || '')
+      const punishMinutes = Math.max(0, Number(body.punishmentMinutes || 0))
+      const targetUser = report.target && report.target.id ? findGlobalUser(store, report.target.id) : null
+      if (targetUser && ['global', 'chats', 'calls', 'cam', 'servers', 'dmCalls'].includes(punishScope)) {
+        if (!targetUser.moderation || typeof targetUser.moderation !== 'object') targetUser.moderation = {}
+        const until = punishMinutes > 0 ? Date.now() + punishMinutes * 60000 : -1
+        if (punishScope === 'global' && until !== -1) {
+          targetUser.moderation.globalUntil = until
+        } else if (punishScope === 'global') {
+          targetUser.flags = { ...(targetUser.flags || {}), banned: true }
+          targetUser.banReason = report.verdict || 'Decisao do conselho'
+          targetUser.bannedAt = now()
+          targetUser.bannedBy = admin.name || 'Conselho'
+        } else {
+          targetUser.moderation[punishScope] = until
+        }
+        if (!Array.isArray(targetUser.moderationHistory)) targetUser.moderationHistory = []
+        targetUser.moderationHistory.push({
+          scope: punishScope,
+          until,
+          reason: report.verdict || '',
+          reportId: report.id,
+          by: admin.name || 'Conselho',
+          createdAt: now(),
+        })
+        targetUser.moderationHistory = targetUser.moderationHistory.slice(-50)
+        upsertGlobalItem(store, 'users', targetUser)
+      }
       report.messages.push({
         id: id(),
         authorId: admin.id,
@@ -3259,6 +3383,70 @@ const actions = {
     if (body.assign === true) {
       report.assignedTo = admin.id
       report.assignedToName = admin.name || 'Suporte'
+    }
+    upsertGlobalItem(store, 'reports', report)
+    return { report }
+  },
+
+  voteReport: async (store, data, body) => {
+    const admin = requireFlags(store, body, 'dev')
+    if (!isDev(admin)) throw new Error('Apenas o conselho/devs podem votar')
+    const report = getAllReports(store).find((r) => r.id === String(body.reportId || ''))
+    if (!report) throw new Error('Ticket nao encontrado')
+    if (report.status === 'resolved') throw new Error('Ticket ja encerrado')
+    const vote = String(body.vote || '')
+    if (!['guilty', 'innocent'].includes(vote)) throw new Error('Voto invalido')
+    if (!Array.isArray(report.councilVotes)) report.councilVotes = []
+    const existing = report.councilVotes.find((item) => item.userId === admin.id)
+    const entry = {
+      userId: admin.id,
+      userName: admin.name || 'Conselho',
+      vote,
+      note: String(body.note || '').slice(0, 1000),
+      createdAt: now(),
+    }
+    if (existing) Object.assign(existing, entry)
+    else report.councilVotes.push(entry)
+    report.status = 'council'
+    const guilty = report.councilVotes.filter((item) => item.vote === 'guilty').length
+    const innocent = report.councilVotes.filter((item) => item.vote === 'innocent').length
+    report.councilDecision = { guilty, innocent, total: report.councilVotes.length }
+    if (report.councilVotes.length >= 3 && guilty !== innocent) {
+      report.status = 'resolved'
+      report.resolvedAt = now()
+      report.resolvedBy = 'Conselho'
+      report.verdict = guilty > innocent
+        ? `Conselho decidiu pela punição (${guilty} x ${innocent}).`
+        : `Conselho decidiu pela absolvição (${innocent} x ${guilty}).`
+      report.messages.push({
+        id: id(),
+        authorId: admin.id,
+        authorName: 'Conselho',
+        authorRole: 'system',
+        content: report.verdict,
+        attachments: [],
+        createdAt: now(),
+      })
+      addNotification(store, {
+        toUserId: report.reporterId,
+        fromUserId: 'system',
+        fromName: 'Friends Space',
+        type: 'ticket',
+        title: 'Resultado do conselho',
+        body: report.verdict,
+        data: { reportId: report.id },
+      })
+      if (report.target && report.target.id) {
+        addNotification(store, {
+          toUserId: report.target.id,
+          fromUserId: 'system',
+          fromName: 'Friends Space',
+          type: 'ticket',
+          title: 'Resultado do conselho',
+          body: report.verdict,
+          data: { reportId: report.id, defense: true },
+        })
+      }
     }
     upsertGlobalItem(store, 'reports', report)
     return { report }
@@ -3588,6 +3776,8 @@ const actions = {
   sendDirectMessage: async (store, data, body) => {
     const message = { id: id(), createdAt: now(), type: 'text', ...body.message }
     if (String(message.fromId || '') !== String(body.__actor || '')) deny('Operação negada (403)')
+    const dmSenderCheck = findGlobalUser(store, body.__actor)
+    if (isPunished(dmSenderCheck, 'chats')) throw new Error('Você está suspenso dos chats até ' + punishmentActiveLabel(dmSenderCheck, 'chats'))
     data.directMessages.push(message)
     upsertGlobalItem(store, 'directMessages', message)
     const sender = getAllUsers(store).find((u) => u && u.id === message.fromId)
@@ -5006,6 +5196,16 @@ const actions = {
     const existing = getAllCallSessions(store).find((item) => item.id === canonicalId)
     const participantIds = Array.isArray(incoming.participantIds) ? incoming.participantIds : []
     const selfId = String(body.userId || '')
+    {
+      const callUser = findGlobalUser(store, selfId)
+      const callScope = serverId === 'dm' ? 'dmCalls' : 'calls'
+      if (isPunished(callUser, callScope)) {
+        deny('Você está suspenso de calls até ' + punishmentActiveLabel(callUser, callScope))
+      }
+      if ((incoming.callMode === 'video' || incoming.cameraOn === true) && isPunished(callUser, 'cam')) {
+        deny('Você está suspenso de call com câmera até ' + punishmentActiveLabel(callUser, 'cam'))
+      }
+    }
     const prevIds = existing ? [...(existing.participantIds || [])] : []
     const prevScreenSharer = String(existing?.screenSharingUserId || '')
     const stamps = { ...(existing?.participantLastSync || {}) }
@@ -5450,6 +5650,7 @@ export default async function handler(req, res) {
       'getLinkPreview',
       'loadMyFolders',
       'listAllReports',
+      'listServerReports',
       'findUserById',
       'listCallSessionsAdmin',
       'checkUpdate',

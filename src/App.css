@@ -5389,3 +5389,7 @@ button, input, select, textarea {
 .ssw-ann-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 .ssw-ann-grid input, .ssw-ann-grid textarea, .ssw-ann-grid select { padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px; outline: none; font-family: inherit; }
 .ssw-ann-body { resize: vertical; min-height: 70px; }
+
+/* Linha responsiva das janelas: acompanha a proporcao da tela. */
+:root { --fs-window-line: clamp(1px, 0.09vw, 2px); }
+.ape-window, .ssw-window, .csw-window, .pfm-modal, .fs-privacy-modal-window, .ucm-menu, .fs-dropdown, .fs-topbar-menu, .fs-server-dropdown, .fs-emoji-picker, .fs-dl-modal, .appearance-modal, .vc-switch-modal, .ssw-modal, .fs-admin-window { border-width: var(--fs-window-line) !important; }

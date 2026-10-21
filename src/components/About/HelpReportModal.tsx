@@ -30,7 +30,7 @@ const CATEGORY_LABEL: Record<string, string> = {
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Aguardando suporte', responded: 'Respondido', open: 'Em atendimento',
   awaiting_user: 'Aguardando você', awaiting_support: 'Aguardando suporte',
-  defense: 'Em defesa', resolved: 'Resolvido',
+  defense: 'Em defesa', council: 'No conselho', resolved: 'Resolvido',
 }
 
 function fmt(ts: number) {

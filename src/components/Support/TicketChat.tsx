@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { AlertTriangle, CheckCircle2, Gavel, Link2, Loader2, MessageSquare, Paperclip, RefreshCw, Send, Shield, X } from 'lucide-react'
 import type { Report, ReportAttachment } from '../../types'
 import { uploadToDrive, isDriveConnected } from '../../services/driveService'
-import { sendReportMessage, setReportStatus, type TicketStatus } from '../../services/tickets'
+import { sendReportMessage, setReportStatus, voteReport, type TicketStatus } from '../../services/tickets'
+import { userIsDev } from '../../services/admin'
 import { useUserStore } from '../../stores/userStore'
 
 type ChatMode = 'user' | 'support' | 'defense'
@@ -14,6 +15,7 @@ const STATUS_LABEL: Record<string, string> = {
   awaiting_user: 'Aguardando você',
   awaiting_support: 'Aguardando suporte',
   defense: 'Em defesa',
+  council: 'No conselho',
   resolved: 'Resolvido',
 }
 
@@ -24,7 +26,18 @@ const STATUS_COLOR: Record<string, string> = {
   awaiting_user: '#f0b232',
   awaiting_support: '#60a5fa',
   defense: '#c084fc',
+  council: '#f59e0b',
   resolved: '#4ade80',
+}
+
+const PUNISHMENT_SCOPE: Record<string, 'global' | 'chats' | 'calls' | 'cam' | 'servers' | 'dmCalls'> = {
+  'Banimento geral': 'global',
+  'Banimento de chats': 'chats',
+  'Banimento de calls': 'calls',
+  'Banimento de call com câmera': 'cam',
+  'Banimento de servidores': 'servers',
+  'Banimento de calls em DM': 'dmCalls',
+  'Suspensão (global)': 'global',
 }
 
 const CANNED_MESSAGES = [
@@ -72,9 +85,10 @@ interface TicketChatProps {
   onUpdated?: (report: Report) => void
   onRefresh?: () => void
   onBan?: (targetId: string) => void
+  onEscalate?: () => void
 }
 
-export function TicketChat({ report, mode, onClose, onUpdated, onRefresh, onBan }: TicketChatProps) {
+export function TicketChat({ report, mode, onClose, onUpdated, onRefresh, onBan, onEscalate }: TicketChatProps) {
   const me = useUserStore(s => s.currentUser)
   const [ticket, setTicket] = useState(report)
   const [text, setText] = useState('')
@@ -83,6 +97,7 @@ export function TicketChat({ report, mode, onClose, onUpdated, onRefresh, onBan 
   const [error, setError] = useState('')
   const [verdict, setVerdict] = useState(report.verdict || '')
   const [punishment, setPunishment] = useState(report.punishment || '')
+  const [punishMinutes, setPunishMinutes] = useState('0')
   const fileRef = useRef<HTMLInputElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
@@ -134,7 +149,7 @@ export function TicketChat({ report, mode, onClose, onUpdated, onRefresh, onBan 
     }
   }
 
-  const updateStatus = async (next: TicketStatus, options?: { defenseOpen?: boolean; verdict?: string; punishment?: string; assign?: boolean }) => {
+  const updateStatus = async (next: TicketStatus, options?: { defenseOpen?: boolean; verdict?: string; punishment?: string; punishmentScope?: 'global' | 'chats' | 'calls' | 'cam' | 'servers' | 'dmCalls' | ''; punishmentMinutes?: number; assign?: boolean }) => {
     setBusy(true)
     setError('')
     const result = await setReportStatus(ticket.id, next, options)
@@ -147,8 +162,20 @@ export function TicketChat({ report, mode, onClose, onUpdated, onRefresh, onBan 
 
   const resolve = async () => {
     if (!verdict.trim()) { setError('Escreva o veredito antes de encerrar.'); return }
-    if (punishment === 'Banimento geral' && ticket.target?.id && onBan) onBan(ticket.target.id)
-    await updateStatus('resolved', { verdict: verdict.trim(), punishment })
+    const scope = PUNISHMENT_SCOPE[punishment]
+    const minutes = Math.max(0, Number(punishMinutes) || 0)
+    if (punishment && !scope) { setError('Escolha uma consequência válida.'); return }
+    await updateStatus('resolved', { verdict: verdict.trim(), punishment, punishmentScope: scope, punishmentMinutes: minutes })
+  }
+
+  const vote = async (value: 'guilty' | 'innocent') => {
+    setBusy(true)
+    setError('')
+    const result = await voteReport(ticket.id, value)
+    setBusy(false)
+    if (!result.report) { setError(result.error || 'Erro ao votar'); return }
+    setTicket(result.report)
+    onUpdated?.(result.report)
   }
 
   return (
@@ -276,8 +303,28 @@ export function TicketChat({ report, mode, onClose, onUpdated, onRefresh, onBan 
             </div>
             {staff && (
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 9, alignItems: 'center' }}>
+                {ticket.status === 'council' && (
+                  <div style={{ width: '100%', padding: '8px 10px', borderRadius: 8, background: 'color-mix(in srgb, #f59e0b 8%, transparent)', border: '1px solid #f59e0b44', marginBottom: 4 }}>
+                    <div style={{ fontSize: 11.5, fontWeight: 800, color: '#f59e0b' }}>
+                      Conselho: {(ticket.councilVotes || []).filter(v => v.vote === 'guilty').length} culpa · {(ticket.councilVotes || []).filter(v => v.vote === 'innocent').length} inocente (mín. 3 votos)
+                    </div>
+                    {(ticket.councilVotes || []).map(v => (
+                      <div key={v.userId} style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>{v.userName}: {v.vote === 'guilty' ? 'culpado' : 'inocente'}{v.note ? ` — ${v.note}` : ''}</div>
+                    ))}
+                    {userIsDev(me) && (
+                      <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                        <button onClick={() => void vote('guilty')} style={{ padding: '5px 9px', borderRadius: 6, background: '#f23f43', border: 'none', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Votar culpado</button>
+                        <button onClick={() => void vote('innocent')} style={{ padding: '5px 9px', borderRadius: 6, background: '#4ade80', border: 'none', color: '#04120a', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Votar inocente</button>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <button onClick={() => void updateStatus('open', { assign: true })} style={{ padding: '6px 9px', borderRadius: 7, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 11.5, cursor: 'pointer' }}>Assumir atendimento</button>
                 <button onClick={() => void updateStatus('defense', { defenseOpen: true })} style={{ padding: '6px 9px', borderRadius: 7, background: 'color-mix(in srgb, #c084fc 12%, transparent)', border: '1px solid #c084fc55', color: '#c084fc', fontSize: 11.5, cursor: 'pointer' }}>Chamar defesa do denunciado</button>
+                <button onClick={() => void updateStatus('council')} style={{ padding: '6px 9px', borderRadius: 7, background: 'color-mix(in srgb, #f59e0b 12%, transparent)', border: '1px solid #f59e0b55', color: '#f59e0b', fontSize: 11.5, cursor: 'pointer' }}>Enviar ao conselho</button>
+                {onEscalate && (
+                  <button onClick={onEscalate} style={{ padding: '6px 9px', borderRadius: 7, background: 'color-mix(in srgb, #f23f43 12%, transparent)', border: '1px solid #f23f4355', color: '#f23f43', fontSize: 11.5, cursor: 'pointer' }}>Escalar ao Friends Space</button>
+                )}
                 <button onClick={() => onRefresh?.()} title="Atualizar" style={{ padding: '6px 8px', borderRadius: 7, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex' }}><RefreshCw size={12} /></button>
                 <div style={{ flex: 1 }} />
                 <input value={verdict} onChange={e => setVerdict(e.target.value)} placeholder="Veredito / decisão do conselho" style={{ flex: 1, minWidth: 180, padding: '6px 9px', borderRadius: 7, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 11.5, outline: 'none' }} />
@@ -289,10 +336,9 @@ export function TicketChat({ report, mode, onClose, onUpdated, onRefresh, onBan 
                   <option>Banimento de call com câmera</option>
                   <option>Banimento de servidores</option>
                   <option>Banimento de calls em DM</option>
-                  <option>Suspensão em dias</option>
-                  <option>Suspensão em horas</option>
-                  <option>Suspensão em minutos</option>
+                  <option>Suspensão (global)</option>
                 </select>
+                <input value={punishMinutes} onChange={e => setPunishMinutes(e.target.value)} type="number" min={0} title="Duração em minutos (0 = permanente)" placeholder="min" style={{ width: 64, padding: '6px 7px', borderRadius: 7, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 11.5 }} />
                 <button onClick={() => void resolve()} disabled={busy} style={{ padding: '6px 10px', borderRadius: 7, background: '#4ade80', border: 'none', color: '#04120a', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><Gavel size={12} /> Encerrar</button>
                 {ticket.type === 'user' && ticket.target?.id && onBan && (
                   <button onClick={() => onBan(ticket.target.id)} style={{ padding: '6px 10px', borderRadius: 7, background: 'transparent', border: '1px solid #f23f4366', color: '#f23f43', fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}>Banir</button>

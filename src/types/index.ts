@@ -345,7 +345,9 @@ export interface Report {
   proofUrl?: string
   evidence?: ReportAttachment[]
   messages?: ReportMessage[]
-  status: 'pending' | 'responded' | 'open' | 'awaiting_user' | 'awaiting_support' | 'defense' | 'resolved'
+  status: 'pending' | 'responded' | 'open' | 'awaiting_user' | 'awaiting_support' | 'defense' | 'council' | 'resolved'
+  councilVotes?: { userId: string; userName: string; vote: 'guilty' | 'innocent'; note?: string; createdAt: number }[]
+  councilDecision?: { guilty: number; innocent: number; total: number }
   response?: string
   verdict?: string
   punishment?: string

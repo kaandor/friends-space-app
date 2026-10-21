@@ -745,6 +745,7 @@ export function ChatView({ channel }: ChatViewProps) {
         open={reportTarget !== null}
         type={reportTarget?.type || null}
         target={reportTarget?.target || null}
+        serverId={currentServer?.id || null}
         onClose={() => setReportTarget(null)}
       />
 

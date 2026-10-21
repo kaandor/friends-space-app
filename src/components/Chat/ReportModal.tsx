@@ -52,10 +52,11 @@ interface ReportModalProps {
   open: boolean
   type: 'media' | 'message' | 'user' | 'server' | null
   target: { id: string; name?: string; channelId?: string; serverId?: string; preview?: string } | null
+  serverId?: string | null
   onClose: () => void
 }
 
-export function ReportModal({ open, type, target, onClose }: ReportModalProps) {
+export function ReportModal({ open, type, target, serverId, onClose }: ReportModalProps) {
   const { createReport, getMyReports, reportUnanswered } = useServerStore()
   const { currentUser } = useUserStore()
   const [step, setStep] = useState<'form' | 'done' | 'myreports'>('form')
@@ -126,6 +127,8 @@ export function ReportModal({ open, type, target, onClose }: ReportModalProps) {
         questionnaire: picked,
         description: description.trim(),
         proofUrl,
+        scope: serverId ? 'server' : 'global',
+        serverId: serverId || '',
       })
       if (result.error || !result.report) {
         setError(result.error || 'Erro ao enviar denuncia')

@@ -116,7 +116,7 @@ interface ServerState {
   addReaction: (messageId: string, emoji: string) => Promise<void>
   removeReaction: (messageId: string, emoji: string) => Promise<void>
   forwardMessage: (message: Message, targetChannelId: string) => Promise<void>
-  createReport: (input: { reporterId: string; type: 'media' | 'message' | 'user' | 'server' | 'help'; subject?: string; target: { id: string; name?: string; channelId?: string; serverId?: string; messageId?: string; preview?: string }; questionnaire: string[]; description: string; proofUrl?: string; evidence?: ReportAttachment[] }) => Promise<{ report?: Report; error?: string }>
+  createReport: (input: { reporterId: string; type: 'media' | 'message' | 'user' | 'server' | 'help'; subject?: string; scope?: 'server' | 'global'; serverId?: string; target: { id: string; name?: string; channelId?: string; serverId?: string; messageId?: string; preview?: string }; questionnaire: string[]; description: string; proofUrl?: string; evidence?: ReportAttachment[] }) => Promise<{ report?: Report; error?: string }>
   getMyReports: () => Promise<Report[]>
   reportUnanswered: (reportId: string, message: string) => Promise<{ report?: Report; error?: string }>
   getServerByInvite: (inviteCode: string) => Promise<Server | undefined>

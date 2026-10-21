@@ -10,9 +10,9 @@ export async function sendReportMessage(reportId: string, content: string, attac
   }
 }
 
-export type TicketStatus = 'open' | 'awaiting_user' | 'awaiting_support' | 'defense' | 'resolved'
+export type TicketStatus = 'open' | 'awaiting_user' | 'awaiting_support' | 'defense' | 'council' | 'resolved'
 
-export async function setReportStatus(reportId: string, status: TicketStatus, options?: { defenseOpen?: boolean; verdict?: string; punishment?: string; assign?: boolean }) {
+export async function setReportStatus(reportId: string, status: TicketStatus, options?: { defenseOpen?: boolean; verdict?: string; punishment?: string; punishmentScope?: 'global' | 'chats' | 'calls' | 'cam' | 'servers' | 'dmCalls' | ''; punishmentMinutes?: number; assign?: boolean }) {
   try {
     const result = await requestBackend<{ report: Report }>('setReportStatus', {
       reportId,
@@ -22,6 +22,15 @@ export async function setReportStatus(reportId: string, status: TicketStatus, op
     return { report: result?.report, error: undefined as string | undefined }
   } catch (error) {
     return { report: undefined, error: error instanceof Error ? error.message : 'Erro ao atualizar ticket' }
+  }
+}
+
+export async function voteReport(reportId: string, vote: 'guilty' | 'innocent', note = '') {
+  try {
+    const result = await requestBackend<{ report: Report }>('voteReport', { reportId, vote, note })
+    return { report: result?.report, error: undefined as string | undefined }
+  } catch (error) {
+    return { report: undefined, error: error instanceof Error ? error.message : 'Erro ao votar' }
   }
 }
 
