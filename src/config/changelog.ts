@@ -9,6 +9,24 @@ export interface ChangelogEntry {
 // a primeira entrada. App = Electron; Site = web.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.2.8',
+    date: '2026-10-21',
+    app: [
+      'Novo logo, ícones e banners do instalador',
+      'Soundboard para de tocar quando o autor sai da call (DM e servidores)',
+      'Volume dos efeitos sonoros ajustǭvel no app',
+      'Fóruns, retrospectiva, conquistas e busca global no app desktop',
+    ],
+    site: [
+      'Volume do soundboard ajustǭvel durante a call',
+      'Sons de quem sai da call sǜo interrompidos para todos',
+      'Busca global com Ctrl+K para servidores, canais, amigos e comandos',
+      'Fóruns por servidor, retrospectiva semanal, conquistas e aniversários',
+      'Modo foco, PWA instalável e central de transparência',
+      'Checklist e análise de atividade no painel do servidor',
+    ],
+  },
+  {
     version: '1.2.7',
     date: '2026-10-15',
     app: [

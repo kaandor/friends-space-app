@@ -164,6 +164,9 @@ export function TopBar({ activeUser, onShowPrivacy, onShowEditProfile, onShowAst
       </div>
 
       <div className="fs-topbar-right">
+        <button className="fs-icon-btn" title={t('toast.searchTitle')} onClick={() => { try { window.dispatchEvent(new Event('friends-space:open-palette')) } catch { } }}>
+          <IconSearch width={16} height={16} />
+        </button>
         <div style={{ position: 'relative' }}>
           <button
             className="fs-icon-btn"

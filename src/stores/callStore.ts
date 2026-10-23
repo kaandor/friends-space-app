@@ -8,8 +8,8 @@ import { clampStreamQuality, clampStreamFps, getMaxBitrateKbps, getMaxStreamFps,
 import { stopMediaStream, QUALITY_BITRATE_KBPS } from '../services/antiloud'
 import type { CallMode, CallQuality, CallFps } from '../services/antiloud'
 import { startCallRecording, refreshCallRecording, stopCallRecording } from '../services/callRecording'
-import { playSound } from '../services/sounds'
-import { isMyInstantsAudioUrl, playInstantAudio } from '../services/instantSounds'
+import { playSound, playSoundboardEffect } from '../services/sounds'
+import { isMyInstantsAudioUrl, playInstantAudio, stopInstantAudios } from '../services/instantSounds'
 import { diag } from '../utils/diagCodes'
 
 export interface ControlSettings {
@@ -22,10 +22,47 @@ export interface ControlSettings {
 }
 export interface ControlGrant { mouse: boolean; keyboard: boolean }
 export interface ControlSelftest { at: number; peer: string; dc: string; ping: string; inject: string }
-export interface WatchPartyState { videoId: string; title: string; byUserId: string; byName: string; playing: boolean; position: number; updatedAt: number }
-export interface WatchPartyState { videoId: string; title: string; byUserId: string; byName: string; playing: boolean; position: number; updatedAt: number }
-export interface WatchPartyState { videoId: string; title: string; byUserId: string; byName: string; playing: boolean; position: number; updatedAt: number }
-export interface WatchPartyState { videoId: string; title: string; byUserId: string; byName: string; playing: boolean; position: number; updatedAt: number }
+export type MediaPartyMode = 'watch' | 'cinema' | 'music'
+export type MediaPartyProvider = 'youtube' | 'video' | 'audio' | 'spotify' | 'deezer' | 'iframe'
+export interface WatchPartyState {
+  videoId: string
+  title: string
+  byUserId: string
+  byName: string
+  playing: boolean
+  position: number
+  updatedAt: number
+  mode?: MediaPartyMode
+  provider?: MediaPartyProvider
+  url?: string
+  startAt?: number
+}
+export interface ChessState {
+  fen: string
+  byUserId: string
+  byName: string
+  whiteId: string
+  whiteName: string
+  blackId: string
+  blackName: string
+  lastMove?: { from: string; to: string } | null
+  updatedAt: number
+}
+export type MeetingStage = 'screen' | 'camera' | 'whiteboard' | 'document' | 'video'
+export interface WhiteboardStroke { color: string; size: number; points: Array<{ x: number; y: number }> }
+export interface MeetingState {
+  active: boolean
+  topic: string
+  presenterId: string
+  presenterName: string
+  stage: MeetingStage
+  documentUrl?: string
+  documentName?: string
+  videoUrl?: string
+  startedBy: string
+  startedAt: number
+  updatedAt: number
+}
 export interface PendingInvite {
   userId: string
   userName: string
@@ -143,8 +180,26 @@ interface CallState {
   refreshCameraDevices: () => Promise<void>
   watchParty: WatchPartyState | null
   startWatchParty: (videoId: string, title?: string) => void
+  startMediaParty: (input: { mode: MediaPartyMode; provider: MediaPartyProvider; url: string; title?: string; videoId?: string; byName?: string }) => void
   stopWatchParty: () => void
   syncWatchParty: (patch: Partial<WatchPartyState>) => void
+  chess: ChessState | null
+  startChess: () => void
+  joinChess: (color: 'white' | 'black') => void
+  syncChess: (fen: string, lastMove?: { from: string; to: string } | null) => void
+  stopChess: () => void
+  meeting: MeetingState | null
+  meetingWhiteboard: WhiteboardStroke[]
+  startMeeting: (topic?: string) => void
+  stopMeeting: () => void
+  setMeetingPresenter: (userId: string, userName: string) => void
+  setMeetingStage: (stage: MeetingStage) => void
+  setMeetingDocument: (url: string, name: string) => void
+  setMeetingVideo: (url: string) => void
+  addMeetingStroke: (stroke: WhiteboardStroke) => void
+  clearMeetingWhiteboard: () => void
+  syncMeetingWhiteboard: () => void
+  requestMeetingWhiteboard: () => void
   playSoundboard: (name: string) => void
   playInstant: (url: string, title?: string) => Promise<boolean>
   stopControlling: () => void
@@ -1038,6 +1093,38 @@ function broadcastCallData(obj: unknown) {
     }
   } catch { }
 }
+// Ao abrir o canal com um peer novo, so a fonte autoritativa envia o estado
+// atual (dono da midia, criador do xadrez, apresentador da reuniao). Isso
+// permite entrar na call no meio do filme/jogo/reuniao sem reiniciar nada.
+function announceCallState(peerId: string) {
+  try {
+    const st = useCallStore.getState()
+    const me = useUserStore.getState().currentUser
+    if (!me) return
+    const w = st.watchParty
+    if (w && w.byUserId === me.id) {
+      const elapsed = w.playing ? Math.max(0, (Date.now() - w.updatedAt) / 1000) : 0
+      sendControlMessage(peerId, {
+        t: 'watch-party', action: 'state', videoId: w.videoId, title: w.title,
+        byUserId: w.byUserId, byName: w.byName, playing: w.playing,
+        position: w.position + elapsed, mode: w.mode, provider: w.provider,
+        url: w.url, startAt: w.startAt,
+      })
+    }
+    const c = st.chess
+    if (c && c.byUserId === me.id) {
+      sendControlMessage(peerId, {
+        t: 'chess', action: 'state', fen: c.fen, byUserId: c.byUserId,
+        whiteId: c.whiteId, whiteName: c.whiteName, blackId: c.blackId,
+        blackName: c.blackName, lastMove: c.lastMove,
+      })
+    }
+    const m = st.meeting
+    if (m && m.active && m.presenterId === me.id) {
+      sendControlMessage(peerId, { t: 'meeting', action: 'state', ...m })
+    }
+  } catch { }
+}
 // (Unificado: sem cauda LiveKit — entrega duplicada gerava toast duplo.)
 const screenRetryTimers = new Map<string, number>()
 // Turbo de tela: até este instante o poll HTTP não desacelera (mín 1s mesmo
@@ -1336,24 +1423,180 @@ function handleControlMessage(peerId: string, raw: string) {
       break
     case 'watch-party': {
       try {
-        const w = message as unknown as { action?: string; videoId?: string; title?: string; byName?: string; playing?: boolean; position?: number }
+        const w = message as unknown as { action?: string; videoId?: string; title?: string; byUserId?: string; byName?: string; playing?: boolean; position?: number; mode?: MediaPartyMode; provider?: MediaPartyProvider; url?: string; startAt?: number }
         if (w.action === 'stop') {
           useCallStore.setState({ watchParty: null })
-        } else if (w.action === 'start' && typeof w.videoId === 'string' && w.videoId) {
+        } else if (w.action === 'state' && (typeof w.videoId === 'string' || typeof w.url === 'string')) {
+          const mode: MediaPartyMode = w.mode === 'cinema' || w.mode === 'music' ? w.mode : 'watch'
+          useCallStore.setState({
+            watchParty: {
+              videoId: typeof w.videoId === 'string' ? w.videoId : '',
+              title: typeof w.title === 'string' ? w.title : (mode === 'cinema' ? 'Cinema dos pinguins' : (mode === 'music' ? 'Friends Music' : 'YouTube')),
+              byUserId: typeof w.byUserId === 'string' ? w.byUserId : peerId,
+              byName: typeof w.byName === 'string' ? w.byName : '',
+              playing: w.playing !== false,
+              position: typeof w.position === 'number' ? w.position : 0,
+              updatedAt: Date.now(),
+              mode,
+              provider: w.provider || 'youtube',
+              url: typeof w.url === 'string' ? w.url : '',
+              startAt: typeof w.startAt === 'number' ? w.startAt : Date.now(),
+            },
+          })
+        } else if (w.action === 'start' && (typeof w.videoId === 'string' || typeof w.url === 'string')) {
           const me = useCallStore.getState()
-          if (!me.watchParty || me.watchParty.videoId !== w.videoId) {
-            try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: `${w.byName || 'Alguém'} iniciou Assistir junto (YouTube)` })) } catch { }
+          const mode: MediaPartyMode = w.mode === 'cinema' || w.mode === 'music' ? w.mode : 'watch'
+          const provider: MediaPartyProvider = w.provider || 'youtube'
+          if (!me.watchParty || String(me.watchParty.url || me.watchParty.videoId) !== String(w.url || w.videoId || '')) {
+            try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: `${w.byName || 'Alguém'} abriu ${mode === 'cinema' ? 'o Cinema dos pinguins' : mode === 'music' ? 'o Friends Music' : 'Assistir junto'}` })) } catch { }
           }
           useCallStore.setState({
-            watchParty: { videoId: w.videoId, title: typeof w.title === 'string' ? w.title : 'YouTube', byUserId: peerId, byName: typeof w.byName === 'string' ? w.byName : '', playing: true, position: 0, updatedAt: Date.now() },
+            watchParty: {
+              videoId: typeof w.videoId === 'string' ? w.videoId : '',
+              title: typeof w.title === 'string' ? w.title : (mode === 'cinema' ? 'Cinema dos pinguins' : (mode === 'music' ? 'Friends Music' : 'YouTube')),
+              byUserId: peerId,
+              byName: typeof w.byName === 'string' ? w.byName : '',
+              playing: true,
+              position: 0,
+              updatedAt: Date.now(),
+              mode,
+              provider,
+              url: typeof w.url === 'string' ? w.url : '',
+              startAt: Date.now(),
+            },
           })
         } else if (w.action === 'sync') {
           const cur = useCallStore.getState().watchParty
-          if (cur && typeof w.videoId === 'string' && cur.videoId === w.videoId) {
+          if (cur && (w.videoId === '' || w.videoId === undefined || cur.videoId === w.videoId)) {
             useCallStore.setState({
               watchParty: { ...cur, playing: w.playing !== false, position: typeof w.position === 'number' ? w.position : cur.position, updatedAt: Date.now() },
             })
           }
+        }
+      } catch { }
+      break
+    }
+    case 'chess': {
+      try {
+        const c = message as unknown as { action?: string; fen?: string; byUserId?: string; whiteId?: string; whiteName?: string; blackId?: string; blackName?: string; color?: 'white' | 'black'; lastMove?: { from: string; to: string } | null }
+        if (c.action === 'stop') {
+          useCallStore.setState({ chess: null })
+        } else if (c.action === 'state' && typeof c.fen === 'string') {
+          useCallStore.setState({
+            chess: {
+              fen: c.fen,
+              byUserId: typeof c.byUserId === 'string' ? c.byUserId : peerId,
+              byName: typeof c.whiteName === 'string' ? c.whiteName : '',
+              whiteId: typeof c.whiteId === 'string' ? c.whiteId : '',
+              whiteName: typeof c.whiteName === 'string' ? c.whiteName : '',
+              blackId: typeof c.blackId === 'string' ? c.blackId : '',
+              blackName: typeof c.blackName === 'string' ? c.blackName : '',
+              lastMove: c.lastMove || null,
+              updatedAt: Date.now(),
+            },
+          })
+        } else if (c.action === 'start' && typeof c.fen === 'string') {
+          useCallStore.setState({
+            chess: {
+              fen: c.fen,
+              byUserId: peerId,
+              byName: typeof c.whiteName === 'string' ? c.whiteName : '',
+              whiteId: typeof c.whiteId === 'string' ? c.whiteId : peerId,
+              whiteName: typeof c.whiteName === 'string' ? c.whiteName : '',
+              blackId: typeof c.blackId === 'string' ? c.blackId : '',
+              blackName: typeof c.blackName === 'string' ? c.blackName : '',
+              lastMove: c.lastMove || null,
+              updatedAt: Date.now(),
+            },
+          })
+          try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: `${c.whiteName || 'Alguem'} abriu uma partida de xadrez` })) } catch { }
+        } else if (c.action === 'seat') {
+          const cur = useCallStore.getState().chess
+          if (!cur) break
+          const isWhite = c.color === 'white'
+          if (isWhite && cur.whiteId) break
+          if (!isWhite && cur.blackId) break
+          useCallStore.setState({
+            chess: {
+              ...cur,
+              whiteId: isWhite ? peerId : cur.whiteId,
+              whiteName: isWhite ? (c.whiteName || '') : cur.whiteName,
+              blackId: !isWhite ? peerId : cur.blackId,
+              blackName: !isWhite ? (c.blackName || '') : cur.blackName,
+              updatedAt: Date.now(),
+            },
+          })
+        } else if (c.action === 'sync' && typeof c.fen === 'string') {
+          const cur = useCallStore.getState().chess
+          if (!cur) break
+          useCallStore.setState({ chess: { ...cur, fen: c.fen, lastMove: c.lastMove || null, updatedAt: Date.now() } })
+        }
+      } catch { }
+      break
+    }
+    case 'meeting': {
+      try {
+        const m = message as unknown as { action?: string; topic?: string; presenterId?: string; presenterName?: string; stage?: MeetingStage; documentUrl?: string; documentName?: string; videoUrl?: string; startedBy?: string; startedAt?: number }
+        const cur = useCallStore.getState().meeting
+        if (m.action === 'stop') {
+          useCallStore.setState({ meeting: null, meetingWhiteboard: [] })
+        } else if (m.action === 'state') {
+          const presenterId = typeof m.presenterId === 'string' ? m.presenterId : peerId
+          useCallStore.setState({
+            meeting: {
+              active: true,
+              topic: typeof m.topic === 'string' ? m.topic : 'Reunião',
+              presenterId,
+              presenterName: typeof m.presenterName === 'string' ? m.presenterName : '',
+              stage: m.stage || 'screen',
+              documentUrl: typeof m.documentUrl === 'string' ? m.documentUrl : undefined,
+              documentName: typeof m.documentName === 'string' ? m.documentName : undefined,
+              videoUrl: typeof m.videoUrl === 'string' ? m.videoUrl : undefined,
+              startedBy: typeof m.startedBy === 'string' ? m.startedBy : presenterId,
+              startedAt: typeof m.startedAt === 'number' ? m.startedAt : Date.now(),
+              updatedAt: Date.now(),
+            },
+          })
+        } else if (m.action === 'start') {
+          const presenterId = typeof m.presenterId === 'string' ? m.presenterId : peerId
+          useCallStore.setState({
+            meeting: {
+              active: true,
+              topic: typeof m.topic === 'string' ? m.topic : 'Reunião',
+              presenterId,
+              presenterName: typeof m.presenterName === 'string' ? m.presenterName : '',
+              stage: m.stage || 'screen',
+              startedBy: peerId,
+              startedAt: typeof m.startedAt === 'number' ? m.startedAt : Date.now(),
+              updatedAt: Date.now(),
+            },
+          })
+          try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: `${m.presenterName || 'Alguem'} abriu a reuniao` })) } catch { }
+        } else if (cur && m.action === 'presenter' && typeof m.presenterId === 'string') {
+          useCallStore.setState({ meeting: { ...cur, presenterId: m.presenterId, presenterName: typeof m.presenterName === 'string' ? m.presenterName : cur.presenterName, updatedAt: Date.now() } })
+        } else if (cur && m.action === 'stage' && m.stage) {
+          useCallStore.setState({ meeting: { ...cur, stage: m.stage, updatedAt: Date.now() } })
+        } else if (cur && m.action === 'document') {
+          useCallStore.setState({ meeting: { ...cur, stage: 'document', documentUrl: typeof m.documentUrl === 'string' ? m.documentUrl : '', documentName: typeof m.documentName === 'string' ? m.documentName : 'Documento', updatedAt: Date.now() } })
+        } else if (cur && m.action === 'video') {
+          useCallStore.setState({ meeting: { ...cur, stage: 'video', videoUrl: typeof m.videoUrl === 'string' ? m.videoUrl : '', updatedAt: Date.now() } })
+        }
+      } catch { }
+      break
+    }
+    case 'whiteboard': {
+      try {
+        const w = message as unknown as { action?: string; stroke?: WhiteboardStroke; strokes?: WhiteboardStroke[] }
+        if (w.action === 'clear') {
+          useCallStore.setState({ meetingWhiteboard: [] })
+        } else if (w.action === 'request') {
+          const meeting = useCallStore.getState().meeting
+          const me = useUserStore.getState().currentUser
+          if (meeting && me && meeting.presenterId === me.id) useCallStore.getState().syncMeetingWhiteboard()
+        } else if (w.action === 'sync' && Array.isArray(w.strokes)) {
+          useCallStore.setState({ meetingWhiteboard: w.strokes.slice(-500) })
+        } else if (w.stroke && Array.isArray(w.stroke.points)) {
+          useCallStore.setState(state => ({ meetingWhiteboard: [...state.meetingWhiteboard, w.stroke as WhiteboardStroke].slice(-500) }))
         }
       } catch { }
       break
@@ -1364,12 +1607,12 @@ function handleControlMessage(peerId: string, raw: string) {
         if (st.deafened) break
         const instant = message as unknown as { url?: unknown }
         if (typeof instant.url === 'string' && isMyInstantsAudioUrl(instant.url)) {
-          void playInstantAudio(instant.url)
+          void playInstantAudio(instant.url, peerId)
           break
         }
         const n = (message as unknown as { name?: unknown }).name
         if (typeof n === 'string' && n.length > 0 && n.length < 32) {
-          try { playSound(n as import('../services/sounds').SoundName) } catch { }
+          try { playSoundboardEffect(n as import('../services/sounds').SoundName) } catch { }
         }
       } catch { }
       break
@@ -1697,6 +1940,7 @@ async function createPeerConnection(peerId: string, initiator: boolean) {
     const dc = pc.createDataChannel('friends-space-control', { negotiated: true, id: 0, ordered: true })
     dataChannels.set(peerId, dc)
     dc.onmessage = event => handleControlMessage(peerId, String(event.data))
+    dc.onopen = () => { try { window.setTimeout(() => announceCallState(peerId), 600) } catch { } }
     dc.onclose = () => { if (dataChannels.get(peerId) === dc) dataChannels.delete(peerId) }
   } catch { }
   pc.ondatachannel = event => {
@@ -1705,6 +1949,7 @@ async function createPeerConnection(peerId: string, initiator: boolean) {
     try { if (dc.label === 'friends-space-control' && dataChannels.get(peerId)) { try { dc.close() } catch { } return } } catch { }
     dataChannels.set(peerId, dc)
     dc.onmessage = messageEvent => handleControlMessage(peerId, String(messageEvent.data))
+    dc.onopen = () => { try { window.setTimeout(() => announceCallState(peerId), 600) } catch { } }
     dc.onclose = () => { if (dataChannels.get(peerId) === dc) dataChannels.delete(peerId) }
   }
   const timer = disconnectTimers.get(peerId)
@@ -3065,6 +3310,9 @@ export const useCallStore = create<CallState>((set, get) => ({
   cameraDevices: [],
   selectedCamera: '',
   watchParty: null,
+  chess: null,
+  meeting: null,
+  meetingWhiteboard: [],
   speakingUsers: {},
   screenMuted: false,
   volumes: {},
@@ -3128,6 +3376,10 @@ export const useCallStore = create<CallState>((set, get) => ({
       recordingActive: false,
       recordingBy: null,
       callRejectedBy: null,
+      watchParty: null,
+      chess: null,
+      meeting: null,
+      meetingWhiteboard: [],
     })
     stopIncomingCallPoll()
     warmIceServers()
@@ -3279,6 +3531,7 @@ export const useCallStore = create<CallState>((set, get) => ({
     void syncSession({ ...state, channelId, serverId })
   },
   endCall: () => {
+    stopInstantAudios()
     screenTransceivers.clear()
     controlBoosted.clear()
     peerClient.clear()
@@ -3415,6 +3668,9 @@ export const useCallStore = create<CallState>((set, get) => ({
       selftestResult: null,
       cameraOn: false,
       watchParty: null,
+      chess: null,
+      meeting: null,
+      meetingWhiteboard: [],
       speakingUsers: {},
       screenMuted: false,
       volumes: {},
@@ -3476,6 +3732,7 @@ export const useCallStore = create<CallState>((set, get) => ({
     window.setTimeout(() => { void syncSession(get()) }, 0)
   },
   removeParticipant: (userId) => {
+    stopInstantAudios(userId)
     set({ participants: get().participants.filter(p => p.userId !== userId) })
     // Purga total do peer (anti-fantasma): falante, controle e cursor nao
     // podem sobreviver a quem saiu.
@@ -3538,6 +3795,7 @@ export const useCallStore = create<CallState>((set, get) => ({
       localStream.getAudioTracks().forEach(t => { t.enabled = !newDeafened })
     }
     set({ deafened: newDeafened, muted: newDeafened })
+    if (newDeafened) stopInstantAudios()
     try { playSound(newDeafened ? 'mute' : 'unmute') } catch { }
     const currentUser = useUserStore.getState().currentUser
     if (currentUser) {
@@ -4481,9 +4739,27 @@ export const useCallStore = create<CallState>((set, get) => ({
   startWatchParty: (videoId, title) => {
     try {
       const me = useUserStore.getState().currentUser
-      const wp = { videoId, title: title || 'YouTube', byUserId: me?.id || '', byName: me?.name || '', playing: true, position: 0, updatedAt: Date.now() }
+      get().startMediaParty({ mode: 'watch', provider: 'youtube', videoId, url: `https://www.youtube.com/watch?v=${videoId}`, title: title || 'YouTube', byName: me?.name || '' })
+    } catch { }
+  },
+  startMediaParty: (input) => {
+    try {
+      const me = useUserStore.getState().currentUser
+      const wp: WatchPartyState = {
+        videoId: input.videoId || '',
+        title: input.title || (input.mode === 'cinema' ? 'Cinema dos pinguins' : input.mode === 'music' ? 'Friends Music' : 'YouTube'),
+        byUserId: me?.id || '',
+        byName: input.byName || me?.name || '',
+        playing: true,
+        position: 0,
+        updatedAt: Date.now(),
+        mode: input.mode,
+        provider: input.provider,
+        url: input.url,
+        startAt: Date.now(),
+      }
       set({ watchParty: wp })
-      broadcastCallData({ t: 'watch-party', action: 'start', videoId, title: wp.title, byName: wp.byName })
+      broadcastCallData({ t: 'watch-party', action: 'start', videoId: wp.videoId, title: wp.title, byName: wp.byName, mode: wp.mode, provider: wp.provider, url: wp.url })
     } catch { }
   },
   stopWatchParty: () => {
@@ -4501,13 +4777,147 @@ export const useCallStore = create<CallState>((set, get) => ({
       broadcastCallData({ t: 'watch-party', action: 'sync', videoId: next.videoId, playing: next.playing, position: Math.floor(next.position || 0) })
     } catch { }
   },
+  startChess: () => {
+    try {
+      const me = useUserStore.getState().currentUser
+      const fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+      set({
+        chess: {
+          fen,
+          byUserId: me?.id || '',
+          byName: me?.name || '',
+          whiteId: me?.id || '',
+          whiteName: me?.name || '',
+          blackId: '',
+          blackName: '',
+          lastMove: null,
+          updatedAt: Date.now(),
+        },
+      })
+      broadcastCallData({ t: 'chess', action: 'start', fen, whiteId: me?.id || '', whiteName: me?.name || '' })
+    } catch { }
+  },
+  joinChess: (color) => {
+    try {
+      const me = useUserStore.getState().currentUser
+      const cur = get().chess
+      if (!me || !cur) return
+      if (color === 'white' && cur.whiteId) return
+      if (color === 'black' && cur.blackId) return
+      set({
+        chess: {
+          ...cur,
+          whiteId: color === 'white' ? me.id : cur.whiteId,
+          whiteName: color === 'white' ? me.name : cur.whiteName,
+          blackId: color === 'black' ? me.id : cur.blackId,
+          blackName: color === 'black' ? me.name : cur.blackName,
+          updatedAt: Date.now(),
+        },
+      })
+      broadcastCallData({ t: 'chess', action: 'seat', color, whiteName: color === 'white' ? me.name : '', blackName: color === 'black' ? me.name : '' })
+    } catch { }
+  },
+  syncChess: (fen, lastMove) => {
+    try {
+      const cur = get().chess
+      if (!cur) return
+      set({ chess: { ...cur, fen, lastMove: lastMove || null, updatedAt: Date.now() } })
+      broadcastCallData({ t: 'chess', action: 'sync', fen, lastMove: lastMove || null })
+    } catch { }
+  },
+  stopChess: () => {
+    try {
+      set({ chess: null })
+      broadcastCallData({ t: 'chess', action: 'stop' })
+    } catch { }
+  },
+  startMeeting: (topic) => {
+    try {
+      const me = useUserStore.getState().currentUser
+      if (!me) return
+      const meeting: MeetingState = {
+        active: true,
+        topic: topic || 'Reunião',
+        presenterId: me.id,
+        presenterName: me.name,
+        stage: 'screen',
+        startedBy: me.id,
+        startedAt: Date.now(),
+        updatedAt: Date.now(),
+      }
+      set({ meeting, meetingWhiteboard: [] })
+      broadcastCallData({ t: 'meeting', action: 'start', topic: meeting.topic, presenterId: me.id, presenterName: me.name, stage: 'screen', startedAt: meeting.startedAt })
+      broadcastCallData({ t: 'whiteboard', action: 'clear' })
+    } catch { }
+  },
+  stopMeeting: () => {
+    try {
+      set({ meeting: null, meetingWhiteboard: [] })
+      broadcastCallData({ t: 'meeting', action: 'stop' })
+    } catch { }
+  },
+  setMeetingPresenter: (userId, userName) => {
+    try {
+      const cur = get().meeting
+      if (!cur) return
+      set({ meeting: { ...cur, presenterId: userId, presenterName: userName, updatedAt: Date.now() } })
+      broadcastCallData({ t: 'meeting', action: 'presenter', presenterId: userId, presenterName: userName })
+    } catch { }
+  },
+  setMeetingStage: (stage) => {
+    try {
+      const cur = get().meeting
+      if (!cur) return
+      set({ meeting: { ...cur, stage, updatedAt: Date.now() } })
+      broadcastCallData({ t: 'meeting', action: 'stage', stage })
+    } catch { }
+  },
+  setMeetingDocument: (url, name) => {
+    try {
+      const cur = get().meeting
+      if (!cur) return
+      set({ meeting: { ...cur, stage: 'document', documentUrl: url, documentName: name, updatedAt: Date.now() } })
+      broadcastCallData({ t: 'meeting', action: 'document', documentUrl: url, documentName: name })
+    } catch { }
+  },
+  setMeetingVideo: (url) => {
+    try {
+      const cur = get().meeting
+      if (!cur) return
+      set({ meeting: { ...cur, stage: 'video', videoUrl: url, updatedAt: Date.now() } })
+      broadcastCallData({ t: 'meeting', action: 'video', videoUrl: url })
+    } catch { }
+  },
+  addMeetingStroke: (stroke) => {
+    try {
+      set(state => ({ meetingWhiteboard: [...state.meetingWhiteboard, stroke].slice(-500) }))
+      broadcastCallData({ t: 'whiteboard', stroke })
+    } catch { }
+  },
+  clearMeetingWhiteboard: () => {
+    try {
+      set({ meetingWhiteboard: [] })
+      broadcastCallData({ t: 'whiteboard', action: 'clear' })
+    } catch { }
+  },
+  syncMeetingWhiteboard: () => {
+    try {
+      broadcastCallData({ t: 'whiteboard', action: 'sync', strokes: get().meetingWhiteboard.slice(-500) })
+    } catch { }
+  },
+  requestMeetingWhiteboard: () => {
+    try {
+      broadcastCallData({ t: 'whiteboard', action: 'request' })
+    } catch { }
+  },
   playSoundboard: (name) => {
     // Toca aqui e para todos da call (estilo Discord).
-    try { playSound(name as import('../services/sounds').SoundName) } catch { }
+    try { playSoundboardEffect(name as import('../services/sounds').SoundName) } catch { }
     try { broadcastCallData({ t: 'soundboard', name }) } catch { }
   },
   playInstant: async (url, title) => {
     if (!isMyInstantsAudioUrl(url)) return false
+    const source = useUserStore.getState().currentUser?.id || 'local'
     const payload = { t: 'soundboard', url, title: String(title || '').slice(0, 90) }
     try { broadcastCallData(payload) } catch { }
     if (dataChannels.size === 0 && get().livekitActive) {
@@ -4516,7 +4926,7 @@ export const useCallStore = create<CallState>((set, get) => ({
         void lk.sendLivekitData(payload).catch(() => { })
       } catch { }
     }
-    return playInstantAudio(url)
+    return playInstantAudio(url, source)
   },
   stopControlling: () => {
     const wasControlling = get().controlling

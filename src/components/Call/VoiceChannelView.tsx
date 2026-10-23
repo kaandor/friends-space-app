@@ -8,7 +8,8 @@ import { useUserStore } from '../../stores/userStore'
 import { useFriendStore } from '../../stores/friendStore'
 import DebugWindow from '../Debug/DebugWindow'
 import { useSettingsStore } from '../../stores/settingsStore'
-import { Mic, MicOff, HeadphoneOff, UserPlus } from 'lucide-react'
+import { Mic, MicOff, HeadphoneOff, UserPlus, Presentation, Maximize2, LayoutGrid, X } from 'lucide-react'
+import { useServerStore } from '../../stores/serverStore'
 import { IconMic, IconMicOff, IconHeadphone, IconHeadphonesOff, IconGear, IconEndCall, IconDisplay, IconStop, IconChat } from '../../utils/icons'
 import { RemoteControlOverlay } from './RemoteControlOverlay'
 import { isElectronDevice, isElectronFs, fullscreenTileById, useCallFullscreen } from './callFullscreen'
@@ -75,7 +76,7 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
   const {
     activeCall, participants, muted, deafened, screenSharing, localStream, screenStream, screenError,
     remoteStreams, remoteScreenStreams, speakingUsers, volumes,
-    startCall, endCall, toggleMute, toggleDeafen, toggleScreenShare, addParticipant, removeParticipant, setSpeaking, clearScreenError, inviteToCall,
+    startCall, endCall, toggleMute, toggleDeafen, toggleScreenShare, addParticipant, removeParticipant, setSpeaking, clearScreenError, inviteToCall, startMeeting,
     preferredQuality, preferredFps, preferredBitrate, setVolume,
     setPreferredQuality, setPreferredFps, setPreferredBitrate, switchMicDevice,
     controlRequests, controlling, controlledBy, controlPending, controlSettings, setControlSettings,
@@ -83,6 +84,8 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
   } = useCallStore()
   const { currentUser } = useUserStore()
   const { friendUsers } = useFriendStore()
+  const currentServer = useServerStore(s => s.currentServer)
+  const meetingEnabled = currentServer?.settings?.community?.meeting !== false
   const [inviteOpen, setInviteOpen] = useState(false)
   const [inviteQuery, setInviteQuery] = useState('')
   const joinedRef = useRef(false)
@@ -132,6 +135,8 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
   // (navegador dispara fullscreenchange; no Electron o overlay se apaga
   // sozinho via isElectronFs()).
   const [tileFsId, setTileFsId] = useState<string | null>(null)
+  const [cameraFocus, setCameraFocus] = useState<string | null>(null)
+  const [cameraMosaic, setCameraMosaic] = useState(false)
   const openTileFs = (userId: string) => {
     try {
       if (fullscreenTileById(`vc-mosaic-tile-${userId}`)) setTileFsId(userId)
@@ -476,6 +481,15 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
     ? [myUser, ...participants.filter(p => p.userId !== currentUser?.id)]
     : participants
 
+  type VoiceCameraTile = { userId: string; userName: string; photo: string; stream: MediaStream }
+  const cameraTiles: VoiceCameraTile[] = allParticipants.map(person => {
+    const stream = person.userId === currentUser?.id ? localStream : remoteStreams[person.userId]
+    let hasVideo = false
+    try { hasVideo = Boolean(stream && stream.getVideoTracks().length > 0) } catch { hasVideo = false }
+    return hasVideo && stream ? { userId: person.userId, userName: person.userName, photo: person.userPhoto, stream } : null
+  }).filter((person): person is VoiceCameraTile => Boolean(person))
+  const focusedCamera = cameraFocus ? cameraTiles.find(person => person.userId === cameraFocus) || null : null
+
   const inviteCandidates = (friendUsers || [])
     .filter(user => user.id !== currentUser?.id)
     .filter(user => !participants.some(p => p.userId === user.id))
@@ -489,6 +503,48 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
     <div className="vc-screen">
       <CameraOverlay />
       <div className={`vc-bg ${hasAnyScreenShare ? 'has-screenshare' : ''}`}>
+        {!hasAnyScreenShare && focusedCamera && (
+          <div id="vc-camera-stage" style={{ position: 'absolute', inset: '0 0 70px', zIndex: 55, background: '#05080e', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '10px 14px', background: 'rgba(0,0,0,.55)' }}>
+              <span className="vc-live-dot" />
+              <strong style={{ fontSize: 14 }}>{focusedCamera.userId === currentUser?.id ? 'Sua câmera' : `Câmera de ${focusedCamera.userName}`}</strong>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                <button className="vc-topbar-btn" onClick={() => { setCameraMosaic(true); setCameraFocus(null) }} title="Mosaico de câmeras"><LayoutGrid size={14} /></button>
+                <button className="vc-topbar-btn" onClick={() => { const el = document.getElementById('vc-camera-stage'); if (!document.fullscreenElement) void el?.requestFullscreen?.(); else void document.exitFullscreen?.() }} title="Tela cheia"><Maximize2 size={14} /></button>
+                <button className="vc-topbar-btn" onClick={() => setCameraFocus(null)} title="Fechar"><X size={14} /></button>
+              </div>
+            </div>
+            <div style={{ flex: 1, minHeight: 0, background: '#000' }}>
+              <video autoPlay playsInline muted={focusedCamera.userId === currentUser?.id} style={{ width: '100%', height: '100%', objectFit: 'contain', transform: focusedCamera.userId === currentUser?.id ? 'scaleX(-1)' : undefined }} ref={el => { if (el && el.srcObject !== focusedCamera.stream) el.srcObject = focusedCamera.stream }} />
+            </div>
+            {cameraTiles.length > 1 && (
+              <div style={{ display: 'flex', gap: 8, padding: 9, overflowX: 'auto', background: 'rgba(0,0,0,.55)' }}>
+                {cameraTiles.filter(person => person.userId !== focusedCamera.userId).map(person => (
+                  <button key={person.userId} onClick={() => setCameraFocus(person.userId)} style={{ width: 140, aspectRatio: '16/9', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', background: '#000', padding: 0, cursor: 'pointer', flexShrink: 0, position: 'relative' }} title={person.userName}>
+                    <video autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: person.userId === currentUser?.id ? 'scaleX(-1)' : undefined }} ref={el => { if (el && el.srcObject !== person.stream) el.srcObject = person.stream }} />
+                    <span style={{ position: 'absolute', left: 5, bottom: 4, fontSize: 10, fontWeight: 700, color: '#fff', textShadow: '0 1px 3px #000' }}>{person.userId === currentUser?.id ? 'Você' : person.userName}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {!hasAnyScreenShare && cameraMosaic && !focusedCamera && (
+          <div style={{ position: 'absolute', inset: '0 0 70px', zIndex: 55, background: '#05080e', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '10px 14px', background: 'rgba(0,0,0,.55)' }}>
+              <LayoutGrid size={15} /><strong style={{ fontSize: 14 }}>Mosaico de câmeras</strong>
+              <button className="vc-topbar-btn" style={{ marginLeft: 'auto' }} onClick={() => setCameraMosaic(false)} title="Fechar"><X size={14} /></button>
+            </div>
+            <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: `repeat(${cameraTiles.length <= 2 ? 1 : cameraTiles.length <= 4 ? 2 : 3}, minmax(0, 1fr))`, gap: 8, padding: 8, overflowY: 'auto' }}>
+              {cameraTiles.map(person => (
+                <button key={person.userId} onClick={() => { setCameraFocus(person.userId); setCameraMosaic(false) }} style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)', background: '#000', minHeight: 120, padding: 0, cursor: 'pointer', position: 'relative' }} title={person.userName}>
+                  <video autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: person.userId === currentUser?.id ? 'scaleX(-1)' : undefined }} ref={el => { if (el && el.srcObject !== person.stream) el.srcObject = person.stream }} />
+                  <span style={{ position: 'absolute', left: 8, bottom: 6, fontSize: 11, fontWeight: 700, color: '#fff', textShadow: '0 1px 3px #000' }}>{person.userId === currentUser?.id ? 'Você' : person.userName}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {hasAnyScreenShare ? (
           <div className="vc-voice-share">
               <div id="call-fs-vc-screen" className="vc-voice-share-main" style={{ position: 'relative' }} onContextMenu={e => {
@@ -567,14 +623,20 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
               const pDeafened = isSelf ? deafened : p.deafened
               const speaking = Boolean(speakingUsers[p.userId]) && !pMuted
               const isMuted = Boolean(pMuted || pDeafened)
+              const hasCam = cameraTiles.some(person => person.userId === p.userId)
               return (
-                <div key={p.userId} className={`vc-tile${speaking ? ' speaking' : ''}${isMuted ? ' muted-ring' : ''}`}>
+                <div key={p.userId} className={`vc-tile${speaking ? ' speaking' : ''}${isMuted ? ' muted-ring' : ''}`} onDoubleClick={() => { if (hasCam) setCameraFocus(p.userId) }} style={hasCam ? { cursor: 'zoom-in', position: 'relative' } : undefined}>
                   <VoiceTileMedia
                     stream={(isSelf ? localStream : remoteStreams[p.userId]) || null}
                     name={p.userName}
                     photo={p.userPhoto}
                     muted={isSelf}
                   />
+                  {hasCam && (
+                    <button onClick={event => { event.stopPropagation(); setCameraFocus(p.userId) }} title="Ver câmera em tela cheia" style={{ position: 'absolute', top: 6, right: 6, zIndex: 3, width: 26, height: 26, borderRadius: 7, border: '1px solid rgba(255,255,255,.25)', background: 'rgba(0,0,0,.55)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                      <Maximize2 size={12} />
+                    </button>
+                  )}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7, maxWidth: '100%' }}>
                     <span className="vc-tile-name">{isSelf ? 'Você' : p.userName}</span>
                   </div>
@@ -616,6 +678,24 @@ export function VoiceChannelView({ channel }: VoiceChannelViewProps) {
             <button className="vc-btn leave" onClick={handleLeave} title="Sair da call">
               <IconEndCall width={22} height={22} />
             </button>
+            {cameraTiles.length > 0 && (
+              <button
+                className={`vc-btn ${cameraMosaic ? 'active' : ''}`}
+                onClick={() => { setCameraMosaic(value => !value); setCameraFocus(null) }}
+                title="Mosaico de câmeras"
+              >
+                <LayoutGrid size={21} />
+              </button>
+            )}
+            {meetingEnabled && (
+              <button
+                className="vc-btn"
+                onClick={() => startMeeting()}
+                title="Iniciar modo reunião / sala de aula"
+              >
+                <Presentation size={21} />
+              </button>
+            )}
             <button
               className={`vc-btn ${screenSharing ? 'active' : ''}`}
               onClick={() => { toggleScreenShare() }}

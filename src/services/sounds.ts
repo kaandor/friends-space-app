@@ -1,9 +1,12 @@
 // Sons do Friends Space: sintetizados em Web Audio com estetica "alienigena".
 // Nada de arquivos: tudo e gerado com ondas senoidais/triangulares, glissandos,
-// vibrato e arpejos pentatonicos etéreos — o "idioma" sonoro do app.
+// vibrato e arpejos pentatonicos etǸreos �?" o "idioma" sonoro do app.
+
+import { soundboardVolumeFraction } from './soundboardVolume'
 
 let ctx: AudioContext | null = null
 let master: GainNode | null = null
+let playbackGain = 1
 
 function ensure(): AudioContext | null {
   if (typeof window === 'undefined') return null
@@ -42,7 +45,7 @@ function tone(o: ToneOpts) {
   osc.frequency.setValueAtTime(Math.max(1, o.freq), t0)
   if (o.glideTo !== undefined) osc.frequency.exponentialRampToValueAtTime(Math.max(1, o.glideTo), t0 + dur)
   const g = c.createGain()
-  const peak = o.gain ?? 0.18
+  const peak = (o.gain ?? 0.18) * playbackGain
   g.gain.setValueAtTime(0.0001, t0)
   g.gain.exponentialRampToValueAtTime(peak, t0 + 0.015)
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur)
@@ -68,7 +71,7 @@ function shimmer(freq: number, at = 0, dur = 0.6, gain = 0.05) {
   lfoGain.connect(osc.frequency)
   const g = c.createGain()
   g.gain.setValueAtTime(0.0001, t0)
-  g.gain.exponentialRampToValueAtTime(gain, t0 + 0.02)
+  g.gain.exponentialRampToValueAtTime(gain * playbackGain, t0 + 0.02)
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur)
   osc.connect(g)
   g.connect(master)
@@ -94,7 +97,9 @@ export type SoundName =
   | 'unmute'
   | 'chime'
 
-export function playSound(name: SoundName) {
+export function playSound(name: SoundName, volume = 1) {
+  const previousGain = playbackGain
+  playbackGain = Math.min(1, Math.max(0, Number.isFinite(volume) ? volume : 1))
   try {
     switch (name) {
       case 'dm':
@@ -160,7 +165,13 @@ export function playSound(name: SoundName) {
     }
   } catch {
     // audio indisponivel: silencio
+  } finally {
+    playbackGain = previousGain
   }
+}
+
+export function playSoundboardEffect(name: SoundName) {
+  playSound(name, soundboardVolumeFraction())
 }
 
 const TYPE_SOUND: Record<string, SoundName> = {

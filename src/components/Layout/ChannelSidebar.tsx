@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import type { Server, Channel, ServerCategory, CallSession } from '../../types'
-import { Hash, Volume2, Headphones, Megaphone, CalendarDays, ChevronRight, ChevronDown, Pen, Folder, Trash2 } from 'lucide-react'
+import { Hash, Volume2, Headphones, Megaphone, CalendarDays, ChevronRight, ChevronDown, Pen, Folder, Trash2, MessageSquare } from 'lucide-react'
 import { Avatar } from '../ui/Avatar'
 import { VoicePanel } from '../Call/VoicePanel'
 import { IconAdd, IconSettings, IconHome } from '../../utils/icons'
 import { useServerStore } from '../../stores/serverStore'
 import { useUserStore } from '../../stores/userStore'
+import { useLangStore } from '../../stores/langStore'
 import { useCallStore } from '../../stores/callStore'
 import { useUserMenuStore } from '../../stores/userMenuStore'
 import { toImageUrl } from '../../services/driveService'
@@ -25,6 +26,7 @@ interface ChannelSidebarProps {
 export function ChannelSidebar({ server, onOpenSettings, onChannelSelect, onReturnToCall }: ChannelSidebarProps) {
   const { currentChannel, setCurrentChannel, addChannel, renameChannel, deleteChannel, addCategory, renameCategory, deleteCategory, updateServer } = useServerStore()
   const { currentUser, users: allUsers } = useUserStore()
+  const tr = useLangStore(s => s.t)
   const [channelSessions, setChannelSessions] = useState<CallSession[]>([])
   useEffect(() => {
     let alive = true
@@ -308,23 +310,30 @@ export function ChannelSidebar({ server, onOpenSettings, onChannelSelect, onRetu
         )}
       </div>
 
-      <button onClick={() => window.dispatchEvent(new Event('friends-space:show-friends'))} style={{ width: '100%', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid var(--border)' }} title="Voltar para Amigos / Conversas">
-        <IconHome width={18} height={18} /> Amigos
+      <button onClick={() => window.dispatchEvent(new Event('friends-space:show-friends'))} style={{ width: '100%', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid var(--border)' }} title={tr('channels.friendsHint')}>
+        <IconHome width={18} height={18} /> {tr('nav.friends')}
       </button>
 
       {isOwner && (
-        <button onClick={() => setShowServerPost(true)} style={{ width: '100%', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid var(--border)' }} title="Postar no feed ou story como este servidor">
-          <Megaphone size={16} strokeWidth={2} /> Postar no feed
+        <button onClick={() => setShowServerPost(true)} style={{ width: '100%', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid var(--border)' }} title={tr('channels.postHint')}>
+          <Megaphone size={16} strokeWidth={2} /> {tr('channels.post')}
         </button>
       )}
       {showServerPost && (
         <ServerPostModal server={server} onClose={() => setShowServerPost(false)} onPublished={() => setShowServerPost(false)} />
       )}
 
-      <button onClick={() => setShowEvents(true)} style={{ width: '100%', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid var(--border)' }} title="Eventos do servidor">
-        <CalendarDays size={16} strokeWidth={2} /> Eventos
+      <button onClick={() => setShowEvents(true)} style={{ width: '100%', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid var(--border)' }} title={tr('channels.eventsHint')}>
+        <CalendarDays size={16} strokeWidth={2} /> {tr('channels.events')}
         {upcomingEvents > 0 && (
           <span style={{ marginLeft: 'auto', background: 'var(--accent)', color: '#000', fontSize: 10, padding: '1px 7px', borderRadius: 10, fontWeight: 700 }}>{upcomingEvents}</span>
+        )}
+      </button>
+
+      <button onClick={() => window.dispatchEvent(new Event('friends-space:open-forums'))} style={{ width: '100%', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid var(--border)' }} title={tr('channels.forumsHint')}>
+        <MessageSquare size={16} strokeWidth={2} /> {tr('channels.forums')}
+        {(server.forums?.length || 0) > 0 && (
+          <span style={{ marginLeft: 'auto', background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', fontSize: 10, padding: '1px 7px', borderRadius: 10, fontWeight: 700 }}>{server.forums?.length}</span>
         )}
       </button>
 

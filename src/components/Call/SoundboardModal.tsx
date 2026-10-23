@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Music, Play, RefreshCw, Search, Users, X } from 'lucide-react'
+import { Music, Play, RefreshCw, Search, Users, Volume2, X } from 'lucide-react'
 import { searchInstantSounds, type InstantSound } from '../../services/instantSounds'
+import { getSoundboardVolume, setSoundboardVolume } from '../../services/soundboardVolume'
 import { useCallStore } from '../../stores/callStore'
 
 const RECENTS_KEY = 'friends-space:soundboard-recents'
@@ -52,6 +53,7 @@ export function SoundboardModal({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [playing, setPlaying] = useState('')
+  const [volume, setVolume] = useState(() => getSoundboardVolume())
   const [reloadKey, setReloadKey] = useState(0)
   const requestId = useRef(0)
   const flashTimer = useRef<number | null>(null)
@@ -143,7 +145,25 @@ export function SoundboardModal({ onClose }: { onClose: () => void }) {
             <strong>Soundboard</strong>
             <span><Users size={12} /> Todos na call escutam o som que você tocar.</span>
           </div>
-          <span className="sb-online">{participants.length} na call</span>
+          <div className="sb-head-tools">
+            <label className="sb-volume" title="Volume dos efeitos">
+              <Volume2 size={13} />
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={volume}
+                onChange={event => {
+                  const next = Number(event.target.value)
+                  setVolume(next)
+                  setSoundboardVolume(next)
+                }}
+                aria-label="Volume dos efeitos"
+              />
+              <span>{volume}%</span>
+            </label>
+            <span className="sb-online">{participants.length} na call</span>
+          </div>
         </div>
 
         <div className="sb-scroll">

@@ -11,6 +11,8 @@ import { requestBackend } from '../../services/backend'
 import { uploadToDrive, isDriveConnected, toImageUrl } from '../../services/driveService'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { assertUploadLimit } from '../../utils/astro'
+import { upcomingBirthdays } from '../../utils/birthdays'
+import { useLangStore } from '../../stores/langStore'
 import { USER_STATUS, StatusIcon, statusFromSettings } from '../../utils/userStatus'
 import { buildFileName, detectMediaKind, extractMediaUrl, extractEmbedUrl, driveFolderFor } from '../../services/mediaDetect'
 import { MediaAttachment } from '../Chat/MediaAttachment'
@@ -59,6 +61,7 @@ async function copyDmText(text: string) {
 
 export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void }) {
   const { currentUser } = useUserStore()
+  const t = useLangStore(s => s.t)
   const { friendUsers, friends, directMessages, currentDMUser,
     loadFriends, addFriendById,
     sendDirectMessage, deleteDirectMessage, loadDirectMessages, setCurrentDMUser } = useFriendStore()
@@ -218,6 +221,8 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
   }
 
   const tabFriends = tab === 'naonline' ? filteredFriends.filter(u => { try { return isUserOnline(u) } catch { return false } }) : filteredFriends
+  const upcoming = upcomingBirthdays(friendUsers, 30)
+  const birthdayText = (days: number) => days === 0 ? t('birthdays.today') : days === 1 ? t('birthdays.tomorrow') : t('birthdays.inDays').replace('{n}', String(days))
 
   const handleSendDM = async () => {
     if (!dmInput.trim() || !currentUser || !currentDMUser || dmSending) return
@@ -495,6 +500,18 @@ export function FriendsView({ onReturnToCall }: { onReturnToCall?: () => void })
           />
           <SlidersHorizontal size={14} strokeWidth={2} color="var(--text-secondary)" style={{ cursor: 'pointer' }} />
         </div>
+        {upcoming.length > 0 && (
+          <div className="fs-birthday-card" style={{ margin: '12px 20px 0' }}>
+            <div className="fs-birthday-title"><Gift size={14} /> {t('birthdays.title')}</div>
+            <div className="fs-birthday-list">
+              {upcoming.map(item => (
+                <button key={item.user.id} type="button" className="fs-birthday-pill" onClick={() => openProfile(item.user)} title={`${item.user.name} · ${item.dateLabel}`}>
+                  {item.user.name.split(' ')[0]} · {birthdayText(item.days)}{item.turning ? ` (${item.turning})` : ''}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div style={{ display: 'flex', padding: '0 20px', gap: 20, borderBottom: '1px solid var(--border)' }}>
           {tabs.map(t => (
             <button

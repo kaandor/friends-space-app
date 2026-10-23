@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import type { Report, Server, Role } from '../../types'
 import { TicketChat } from '../Support/TicketChat'
 import { escalateReport, listServerReports } from '../../services/serverReports'
+import { ServerChecklist } from './ServerChecklist'
 
 /* ══ PARTE 2 (UI): helpers defensivos p/ contrato Server.settings/auditLog ══ */
 export function localDefaultSettings() {
@@ -506,6 +507,29 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
     }
   }, [liveServer, liveRoles, liveChannels, liveCategories, liveEvents, liveMembers, cachedMessages, allUsers])
 
+  const analytics = useMemo(() => {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+    const start = today - 6 * 86400000
+    const ids = new Set((liveChannels).map(channel => channel.id))
+    const recent = cachedMessages.filter(message => ids.has(message.channelId) && Number(message.createdAt || 0) >= start)
+    const byDay = Array.from({ length: 7 }, (_, index) => {
+      const dayStart = start + index * 86400000
+      const dayEnd = dayStart + 86400000
+      return {
+        label: new Date(dayStart).toLocaleDateString(undefined, { weekday: 'short' }).slice(0, 3),
+        count: recent.filter(message => Number(message.createdAt || 0) >= dayStart && Number(message.createdAt || 0) < dayEnd).length,
+      }
+    })
+    const byChannel = new Map<string, number>()
+    for (const message of recent) byChannel.set(message.channelId, (byChannel.get(message.channelId) || 0) + 1)
+    const topChannels = [...byChannel.entries()]
+      .map(([id, count]) => ({ name: liveChannels.find(channel => channel.id === id)?.name || 'canal', count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+    return { recent: recent.length, byDay, maxDay: Math.max(1, ...byDay.map(day => day.count)), topChannels }
+  }, [cachedMessages, liveChannels])
+
   const flipToggle = (key: keyof typeof toggles) => persistToggles({ ...toggles, [key]: !toggles[key] })
   const removeTheme = (t: string) => persistThemes(selectedThemes.filter(x => x !== t))
   const addTheme = () => {
@@ -869,6 +893,8 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
             </div>
           </section>
 
+          {liveServer && <ServerChecklist server={liveServer} onNavigate={setActive} />}
+
           {/* Nome + descrição + cor */}
           <section className="ssw-card ssw-form-card">
             <div className="ssw-form-grid ssw-two-columns">
@@ -1056,6 +1082,29 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
             <div className="ssw-bar-row"><span>Canais de voz</span><div className="ssw-bar"><span style={{ width: bar(stats.voz, stats.canais) }} /></div><strong>{stats.voz}</strong></div>
             <div className="ssw-bar-row"><span>Membros online</span><div className="ssw-bar"><span style={{ width: bar(stats.online, Math.max(stats.membros, 1)) }} /></div><strong>{stats.online}/{stats.membros}</strong></div>
           </section>
+          <section className="ssw-card">
+            <SectionTitle eyebrow="ÚLTIMOS 7 DIAS" title="Ritmo de mensagens" desc={`${analytics.recent} mensagem(ns) no cache recente do servidor.`} />
+            <div className="fs-spark-bars" style={{ height: 96 }}>
+              {analytics.byDay.map(day => (
+                <div key={day.label} title={`${day.count} mensagem(ns)`}>
+                  <span className="fs-spark-bar" style={{ height: `${Math.max(4, (day.count / analytics.maxDay) * 100)}%` }} />
+                  <small>{day.label}</small>
+                </div>
+              ))}
+            </div>
+          </section>
+          {analytics.topChannels.length > 0 && (
+            <section className="ssw-card">
+              <SectionTitle eyebrow="CONVERSA" title="Canais mais ativos" desc="Com base no histórico carregado neste dispositivo." />
+              {analytics.topChannels.map((channel, index) => (
+                <div className="ssw-bar-row" key={channel.name + index}>
+                  <span>#{channel.name}</span>
+                  <div className="ssw-bar"><span style={{ width: bar(channel.count, analytics.topChannels[0]?.count || 1) }} /></div>
+                  <strong>{channel.count}</strong>
+                </div>
+              ))}
+            </section>
+          )}
         </div>
       )
     }
@@ -1076,6 +1125,15 @@ export function ServerSettingsWindow(props: ServerSettingsWindowProps) {
               <label className="ssw-field" style={{ gridColumn: '1 / -1' }}><span>IDs da staff (separados por vírgula)</span>
                 <input value={editStaffIds} onChange={e => setEditStaffIds(e.target.value)} placeholder="ID1, ID2, ID3" />
               </label>
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <SettingRow
+                icon="fa-video"
+                title="Modo Reunião"
+                desc="Permite iniciar salas de aula/reuniões com apresentador, lousa, documento e tela."
+                checked={communityValues.meeting !== false}
+                onChange={() => toggleCommunity('meeting')}
+              />
             </div>
           </section>
           <section className="ssw-card">

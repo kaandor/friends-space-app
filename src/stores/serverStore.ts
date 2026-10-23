@@ -101,6 +101,9 @@ interface ServerState {
   deleteCategory: (serverId: string, categoryId: string) => Promise<void>
   addServerEvent: (serverId: string, data: { title: string; description?: string; date: number; location?: string }) => Promise<void>
   deleteServerEvent: (serverId: string, eventId: string) => Promise<void>
+  addForumThread: (serverId: string, title: string, body: string) => Promise<{ ok: boolean; error?: string; threadId?: string }>
+  addForumReply: (serverId: string, threadId: string, content: string) => Promise<{ ok: boolean; error?: string }>
+  deleteForumThread: (serverId: string, threadId: string) => Promise<{ ok: boolean; error?: string }>
   addRole: (serverId: string, name: string, color: string) => Promise<void>
   addMember: (serverId: string, userId: string) => Promise<void>
   addServerEmoji: (serverId: string, name: string, url: string, kind?: 'emoji' | 'gif' | 'sticker') => Promise<void>
@@ -664,6 +667,51 @@ export const useServerStore = create<ServerState>((set, get) => ({
       return
     } catch {
       return
+    }
+  },
+  addForumThread: async (serverId, title, body) => {
+    const userId = useUserStore.getState().currentUser?.id || localStorage.getItem('friends-space:current-user-id') || ''
+    try {
+      const result = await requestBackend<{ servers: Server[]; server?: Server; thread?: { id: string } }>('addForumThread', { serverId, userId, title, body })
+      set({
+        servers: result.servers,
+        currentServer: get().currentServer?.id === serverId ? result.server || get().currentServer : get().currentServer,
+      })
+      await getDb(getActiveProfileId()).servers.bulkPut(result.servers)
+      notifyServerSync()
+      return { ok: true, threadId: result.thread?.id }
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : 'Erro ao criar topico' }
+    }
+  },
+  addForumReply: async (serverId, threadId, content) => {
+    const userId = useUserStore.getState().currentUser?.id || localStorage.getItem('friends-space:current-user-id') || ''
+    try {
+      const result = await requestBackend<{ servers: Server[]; server?: Server }>('addForumReply', { serverId, userId, threadId, content })
+      set({
+        servers: result.servers,
+        currentServer: get().currentServer?.id === serverId ? result.server || get().currentServer : get().currentServer,
+      })
+      await getDb(getActiveProfileId()).servers.bulkPut(result.servers)
+      notifyServerSync()
+      return { ok: true }
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : 'Erro ao responder' }
+    }
+  },
+  deleteForumThread: async (serverId, threadId) => {
+    const userId = useUserStore.getState().currentUser?.id || localStorage.getItem('friends-space:current-user-id') || ''
+    try {
+      const result = await requestBackend<{ servers: Server[]; server?: Server }>('deleteForumThread', { serverId, userId, threadId })
+      set({
+        servers: result.servers,
+        currentServer: get().currentServer?.id === serverId ? result.server || get().currentServer : get().currentServer,
+      })
+      await getDb(getActiveProfileId()).servers.bulkPut(result.servers)
+      notifyServerSync()
+      return { ok: true }
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : 'Erro ao excluir topico' }
     }
   },
   deleteChannel: async (serverId, channelId) => {

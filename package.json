@@ -1,7 +1,7 @@
 {
   "name": "friends-space",
   "private": true,
-  "version": "1.2.7",
+  "version": "1.2.8",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -24,6 +24,7 @@
   "dependencies": {
     "@fontsource/inter": "^5.3.0",
     "@twemoji/api": "^17.0.3",
+    "chess.js": "^1.4.0",
     "dexie": "^4.4.4",
     "electron-updater": "^6.8.9",
     "livekit-client": "^2.22.3",
@@ -98,6 +99,7 @@
       "shortcutName": "Friends Space",
       "installerIcon": "build/icon.ico",
       "installerSidebar": "build/installer-sidebar.bmp",
+      "installerHeader": "build/installer-header.png",
       "uninstallerIcon": "build/icon.ico",
       "installerHeaderIcon": "build/icon.ico",
       "artifactName": "Friends-Space-Setup-${version}.exe",

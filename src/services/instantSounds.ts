@@ -1,4 +1,5 @@
 import { requestBackend } from './backend'
+import { getSoundboardVolume } from './soundboardVolume'
 
 export interface InstantSound {
   id: string
@@ -8,7 +9,22 @@ export interface InstantSound {
 }
 
 const MAX_ACTIVE = 6
-const activeAudios = new Set<HTMLAudioElement>()
+const activeAudios = new Map<HTMLAudioElement, string>()
+
+function instantVolume(): number {
+  return Math.min(1, Math.max(0, (getSoundboardVolume() / 100) * 0.9))
+}
+
+export function setInstantAudioVolume(): void {
+  const volume = instantVolume()
+  for (const audio of activeAudios.keys()) {
+    try { audio.volume = volume } catch { }
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('friends-space:soundboard-volume', () => setInstantAudioVolume())
+}
 
 export function isMyInstantsAudioUrl(value: string): boolean {
   try {
@@ -30,18 +46,24 @@ function stopAudio(audio: HTMLAudioElement) {
   activeAudios.delete(audio)
 }
 
-export async function playInstantAudio(url: string): Promise<boolean> {
+export function stopInstantAudios(source?: string): void {
+  for (const [audio, owner] of [...activeAudios.entries()]) {
+    if (source === undefined || owner === source) stopAudio(audio)
+  }
+}
+
+export async function playInstantAudio(url: string, source = 'local'): Promise<boolean> {
   if (!isMyInstantsAudioUrl(url)) return false
   try {
     while (activeAudios.size >= MAX_ACTIVE) {
-      const oldest = activeAudios.values().next().value
+      const oldest = activeAudios.keys().next().value
       if (!oldest) break
       stopAudio(oldest)
     }
     const audio = new Audio(url)
     audio.preload = 'auto'
-    audio.volume = 0.9
-    activeAudios.add(audio)
+    audio.volume = instantVolume()
+    activeAudios.set(audio, source)
     const cleanup = () => stopAudio(audio)
     audio.addEventListener('ended', cleanup, { once: true })
     audio.addEventListener('error', cleanup, { once: true })

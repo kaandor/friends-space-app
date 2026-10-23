@@ -7,6 +7,7 @@ import { useLangStore } from '../../stores/langStore'
 import { useSettingsStore, type SettingsTabId } from '../../stores/settingsStore'
 import { useNotificationStore, NOTIF_DEFAULT_OFF_SETTINGS } from '../../stores/notificationStore'
 import { getAudioInputDevices, getAudioOutputDevices, supportsSinkId, inputVolumePref, setInputVolume } from '../../services/antiloud'
+import { getSoundboardVolume, setSoundboardVolume } from '../../services/soundboardVolume'
 import { connectDrive, disconnectDrive, getDriveStorage, isDriveConnected, type DriveStorageInfo } from '../../services/driveService'
 import { pingBackend } from '../../services/backend'
 import { useCallStore } from '../../stores/callStore'
@@ -105,6 +106,7 @@ export function SettingsModal() {
   const [agc, setAgc] = useState(() => { try { return localStorage.getItem('friends-space:agc') !== '0' } catch { return true } })
   const [volumeIn, setVolumeIn] = useState(() => inputVolumePref())
   const [volumeOut, setVolumeOut] = useState(() => { try { return Number(localStorage.getItem('friends-space:vol-out') || '80') } catch { return 80 } })
+  const [soundboardVolume, setSoundboardVolumeState] = useState(() => getSoundboardVolume())
   const [drive, setDrive] = useState(isDriveConnected())
   const [driveBusy, setDriveBusy] = useState(false)
   const [driveStorage, setDriveStorage] = useState<DriveStorageInfo | null>(null)
@@ -312,6 +314,17 @@ export function SettingsModal() {
                   <Button size="sm" variant="secondary" onClick={() => setShowAppearance(true)}>Editar aparência do perfil</Button>
                 </div>
               </Row>
+              <Row label={t('settings.birthday')} hint={t('settings.birthdayHint')}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input
+                    type="date"
+                    value={currentUser.birthday || ''}
+                    onChange={e => { void updateUser({ birthday: e.target.value }) }}
+                    style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 12.5, colorScheme: 'dark' }}
+                  />
+                  {currentUser.birthday ? <Button size="sm" variant="secondary" onClick={() => { void updateUser({ birthday: '' }) }}>{t('settings.clear')}</Button> : null}
+                </div>
+              </Row>
               <Row label="ID da conta" hint="Use para suporte e para compartilhar seu perfil.">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <code style={{ fontSize: 12, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 10px', color: 'var(--text-secondary)' }}>{currentUser.id}</code>
@@ -355,6 +368,14 @@ export function SettingsModal() {
                   style={{ width: '100%' }}
                 />
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'right' }}>{volumeOut}%</div>
+              </Row>
+              <Row label="Volume dos efeitos" hint="Volume do soundboard e dos efeitos tocados na call. Vale para o seu dispositivo; não altera o volume da voz.">
+                <input
+                  type="range" min={0} max={100} value={soundboardVolume}
+                  onChange={e => { const v = Number(e.target.value); setSoundboardVolumeState(v); setSoundboardVolume(v) }}
+                  style={{ width: '100%' }}
+                />
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'right' }}>{soundboardVolume}%</div>
               </Row>
               <Row label={t('settings.audioProcessing')}>
                 <Toggle checked={echo} onChange={v => { setEcho(v); savePref('friends-space:echo', v ? '1' : '0') }} label={t('settings.echo')} />

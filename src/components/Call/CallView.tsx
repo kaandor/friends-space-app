@@ -17,8 +17,9 @@ import { useServerStore } from '../../stores/serverStore'
 import {
   Mic, MicOff, Video, VideoOff, ScreenShare, ScreenShareOff,
   Headphones, HeadphoneOff, VolumeX, Volume2, PhoneOff, UserPlus, Ellipsis,
-  Settings, Gauge, Check, PictureInPicture2, Minimize2,
+  Settings, Gauge, Check, PictureInPicture2, Minimize2, Maximize2, LayoutGrid, X, Presentation, Gamepad2,
 } from 'lucide-react'
+import { ActivityModal } from './ActivityModal'
 import { RemoteControlOverlay } from './RemoteControlOverlay'
 import { isElectronDevice, useCallFullscreen } from './callFullscreen'
 import { getStreamPlanLabel, isQualityBlocked, getMaxStreamFps, getMaxBitrateKbps, getAstroTier } from '../../utils/astro'
@@ -80,7 +81,7 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
     toggleRecording,
     controlRequests, controlling, controlledBy, controlSettings, setControlSettings,
     requestControl, acceptControlRequest, denyControlRequest, sendControlInput, stopControlling, revokeControl,
-    inviteToCall, setAnydeskMode,
+    inviteToCall, setAnydeskMode, startMeeting,
   } = useCallStore()
   const { currentUser } = useUserStore()
   const { friendUsers } = useFriendStore()
@@ -93,6 +94,7 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
   const stalePeers = participants.filter(p => { const v = peerProtos[p.userId]; return typeof v === 'number' && v !== CALL_PROTO })
   const pendingScreens = sharingPeers.filter(id => !remoteScreenStreams[id])
   const [showRecConfirm, setShowRecConfirm] = useState(false)
+  const [activitiesOpen, setActivitiesOpen] = useState(false)
   const isOwnRecording = Boolean(recordingActive && recordingBy && currentUser && recordingBy.id === currentUser.id)
   const callChannelName = useServerStore(s => s.currentChannel?.name)
   const callServerId = useCallStore(s => s.serverId)
@@ -185,7 +187,23 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
   // (menu) volta ao palco de tela unica antigo quando quiser.
   const [mosaic, setMosaic] = useState(true)
   const [mosaicFocus, setMosaicFocus] = useState<string | null>(null)
+  const [cameraStage, setCameraStage] = useState<string | null>(null)
+  const [cameraMosaic, setCameraMosaic] = useState(false)
   const showMosaic = totalScreens > 1 && mosaic && !popout && !controlling
+  type CameraTile = { userId: string; userName: string; stream: MediaStream | null; isSelf: boolean }
+  const cameraTiles: CameraTile[] = [
+    ...(hasCamera && cameraOn && currentUser ? [{ userId: currentUser.id, userName: 'Você', stream: localStream, isSelf: true }] : []),
+    ...participants
+      .filter(person => person.userId !== currentUser?.id)
+      .map((person): CameraTile | null => {
+        const stream = remoteStreams[person.userId] || null
+        let hasVideo = false
+        try { hasVideo = Boolean(stream && stream.getVideoTracks().length > 0) } catch { hasVideo = false }
+        return hasVideo ? { userId: person.userId, userName: person.userName, stream, isSelf: false } : null
+      })
+      .filter((person): person is CameraTile => Boolean(person)),
+  ]
+  const focusedCamera = cameraStage ? cameraTiles.find(person => person.userId === cameraStage) || null : null
 
   const dragging = (e: { clientX: number; clientY: number }) => {
     const startX = e.clientX
@@ -550,6 +568,51 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
             </div>
           ))}
           <div className={`vc-bg ${hasActiveScreen ? 'has-screenshare' : ''}`}>
+            {!hasActiveScreen && focusedCamera && (
+              <div id="call-camera-stage" className="vc-camera-stage" style={{ position: 'absolute', inset: '0 0 84px', zIndex: 60, background: '#05080e', display: 'flex', flexDirection: 'column' }}>
+                <div className="vc-camera-stage-head" style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '10px 14px', background: 'rgba(0,0,0,.55)' }}>
+                  <span className="vc-live-dot" />
+                  <strong style={{ fontSize: 14 }}>{focusedCamera.isSelf ? 'Sua câmera' : `Câmera de ${focusedCamera.userName}`}</strong>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700 }}>TELA CHEIA</span>
+                  <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                    <button className="vc-topbar-btn" onClick={() => { setCameraMosaic(true); setCameraStage(null) }} title="Ver todas as câmeras em mosaico"><LayoutGrid size={14} /></button>
+                    <button className="vc-topbar-btn" onClick={() => { const el = document.getElementById('call-camera-stage'); if (!document.fullscreenElement) void el?.requestFullscreen?.(); else void document.exitFullscreen?.() }} title="Tela cheia"><Maximize2 size={14} /></button>
+                    <button className="vc-topbar-btn" onClick={() => setCameraStage(null)} title="Fechar"><X size={14} /></button>
+                  </div>
+                </div>
+                <div style={{ flex: 1, minHeight: 0, background: '#000' }}>
+                  <video autoPlay playsInline muted={focusedCamera.isSelf} style={{ width: '100%', height: '100%', objectFit: 'contain', transform: focusedCamera.isSelf ? 'scaleX(-1)' : undefined }} ref={el => { if (el && focusedCamera.stream && el.srcObject !== focusedCamera.stream) el.srcObject = focusedCamera.stream }} />
+                </div>
+                {cameraTiles.length > 1 && (
+                  <div style={{ display: 'flex', gap: 8, padding: 10, overflowX: 'auto', background: 'rgba(0,0,0,.55)' }}>
+                    {cameraTiles.filter(person => person.userId !== focusedCamera.userId).map(person => (
+                      <button key={person.userId} onClick={() => setCameraStage(person.userId)} style={{ width: 150, aspectRatio: '16/9', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', background: '#000', padding: 0, cursor: 'pointer', flexShrink: 0, position: 'relative' }} title={person.isSelf ? 'Sua câmera' : person.userName}>
+                        <video autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: person.isSelf ? 'scaleX(-1)' : undefined }} ref={el => { if (el && person.stream && el.srcObject !== person.stream) el.srcObject = person.stream }} />
+                        <span style={{ position: 'absolute', left: 5, bottom: 4, fontSize: 10, fontWeight: 700, color: '#fff', textShadow: '0 1px 3px #000' }}>{person.isSelf ? 'Você' : person.userName}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {!hasActiveScreen && cameraMosaic && !focusedCamera && (
+              <div id="call-camera-mosaic" className="vc-camera-mosaic" style={{ position: 'absolute', inset: '0 0 84px', zIndex: 60, background: '#05080e', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '10px 14px', background: 'rgba(0,0,0,.55)' }}>
+                  <LayoutGrid size={15} />
+                  <strong style={{ fontSize: 14 }}>Mosaico de câmeras</strong>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700 }}>{cameraTiles.length} {cameraTiles.length === 1 ? 'câmera' : 'câmeras'}</span>
+                  <button className="vc-topbar-btn" style={{ marginLeft: 'auto' }} onClick={() => setCameraMosaic(false)} title="Fechar mosaico"><X size={14} /></button>
+                </div>
+                <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: `repeat(${cameraTiles.length <= 2 ? 1 : cameraTiles.length <= 4 ? 2 : 3}, minmax(0, 1fr))`, gap: 8, padding: 8, overflowY: 'auto' }}>
+                  {cameraTiles.map(person => (
+                    <button key={person.userId} onClick={() => { setCameraStage(person.userId); setCameraMosaic(false) }} style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)', background: '#000', minHeight: 120, padding: 0, cursor: 'pointer', position: 'relative' }} title={person.isSelf ? 'Sua câmera' : person.userName}>
+                      <video autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: person.isSelf ? 'scaleX(-1)' : undefined }} ref={el => { if (el && person.stream && el.srcObject !== person.stream) el.srcObject = person.stream }} />
+                      <span style={{ position: 'absolute', left: 8, bottom: 6, fontSize: 11, fontWeight: 700, color: '#fff', textShadow: '0 1px 3px #000' }}>{person.isSelf ? 'Você' : person.userName}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {hasActiveScreen && !popout && !showMosaic && (
             <div id={`call-fs-${fsKey}`} className="vc-main-screen" onContextMenu={e => { e.preventDefault(); setScreenMenu({ x: e.clientX, y: e.clientY, userId: screenUserId }) }}>
                 <WatchPartyBar />
@@ -703,6 +766,11 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
                     <Fa name="user-group" size={10} style={{  marginRight: 5 }} />
                     {totalInCall}
                   </span>
+                  {cameraTiles.length > 0 && (
+                    <button className="fs-dm-action" onClick={() => { setCameraMosaic(true); setCameraStage(null) }} title="Mosaico de câmeras">
+                      <LayoutGrid size={15} strokeWidth={2} />
+                    </button>
+                  )}
                   {callServerId === 'dm' && (
                     <button
                       className="fs-dm-action"
@@ -727,7 +795,7 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
                     if (t.isSelf && !cameraOn) hasTileVideo = false
                     const off = Boolean(t.muted || t.deafened)
                     return (
-                      <div key={t.userId} className={`vc-tile${speaking ? ' speaking' : ''}${off ? ' muted-ring' : ''}${hasTileVideo ? ' has-video' : ''}`}>
+                      <div key={t.userId} className={`vc-tile${speaking ? ' speaking' : ''}${off ? ' muted-ring' : ''}${hasTileVideo ? ' has-video' : ''}`} onDoubleClick={() => { if (hasTileVideo) setCameraStage(t.userId) }} style={hasTileVideo ? { cursor: 'zoom-in' } : undefined}>
                         {hasTileVideo ? (
                           <video
                             id={`call-tile-${t.userId}`}
@@ -742,6 +810,16 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
                           <div className="vc-tile-ring">
                             <Avatar src={t.userPhoto} name={t.userName} size={84} />
                           </div>
+                        )}
+                        {hasTileVideo && (
+                          <button
+                            className="vc-tile-expand"
+                            onClick={event => { event.stopPropagation(); setCameraStage(t.userId) }}
+                            title="Ver câmera em tela cheia"
+                            style={{ position: 'absolute', top: 6, right: 6, zIndex: 3, width: 27, height: 27, borderRadius: 7, border: '1px solid rgba(255,255,255,.25)', background: 'rgba(0,0,0,.55)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                          >
+                            <Maximize2 size={13} />
+                          </button>
                         )}
                         <div className="vc-tile-bar">
                           <span className="vc-tile-name">{t.isSelf ? 'Você' : t.userName}</span>
@@ -794,6 +872,26 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
                       <span className="vc-ctrl-label">Câmera</span>
                     </button>
                   )}
+                  <button
+                    className="vc-ctrl"
+                    onClick={() => setActivitiesOpen(true)}
+                    title="Atividades da call"
+                  >
+                    <span className="vc-btn">
+                      <Gamepad2 size={20} />
+                    </span>
+                    <span className="vc-ctrl-label">Atividades</span>
+                  </button>
+                  <button
+                    className="vc-ctrl"
+                    onClick={() => startMeeting()}
+                    title="Iniciar modo reunião / sala de aula"
+                  >
+                    <span className="vc-btn">
+                      <Presentation size={20} />
+                    </span>
+                    <span className="vc-ctrl-label">Reunião</span>
+                  </button>
                   <button
                     className="vc-ctrl"
                     onClick={() => { toggleScreenShare() }}
@@ -1290,6 +1388,7 @@ export function CallView({ embedded = false }: { embedded?: boolean } = {}) {
           </div>
         </div>
       )}
+      {activitiesOpen && <ActivityModal onClose={() => setActivitiesOpen(false)} />}
 
     </>
   )

@@ -9,6 +9,7 @@ import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { initZoomLock } from './utils/zoomLock'
+import { registerPwa } from './services/pwa'
 
 const host = window.location.hostname
 if (host.endsWith('.friends-space.pages.dev') && host !== 'friends-space.pages.dev') {
@@ -17,6 +18,7 @@ if (host.endsWith('.friends-space.pages.dev') && host !== 'friends-space.pages.d
   )
 } else {
   initZoomLock()
+  registerPwa()
   watchForNewBuild()
   createRoot(document.getElementById('root')!).render(
     <StrictMode>

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Check, ChevronRight, Copy, Headphones, HelpCircle, Languages, LogOut, Mic, Monitor, Palette, Pen, Rocket, ShieldHalf, Sparkles, UserPlus, Volume2 } from 'lucide-react'
+import { Award, CalendarDays, Check, ChevronRight, Copy, FileText, Focus, Headphones, HelpCircle, Languages, LogOut, Mic, Monitor, Palette, Pen, Rocket, ShieldCheck, ShieldHalf, Sparkles, UserPlus, Volume2 } from 'lucide-react'
 import { Avatar } from '../ui/Avatar'
 import { IconMic, IconMute, IconHeadphone, IconDeafen, IconSettings } from '../../utils/icons'
 import { useUserStore } from '../../stores/userStore'
 import { useCallStore } from '../../stores/callStore'
 import { useSettingsStore } from '../../stores/settingsStore'
+import { useLangStore } from '../../stores/langStore'
 import { getAudioInputDevices, getAudioOutputDevices, supportsSinkId, inputVolumePref, setInputVolume } from '../../services/antiloud'
 import { loadKnownAccounts } from '../../services/knownAccounts'
 import { canOpenAdminPanel } from '../../services/admin'
@@ -87,6 +88,7 @@ export function UserDock({ floating = false, aboveDiscover = false }: UserDockPr
   const deafened = useCallStore(s => s.deafened)
   const settingsOpen = useSettingsStore(s => s.open)
   const openSettings = useSettingsStore(s => s.openSettings)
+  const tr = useLangStore(s => s.t)
 
   const dockRef = useRef<HTMLDivElement | null>(null)
   const popupRef = useRef<HTMLDivElement | null>(null)
@@ -305,6 +307,9 @@ export function UserDock({ floating = false, aboveDiscover = false }: UserDockPr
               <MenuRow icon={<span className="ud-dot"><StatusIcon status={status} size={9} /></span>} label="Status" hint={STATUS[status].label} arrow onMouseEnter={hoverSub('status')} onClick={() => openSub('status')} />
               <MenuRow icon={<Sparkles size={14} strokeWidth={2} />} label="Insígnias" arrow onMouseEnter={hoverSub('badges')} onClick={() => openSub('badges')} />
               <MenuRow icon={<Rocket size={14} strokeWidth={2} />} label="ASTRO" onClick={() => { closeAll(); fire('friends-space:open-astro') }} />
+              <MenuRow icon={<CalendarDays size={14} strokeWidth={2} />} label={tr('dock.recap')} onClick={() => { closeAll(); fire('friends-space:open-recap') }} />
+              <MenuRow icon={<Award size={14} strokeWidth={2} />} label={tr('dock.achievements')} onClick={() => { closeAll(); fire('friends-space:open-achievements') }} />
+              <MenuRow icon={<FileText size={14} strokeWidth={2} />} label={tr('dock.changelog')} onClick={() => { closeAll(); fire('friends-space:open-changelog') }} />
               <MenuRow icon={<HelpCircle size={14} strokeWidth={2} />} label="Ajuda" onClick={() => { closeAll(); fire('friends-space:open-help') }} />
               <MenuRow icon={<UserPlus size={14} strokeWidth={2} />} label="Mudar de conta" arrow onMouseEnter={hoverSub('accounts')} onClick={() => openSub('accounts')} />
               <MenuRow icon={<Copy size={14} strokeWidth={2} />} label="Copiar ID" onClick={copyId} />
@@ -350,6 +355,10 @@ export function UserDock({ floating = false, aboveDiscover = false }: UserDockPr
               <MenuRow icon={<Monitor size={14} strokeWidth={2} />} label="Voz e vídeo" onClick={() => { closeAll(); openSettings('voz') }} />
               <MenuRow icon={<Palette size={14} strokeWidth={2} />} label="Aparência" onClick={() => { closeAll(); openSettings('aparencia') }} />
               <MenuRow icon={<Languages size={14} strokeWidth={2} />} label="Idioma" onClick={() => { closeAll(); openSettings('idioma') }} />
+              <MenuRow icon={<Focus size={14} strokeWidth={2} />} label={tr('dock.focus')} hint="Ctrl+Shift+F" onClick={() => { closeAll(); fire('friends-space:toggle-focus') }} />
+              <MenuRow icon={<CalendarDays size={14} strokeWidth={2} />} label={tr('dock.recap')} onClick={() => { closeAll(); fire('friends-space:open-recap') }} />
+              <MenuRow icon={<FileText size={14} strokeWidth={2} />} label={tr('dock.changelog')} onClick={() => { closeAll(); fire('friends-space:open-changelog') }} />
+              <MenuRow icon={<ShieldCheck size={14} strokeWidth={2} />} label={tr('dock.transparency')} onClick={() => { closeAll(); fire('friends-space:open-transparency') }} />
               {canOpenAdminPanel(currentUser) && (
                 <MenuRow icon={<ShieldHalf size={14} strokeWidth={2} />} label={`Painel ${currentUser.flags?.dev ? 'Dev' : currentUser.flags?.support ? 'Suporte' : 'Conta'}`} onClick={() => { closeAll(); setAdminOpen(true) }} />
               )}

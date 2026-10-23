@@ -7,6 +7,7 @@ export interface User {
   bannerUrl?: string
   accentColor?: string
   status?: string
+  birthday?: string
   googleId?: string
   email?: string
   authProvider?: 'google'
@@ -157,6 +158,7 @@ export interface Server {
   customEmojis?: ServerCustomEmoji[]
   categories?: ServerCategory[]
   events?: ServerEvent[]
+  forums?: ServerForumThread[]
   verified?: boolean
   onlineCount?: number
   partner?: string
@@ -179,6 +181,30 @@ export interface ServerEvent {
   location?: string
   createdBy: string
   createdAt: number
+}
+
+export interface ServerForumReply {
+  id: string
+  authorId: string
+  authorName: string
+  authorPhoto: string
+  content: string
+  createdAt: number
+}
+
+export interface ServerForumThread {
+  id: string
+  serverId: string
+  title: string
+  body: string
+  authorId: string
+  authorName: string
+  authorPhoto: string
+  createdAt: number
+  updatedAt: number
+  pinned?: boolean
+  locked?: boolean
+  replies: ServerForumReply[]
 }
 
 export interface StoryOverlayStyle {

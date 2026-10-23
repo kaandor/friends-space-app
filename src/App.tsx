@@ -34,6 +34,8 @@ const ServerSettingsWindow = lazy(() => import('./components/Servers/ServerSetti
 import { ServerInviteModal } from './components/Servers/ServerInviteModal'
 import { DiscoverView } from './components/Social/DiscoverView'
 import { VoiceChannelView } from './components/Call/VoiceChannelView'
+import { MediaPartyOverlay } from './components/Call/MediaPartyOverlay'
+import { MeetingRoom } from './components/Call/MeetingRoom'
 import { UsersView } from './components/Users/UsersView'
 import { useIsMobile } from './hooks/useIsMobile'
 import { getStickyUser, useUserStore } from './stores/userStore'
@@ -69,6 +71,13 @@ import { AboutModal } from './components/About/AboutModal'
 import { WelcomeModal } from './components/About/WelcomeModal'
 import { HelpReportModal } from './components/About/HelpReportModal'
 import { DownloadAppModal } from './components/About/DownloadAppModal'
+import { ChangelogModal } from './components/About/ChangelogModal'
+import { TransparencyModal } from './components/About/TransparencyModal'
+import { WeeklyRecapModal } from './components/Home/WeeklyRecapModal'
+import { AchievementsModal } from './components/Home/AchievementsModal'
+import { ForumsModal } from './components/Servers/ForumsModal'
+import { CommandPalette } from './components/ui/CommandPalette'
+import { applyFocusMode, readFocusMode } from './utils/focusMode'
 
 const CURRENT_USER_DATA_KEY = 'friends-space:current-user'
 const THEME_KEY = 'friends-space:theme'
@@ -142,6 +151,7 @@ function LoadingWatchdog() {
 }
 
 function App() {
+  const tr = useLangStore(s => s.t)
   const { currentUser, loadCurrentUser, loadUsers, signOut } = useUserStore()
   const { servers, currentServer, currentChannel, loadServers, createServer, joinServer, addRole, updateServer, deleteServer, leaveServer, setCurrentServer, setCurrentChannel, unread, totalUnread, loadUnread } = useServerStore()
   const { folders, loadFolders, createFolder, updateFolder, deleteFolder, shareFolder } = useFolderStore()
@@ -385,6 +395,13 @@ function App() {
   const [welcomePlatform, setWelcomePlatform] = useState<'site' | 'desktop'>('site')
   const [showHelpReport, setShowHelpReport] = useState(false)
   const [showDownloadApp, setShowDownloadApp] = useState(false)
+  const [showCommandPalette, setShowCommandPalette] = useState(false)
+  const [showChangelog, setShowChangelog] = useState(false)
+  const [showTransparency, setShowTransparency] = useState(false)
+  const [showRecap, setShowRecap] = useState(false)
+  const [showAchievements, setShowAchievements] = useState(false)
+  const [showForums, setShowForums] = useState(false)
+  const [focusMode, setFocusMode] = useState(readFocusMode)
   const [showInbox, setShowInbox] = useState(false)
   const [showPrivacy, setShowPrivacy] = useState(false)
   const [showRecovery, setShowRecovery] = useState(false)
@@ -645,6 +662,68 @@ function App() {
     window.addEventListener('friends-space:open-download', onOpenDownload)
     return () => { window.removeEventListener('friends-space:toast', onToast); window.removeEventListener('friends-space:open-discover', onOpenDiscover); window.removeEventListener('friends-space:open-download', onOpenDownload) }
   }, [])
+
+  useEffect(() => {
+    applyFocusMode(focusMode)
+  }, [focusMode])
+
+  useEffect(() => {
+    const onOpenChangelog = () => setShowChangelog(true)
+    const onOpenTransparency = () => setShowTransparency(true)
+    const onOpenRecap = () => setShowRecap(true)
+    const onOpenAchievements = () => setShowAchievements(true)
+    const onOpenForums = () => setShowForums(true)
+    const onShowBirthdays = () => {
+      setShowUsers(false)
+      setShowProfile(false)
+      setShowServerSearch(false)
+      setMobileTab('messages')
+      useServerStore.setState({ currentServer: null, currentChannel: null })
+      try { window.dispatchEvent(new Event('friends-space:show-friends')) } catch { }
+    }
+    const onToggleFocus = () => {
+      setFocusMode(value => {
+        const next = !value
+        applyFocusMode(next)
+        try { window.dispatchEvent(new CustomEvent('friends-space:toast', { detail: next ? tr('focus.enabled') : tr('focus.disabled') })) } catch { }
+        return next
+      })
+    }
+    const onToggleTheme = () => setTheme(previous => previous === 'dark' ? 'light' : 'dark')
+    const onPalette = () => setShowCommandPalette(value => !value)
+    const onKey = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase()
+      if ((event.ctrlKey || event.metaKey) && key === 'k') {
+        event.preventDefault()
+        setShowCommandPalette(value => !value)
+      } else if ((event.ctrlKey || event.metaKey) && event.shiftKey && key === 'f') {
+        event.preventDefault()
+        onToggleFocus()
+      }
+    }
+    window.addEventListener('friends-space:open-changelog', onOpenChangelog)
+    window.addEventListener('friends-space:open-transparency', onOpenTransparency)
+    window.addEventListener('friends-space:open-recap', onOpenRecap)
+    window.addEventListener('friends-space:open-achievements', onOpenAchievements)
+    window.addEventListener('friends-space:open-forums', onOpenForums)
+    window.addEventListener('friends-space:show-birthdays', onShowBirthdays)
+    window.addEventListener('friends-space:toggle-focus', onToggleFocus)
+    window.addEventListener('friends-space:toggle-theme', onToggleTheme)
+    window.addEventListener('friends-space:open-palette', onPalette)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('friends-space:open-changelog', onOpenChangelog)
+      window.removeEventListener('friends-space:open-transparency', onOpenTransparency)
+      window.removeEventListener('friends-space:open-recap', onOpenRecap)
+      window.removeEventListener('friends-space:open-achievements', onOpenAchievements)
+      window.removeEventListener('friends-space:open-forums', onOpenForums)
+      window.removeEventListener('friends-space:show-birthdays', onShowBirthdays)
+      window.removeEventListener('friends-space:toggle-focus', onToggleFocus)
+      window.removeEventListener('friends-space:toggle-theme', onToggleTheme)
+      window.removeEventListener('friends-space:open-palette', onPalette)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [tr])
 
   // Lembra o ultimo canal de TEXTO por servidor: ao sair da call em voz,
   // volta sozinho para onde estava (em vez de ficar parado no canal vazio).
@@ -1995,6 +2074,9 @@ function App() {
 
           <UserContextMenu />
 
+          <MediaPartyOverlay />
+          <MeetingRoom />
+
           {isMobile && callChannelId === 'dm' && !(currentServer && currentChannel?.type === 'voice') && <CallView />}
 
           <Modal open={showSearch} onClose={() => { setShowSearch(false); setSearchQuery('') }} title="Pesquisar">
@@ -2299,6 +2381,18 @@ function App() {
       />
       <HelpReportModal open={showHelpReport} onClose={() => setShowHelpReport(false)} />
       <DownloadAppModal open={showDownloadApp} onClose={() => setShowDownloadApp(false)} />
+      <CommandPalette open={showCommandPalette} onClose={() => setShowCommandPalette(false)} />
+      {showChangelog && <ChangelogModal onClose={() => setShowChangelog(false)} />}
+      {showTransparency && <TransparencyModal onClose={() => setShowTransparency(false)} />}
+      {showRecap && <WeeklyRecapModal onClose={() => setShowRecap(false)} />}
+      {showAchievements && <AchievementsModal onClose={() => setShowAchievements(false)} />}
+      {showForums && <ForumsModal onClose={() => setShowForums(false)} />}
+      {focusMode && (
+        <button type="button" className="fs-focus-exit" onClick={() => setFocusMode(false)} title={`${tr('focus.exit')} (Ctrl+Shift+F)`}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--accent)' }} />
+          {tr('focus.exit')}
+        </button>
+      )}
     </div>
   )
 }

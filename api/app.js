@@ -2197,7 +2197,7 @@ const actions = {
     const nextStatus = String(nextSettings.statusMessage || '')
     const prevPresence = String(prevSettings.status || '')
     const nextPresence = String(nextSettings.status || '')
-    const ALLOWED_USER_FIELDS = ['name','bio','photoUrl','bannerUrl','accentColor','status','settings','activityName','activityDetails','activityStartedAt','friendCode','bookmarks']
+    const ALLOWED_USER_FIELDS = ['name','bio','photoUrl','bannerUrl','accentColor','status','birthday','settings','activityName','activityDetails','activityStartedAt','friendCode','bookmarks']
     const safeData = {}
     for (const k of ALLOWED_USER_FIELDS) { if (body.data && body.data[k] !== undefined) safeData[k] = body.data[k] }
     // Imagem inline (data URI) gigante afoga o store compartilhado e derruba a
@@ -5247,6 +5247,111 @@ const actions = {
     const isStaff = actor === server.ownerId || (Array.isArray(server.staffMemberIds) && server.staffMemberIds.includes(actor))
     if (!isStaff) throw new Error('Somente o dono e a staff podem gerenciar eventos')
     const updated = { ...server, events: (server.events || []).filter((e) => e.id !== body.eventId) }
+    upsertGlobalServer(store, updated)
+    const index = data.servers.findIndex((s) => s.id === server.id)
+    if (index === -1) data.servers.push(updated)
+    else data.servers[index] = updated
+    return { server: updated, servers: data.servers }
+  },
+  addForumThread: async (store, data, body) => {
+    const server = getAllServers(store).find((s) => s && s.id === body.serverId)
+    if (!server) throw new Error('Servidor nao encontrado')
+    const actor = String(body.userId || '')
+    if (!isServerMember(store, actor, server.id)) deny('Apenas membros (403)')
+    const title = String(body.title || '').trim().slice(0, 120)
+    const content = String(body.body || '').trim().slice(0, 5000)
+    if (!title) throw new Error('Titulo do topico obrigatorio')
+    if (!content) throw new Error('Mensagem do topico obrigatoria')
+    if ((server.forums || []).length >= 100) throw new Error('Maximo de 100 topicos por servidor')
+    const author = getAllUsers(store).find((u) => u && u.id === actor)
+    const thread = {
+      id: id(),
+      serverId: server.id,
+      title,
+      body: content,
+      authorId: actor,
+      authorName: author ? author.name : 'Alguem',
+      authorPhoto: author ? (author.photoUrl || '') : '',
+      createdAt: now(),
+      updatedAt: now(),
+      pinned: false,
+      locked: false,
+      replies: [],
+    }
+    const updated = { ...server, forums: [thread, ...(server.forums || [])] }
+    upsertGlobalServer(store, updated)
+    const index = data.servers.findIndex((s) => s.id === server.id)
+    if (index === -1) data.servers.push(updated)
+    else data.servers[index] = updated
+    for (const memberId of (server.members || [])) {
+      if (memberId === actor) continue
+      addNotification(store, {
+        toUserId: memberId,
+        fromUserId: actor || 'system',
+        fromName: thread.authorName,
+        fromPhoto: thread.authorPhoto,
+        type: 'server-forum',
+        title: `Novo topico em ${server.name}`,
+        body: title,
+        data: { serverId: server.id, threadId: thread.id },
+      })
+    }
+    return { server: updated, servers: data.servers, thread }
+  },
+  addForumReply: async (store, data, body) => {
+    const server = getAllServers(store).find((s) => s && s.id === body.serverId)
+    if (!server) throw new Error('Servidor nao encontrado')
+    const actor = String(body.userId || '')
+    if (!isServerMember(store, actor, server.id)) deny('Apenas membros (403)')
+    const threadId = String(body.threadId || '')
+    const content = String(body.content || '').trim().slice(0, 3000)
+    if (!content) throw new Error('Resposta obrigatoria')
+    const thread = (server.forums || []).find((item) => item && item.id === threadId)
+    if (!thread) throw new Error('Topico nao encontrado')
+    const isStaff = actor === server.ownerId || (Array.isArray(server.staffMemberIds) && server.staffMemberIds.includes(actor))
+    if (thread.locked && !isStaff) throw new Error('Este topico esta fechado')
+    if ((thread.replies || []).length >= 500) throw new Error('Maximo de 500 respostas por topico')
+    const author = getAllUsers(store).find((u) => u && u.id === actor)
+    const reply = {
+      id: id(),
+      authorId: actor,
+      authorName: author ? author.name : 'Alguem',
+      authorPhoto: author ? (author.photoUrl || '') : '',
+      content,
+      createdAt: now(),
+    }
+    const forums = (server.forums || []).map((item) => item && item.id === threadId
+      ? { ...item, replies: [...(item.replies || []), reply], updatedAt: now() }
+      : item)
+    const updated = { ...server, forums }
+    upsertGlobalServer(store, updated)
+    const index = data.servers.findIndex((s) => s.id === server.id)
+    if (index === -1) data.servers.push(updated)
+    else data.servers[index] = updated
+    if (thread.authorId !== actor) {
+      addNotification(store, {
+        toUserId: thread.authorId,
+        fromUserId: actor || 'system',
+        fromName: reply.authorName,
+        fromPhoto: reply.authorPhoto,
+        type: 'server-forum',
+        title: `Nova resposta em ${server.name}`,
+        body: thread.title,
+        data: { serverId: server.id, threadId: thread.id },
+      })
+    }
+    return { server: updated, servers: data.servers, thread: { ...thread, replies: [...(thread.replies || []), reply] } }
+  },
+  deleteForumThread: async (store, data, body) => {
+    const server = getAllServers(store).find((s) => s && s.id === body.serverId)
+    if (!server) throw new Error('Servidor nao encontrado')
+    const actor = String(body.userId || '')
+    if (!isServerMember(store, actor, server.id)) deny('Apenas membros (403)')
+    const thread = (server.forums || []).find((item) => item && item.id === body.threadId)
+    if (!thread) throw new Error('Topico nao encontrado')
+    const isStaff = actor === server.ownerId || (Array.isArray(server.staffMemberIds) && server.staffMemberIds.includes(actor))
+    if (!isStaff && thread.authorId !== actor) throw new Error('Somente o autor ou a staff podem excluir o topico')
+    const updated = { ...server, forums: (server.forums || []).filter((item) => item && item.id !== body.threadId) }
     upsertGlobalServer(store, updated)
     const index = data.servers.findIndex((s) => s.id === server.id)
     if (index === -1) data.servers.push(updated)
